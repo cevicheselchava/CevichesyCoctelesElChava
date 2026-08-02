@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Preparar app y panel administrativo
+      - name: Preparar app, PWA y panel administrativo
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -28,8 +28,29 @@ jobs:
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
           html = re.sub(r'\n?<script src="order-fix\.js(?:\?[^\"]*)?"></script>', '', html)
+          html = re.sub(r'\n?<script src="pwa-init\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
-          html = html.replace('</body>', '<script src="order-fix.js?v=20260802-1125"></script>\n</body>')
+
+          pwa_head = (
+              '<meta name="description" content="Ordena ceviches y cócteles El Chava con entrega a domicilio.">\n'
+              '<meta name="mobile-web-app-capable" content="yes">\n'
+              '<meta name="apple-mobile-web-app-capable" content="yes">\n'
+              '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+              '<meta name="apple-mobile-web-app-title" content="El Chava">\n'
+              '<link rel="manifest" href="/manifest.webmanifest">\n'
+              '<link rel="icon" href="/pwa-icon.svg" type="image/svg+xml">\n'
+              '<link rel="apple-touch-icon" href="/logo.png">'
+          )
+          if 'rel="manifest"' not in html:
+              html = html.replace('</head>', pwa_head + '\n</head>', 1)
+
+          html = html.replace(
+              '</body>',
+              '<script src="order-fix.js?v=20260802-1125"></script>\n'
+              '<script src="pwa-init.js?v=20260802-1409"></script>\n'
+              '</body>',
+              1
+          )
           index.write_text(html, encoding='utf-8')
 
           control = Path('control.html')
