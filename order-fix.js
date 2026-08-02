@@ -1,62 +1,123 @@
 (()=>{
-  const button=document.getElementById('continueOrder');
-  if(!button||typeof validateOrder!=='function'||typeof buildOrder!=='function'||typeof buildWhatsApp!=='function')return;
+  const sendButton=document.getElementById('continueOrder');
+  const modal=document.getElementById('cartModal');
+  const closeButton=document.getElementById('closeCart');
+  const backdrop=document.getElementById('cartBackdrop');
+  const keepShoppingButton=document.getElementById('keepShopping');
 
-  let pendingOrderId='';
-
-  function withTimeout(promise,ms){
-    return new Promise((resolve,reject)=>{
-      let finished=false;
-      const timer=setTimeout(()=>{
-        if(finished)return;
-        finished=true;
-        const error=new Error('Firebase no respondió a tiempo.');
-        error.code='pedido/timeout';
-        reject(error);
-      },ms);
-      promise.then(value=>{
-        if(finished)return;
-        finished=true;
-        clearTimeout(timer);
-        resolve(value);
-      }).catch(error=>{
-        if(finished)return;
-        finished=true;
-        clearTimeout(timer);
-        reject(error);
-      });
-    });
+  function hideCart(){
+    if(modal)modal.hidden=true;
+    document.body.classList.remove('modal-open');
   }
 
-  button.onclick=async()=>{
+  window.closeCart=hideCart;
+
+  function attachClose(element){
+    if(!element)return;
+    element.style.pointerEvents='auto';
+    element.style.zIndex='5';
+    element.addEventListener('click',event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      hideCart();
+    },true);
+  }
+
+  attachClose(closeButton);
+  attachClose(backdrop);
+  attachClose(keepShoppingButton);
+
+  document.addEventListener('click',event=>{
+    if(event.target.closest('#closeCart')){
+      event.preventDefault();
+      event.stopPropagation();
+      hideCart();
+    }
+  },true);
+
+  if(!sendButton||typeof validateOrder!=='function'||typeof buildOrder!=='function'||typeof buildWhatsApp!=='function')return;
+
+  const PROJECT_ID='ceviches-y-cocteles-el-chava';
+  const API_KEY='AIzaSyBbOIXTr2Tvz1FvoTk5GZgP2jx24jpjlL4';
+  let pendingOrderId=sessionStorage.getItem('pendingOrderId')||'';
+
+  function newOrderId(){
+    if(pendingOrderId)return pendingOrderId;
+    pendingOrderId='PED-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
+    sessionStorage.setItem('pendingOrderId',pendingOrderId);
+    return pendingOrderId;
+  }
+
+  function toFirestoreValue(value){
+    if(value===null)return {nullValue:null};
+    if(value instanceof Date)return {timestampValue:value.toISOString()};
+    if(Array.isArray(value))return {arrayValue:{values:value.map(toFirestoreValue)}};
+    if(typeof value==='boolean')return {booleanValue:value};
+    if(typeof value==='number')return Number.isInteger(value)?{integerValue:String(value)}:{doubleValue:value};
+    if(typeof value==='string')return {stringValue:value};
+    if(typeof value==='object')return {mapValue:{fields:toFirestoreFields(value)}};
+    return {stringValue:String(value)};
+  }
+
+  function toFirestoreFields(object){
+    const fields={};
+    Object.entries(object||{}).forEach(([key,value])=>{
+      if(value!==undefined)fields[key]=toFirestoreValue(value);
+    });
+    return fields;
+  }
+
+  async function saveWithRest(order,id){
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),15000);
+    const url=`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/pedidos/${encodeURIComponent(id)}?key=${encodeURIComponent(API_KEY)}`;
+    try{
+      const response=await fetch(url,{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({fields:toFirestoreFields(order)}),
+        signal:controller.signal,
+        cache:'no-store'
+      });
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok){
+        const error=new Error(result?.error?.message||`Firebase respondió ${response.status}`);
+        error.status=response.status;
+        throw error;
+      }
+      return result;
+    }finally{
+      clearTimeout(timer);
+    }
+  }
+
+  function openWhatsApp(order,id){
+    hideCart();
+    location.href='https://wa.me/12109432119?text='+encodeURIComponent(buildWhatsApp(order,id));
+  }
+
+  sendButton.onclick=async()=>{
     if(!validateOrder())return;
-    button.disabled=true;
-    button.textContent='Guardando pedido...';
+    sendButton.disabled=true;
+    sendButton.textContent='Enviando pedido...';
+
+    const id=newOrderId();
+    const order={...buildOrder(),id,createdAt:new Date(),createdAtClient:new Date().toISOString()};
 
     try{
-      await db.enableNetwork().catch(()=>{});
-      const order=buildOrder();
-      const ref=pendingOrderId
-        ? db.collection('pedidos').doc(pendingOrderId)
-        : db.collection('pedidos').doc();
-      pendingOrderId=ref.id;
-
-      await withTimeout(ref.set({...order,id:ref.id}),15000);
+      await saveWithRest(order,id);
+      sessionStorage.removeItem('pendingOrderId');
       pendingOrderId='';
-      closeCart();
-      location.href='https://wa.me/12109432119?text='+encodeURIComponent(buildWhatsApp(order,ref.id));
+      openWhatsApp(order,id);
     }catch(error){
-      console.error(error);
-      if(error?.code==='pedido/timeout'){
-        alert('Firebase no respondió en 15 segundos. Revisa tu internet y vuelve a tocar Enviar pedido. No se duplicará el pedido.');
-      }else if(error?.code==='permission-denied'){
-        alert('Firebase rechazó el pedido por permisos. Hay que corregir las reglas de Firestore.');
-      }else{
-        alert('No se pudo guardar el pedido. Revisa la conexión e inténtalo otra vez.');
-      }
+      console.error('No se pudo sincronizar el pedido con Firestore:',error);
+      sessionStorage.removeItem('pendingOrderId');
+      pendingOrderId='';
+      alert('Firebase no pudo guardar el pedido, pero se abrirá WhatsApp para enviarlo y no perder la venta.');
+      openWhatsApp(order,id);
     }finally{
-      button.disabled=false;
-      button.textContent='Enviar pedido';
+      sendButton.disabled=false;
+      sendButton.textContent='Enviar pedido';
     }
   };
 })();
