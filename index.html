@@ -21,7 +21,7 @@ button,input,select,textarea{font:inherit}.wrap{position:relative;z-index:1;max-
 .checkout{margin-top:12px;background:rgba(255,255,255,.78);border:1px solid rgba(229,220,205,.9);border-radius:17px;padding:14px}.checkout h2{margin:0 0 10px;color:var(--navy);font-size:22px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field-label{display:flex;flex-direction:column;gap:6px;font-size:16px;font-weight:900;color:var(--navy)}.field-label input,.field-label select{font-weight:400;color:var(--ink)}input,select,textarea{width:100%;border:1px solid rgba(215,205,189,.95);border-radius:10px;padding:11px;font-size:16px;background:rgba(255,255,255,.9)}textarea{grid-column:1/-1;min-height:66px;resize:vertical}.full{grid-column:1/-1}.credit{text-align:center;font-size:15px;font-weight:900;color:var(--navy);padding:18px 0 2px}
 .sticky{position:fixed;z-index:8;bottom:0;left:0;right:0;background:var(--navy);color:#fff;padding:9px max(10px,calc((100% - 980px)/2 + 12px)) calc(9px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;box-shadow:0 -5px 18px rgba(0,0,0,.18)}.summary{flex:1;min-width:0}.summary b{font-size:18px}.summary b span{color:#7df18d}.summary small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d8e2ef;font-size:12px}.send{border:0;border-radius:12px;background:#25d366;color:#fff;padding:11px 14px;font-weight:1000;font-size:14px}.send small{display:block;font-size:11px;font-weight:700}
 @media(min-width:720px){.products{grid-template-columns:repeat(4,minmax(0,1fr))}.product{min-height:140px}.main-logo{width:min(500px,88%);max-height:220px}}
-@media(max-width:560px){.benefits{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.full,textarea{grid-column:1}.hero h1{font-size:27px}.sticky{gap:7px}.send{padding:10px 11px}}
+@media(max-width:560px){.fields{grid-template-columns:1fr}.full,textarea{grid-column:1}.hero h1{font-size:27px}.sticky{gap:7px}.send{padding:10px 11px}}
 </style>
 </head>
 <body>
@@ -32,9 +32,9 @@ button,input,select,textarea{font:inherit}.wrap{position:relative;z-index:1;max-
   <h1>¿Qué se te antoja hoy?</h1>
   <p>Programa tu pedido · Delivery gratis en área delimitada</p>
   <div class="benefits">
-    <div class="benefit">🚚 <b>Delivery gratis</b>Dentro del área delimitada</div>
-    <div class="benefit">💯 <b>Pedido seguro</b>Sin anticipos</div>
-    <div class="benefit">💵 <b>Paga al recibir</b>Efectivo o Cash App</div>
+    <div class="benefit"><b>💯 Seguro</b>Sin anticipos</div>
+    <div class="benefit"><b>💵 Paga al recibir</b>Efectivo o Cash App</div>
+    <div class="benefit"><b>🚚 Delivery</b>Área delimitada</div>
   </div>
 </header>
 <div class="notice"><b>📍 Fuera de San Antonio:</b> puede aplicar compra mínima según la distancia.</div>
@@ -75,7 +75,7 @@ button,input,select,textarea{font:inherit}.wrap{position:relative;z-index:1;max-
     <textarea id="notes" placeholder="Notas del pedido"></textarea>
   </div>
 </section>
-<footer class="credit">by Salmar Marketing Digital ©️</footer>
+<footer class="credit">Todos los derechos reservados · Desarrollado por Salmar Marketing Digital ©️</footer>
 </main>
 
 <div class="sticky">
