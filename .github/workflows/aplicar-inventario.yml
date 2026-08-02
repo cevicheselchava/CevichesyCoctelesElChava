@@ -1,5 +1,6 @@
 name: Aplicar inventario agrupado
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths: [".github/workflows/aplicar-inventario.yml"]
