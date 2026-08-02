@@ -28,6 +28,7 @@ jobs:
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
           html = re.sub(r'\n?<script src="order-fix\.js(?:\?[^\"]*)?"></script>', '', html)
+          html = re.sub(r'\n?<script src="promo-personal\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<script src="pwa-init\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
 
@@ -46,6 +47,7 @@ jobs:
 
           html = html.replace(
               '</body>',
+              '<script src="promo-personal.js?v=20260802-1417"></script>\n'
               '<script src="order-fix.js?v=20260802-1125"></script>\n'
               '<script src="pwa-init.js?v=20260802-1409"></script>\n'
               '</body>',
