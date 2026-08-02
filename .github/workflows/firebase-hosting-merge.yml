@@ -1,4 +1,4 @@
-# Despliega la app, el panel y las reglas de Firestore
+# Despliega únicamente la app y el panel en Firebase Hosting
 name: Deploy to Firebase Hosting on merge
 on:
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
 
           html = html.replace(
               '</body>',
-              '<script src="promo-personal.js?v=20260802-1417"></script>\n'
+              '<script src="promo-personal.js?v=20260802-1420"></script>\n'
               '<script src="order-fix.js?v=20260802-1125"></script>\n'
               '<script src="pwa-init.js?v=20260802-1409"></script>\n'
               '</body>',
@@ -70,17 +70,9 @@ jobs:
           control.write_text(panel, encoding='utf-8')
           PY
 
-      - name: Publicar reglas de Firestore
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CEVICHES_Y_COCTELES_EL_CHAVA }}
-        run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
-          npx --yes firebase-tools@latest deploy --only firestore:rules --project ceviches-y-cocteles-el-chava --non-interactive
-
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Publicar en Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CEVICHES_Y_COCTELES_EL_CHAVA }}
           channelId: live
           projectId: ceviches-y-cocteles-el-chava
