@@ -40,11 +40,11 @@
 </div><button class="primary" id="registerPurchase">Agregar compra al inventario</button></div></section>
 <section class="panel" id="history"><div class="card"><h2>Movimientos</h2><div class="history" id="historyList"></div></div></section>
 </main>
-<div class="footer">Control administrativo · Inventario agrupado v2</div><div class="toast" id="toast"></div>
+<div class="footer">Control administrativo · Inventario agrupado v3</div><div class="toast" id="toast"></div>
 <script>
 const firebaseConfig={apiKey:'AIzaSyBbOIXTr2Tvz1FvoTk5GZgP2jx24jpjlL4',authDomain:'ceviches-y-cocteles-el-chava.firebaseapp.com',projectId:'ceviches-y-cocteles-el-chava',storageBucket:'ceviches-y-cocteles-el-chava.firebasestorage.app',messagingSenderId:'227568387475',appId:'1:227568387475:web:6ccd3e67e62d1bf4b0d466',measurementId:'G-1MZS4J9Y4Z'};
 firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore(),inventoryRef=db.collection('inventario').doc('principal');
+const db=firebase.firestore();db.settings({experimentalForceLongPolling:true,useFetchStreams:false});const inventoryRef=db.collection('inventario').doc('principal');
 const GROUPS={mariscos:'Mariscos',verduras:'Verduras y frescos',salsas:'Salsas y líquidos',desechables:'Desechables y complementos',refrescos:'Refrescos'};
 const ITEMS={
 fish:{name:'Filete de pescado',group:'mariscos',unit:'lb',purchaseUnit:'lb',factor:1,low:1},
