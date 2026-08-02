@@ -1,0 +1,29 @@
+{
+  "id": "/",
+  "name": "Ceviches y Cócteles El Chava",
+  "short_name": "El Chava",
+  "description": "Pedidos de ceviches y cócteles con entrega a domicilio.",
+  "lang": "es",
+  "start_url": "/?utm_source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8f3e8",
+  "theme_color": "#06254d",
+  "categories": ["food", "shopping"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}
