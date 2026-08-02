@@ -17,21 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Conectar la versión nueva del inventario
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('control.html')
-          html = path.read_text(encoding='utf-8')
-          html = re.sub(r'\n?<script src="control-extra\.js(?:\?[^\"]*)?"></script>', '', html)
-          tag = '<script src="control-extra.js?v=20260801-2330"></script>'
-          html = html.replace('</body>', tag + '\n</body>')
-          path.write_text(html, encoding='utf-8')
-          PY
-
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
