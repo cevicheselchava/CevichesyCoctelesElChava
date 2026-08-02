@@ -28,8 +28,17 @@ jobs:
           html = path.read_text(encoding='utf-8')
           html = re.sub(r'\n?<script src="order-fix\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
-          html = html.replace('</body>', '<script src="order-fix.js?v=20260802-1026"></script>\n</body>')
+          html = html.replace('</body>', '<script src="order-fix.js?v=20260802-1048"></script>\n</body>')
           path.write_text(html, encoding='utf-8')
+
+          control = Path('control.html')
+          panel = control.read_text(encoding='utf-8')
+          old = "const db=firebase.firestore(),inventoryRef=db.collection('inventario').doc('principal');"
+          new = "const db=firebase.firestore();db.settings({experimentalForceLongPolling:true,useFetchStreams:false});const inventoryRef=db.collection('inventario').doc('principal');"
+          if old in panel:
+              panel = panel.replace(old, new, 1)
+          panel = panel.replace('Control administrativo · Inventario agrupado v2','Control administrativo · Inventario agrupado v3')
+          control.write_text(panel, encoding='utf-8')
           PY
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
