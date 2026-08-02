@@ -6,209 +6,53 @@
 <meta name="theme-color" content="#06254d">
 <title>Ceviches y Cócteles El Chava</title>
 <style>
-:root{--navy:#06254d;--navy2:#0b3568;--red:#cf161d;--green:#22983a;--cream:#f8f3e8;--gold:#f7b928;--ink:#182235;--muted:#647084;--orange:#b84f00;--brown:#7b2f00}
-*{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:linear-gradient(180deg,#fff 0%,var(--cream) 100%);font-family:Arial,Helvetica,sans-serif;color:var(--ink);padding-bottom:98px}
-body::before{content:"";position:fixed;inset:0;background:url("logo.png") center 61%/470px auto no-repeat;opacity:.07;pointer-events:none;z-index:0}
-button,input,select,textarea{font:inherit}.wrap{position:relative;z-index:1;max-width:980px;margin:auto;padding:12px}
-.hero{position:relative;background:rgba(255,255,255,.72);border:1px solid #eadfcb;border-radius:22px;padding:10px 16px 16px;text-align:center;box-shadow:0 8px 22px rgba(6,37,77,.08)}
-.main-logo{display:block;width:min(430px,92%);height:auto;max-height:185px;object-fit:contain;margin:0 auto 6px}.hero h1{margin:8px 0 3px;color:var(--navy);font-size:30px}.hero p{margin:0;color:var(--red);font-weight:800;font-size:16px}
-.cart-top{position:absolute;top:12px;right:12px;width:45px;height:45px;border:0;border-radius:14px;background:#fff;color:var(--navy);box-shadow:0 4px 14px #0002;font-size:23px}.cart-badge{position:absolute;right:-6px;top:-7px;background:var(--red);color:#fff;border-radius:20px;min-width:23px;height:23px;padding:0 6px;display:grid;place-items:center;font-size:12px;font-weight:1000}
-.benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.benefit{background:rgba(255,255,255,.78);border:1px solid rgba(231,223,209,.9);border-radius:12px;padding:9px 5px;font-size:13px;font-weight:800}.benefit b{display:block;color:var(--green);font-size:14px}
-.notice{margin:10px 0;background:rgba(255,244,215,.82);border:1px solid rgba(238,212,156,.9);border-radius:13px;padding:10px 12px;font-size:14px}.notice b{color:#8b4a00}.availability-note{margin:10px 0;background:rgba(225,244,255,.82);border:1px solid rgba(91,158,202,.55);border-radius:13px;padding:10px 12px;font-size:14px;color:var(--navy)}
-.section{margin-top:10px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:0;cursor:pointer;text-align:left;background:rgba(6,37,77,.94);color:#fff;border-radius:11px;padding:12px;font-size:16px;font-weight:1000}.section-title:active{transform:scale(.995)}.section-heading{display:flex;align-items:center;gap:7px;min-width:0}.section-right{display:flex;align-items:center;gap:9px;flex-shrink:0}.section-count{display:none;min-width:25px;height:25px;border-radius:999px;align-items:center;justify-content:center;padding:0 7px;background:#fff;color:var(--navy);font-size:13px;font-weight:1000}.section-count.visible{display:inline-flex}.accordion-arrow{font-size:19px;line-height:1;transition:transform .2s ease}.section.open .accordion-arrow{transform:rotate(180deg)}.section .products{max-height:0;overflow:hidden;opacity:0;margin-top:0;transition:max-height .35s ease,opacity .22s ease,margin-top .22s ease}.section.open .products{max-height:4000px;opacity:1;margin-top:8px}.section-title small{font-size:12px;color:#9ff0ad}.section-title.promo-title{background:linear-gradient(90deg,#b40f18,#e3262f)}.section-title.cocktail-title{background:var(--orange)}.section-title.pre-title{background:var(--brown)}
-.products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.product{min-height:132px;background:rgba(255,255,255,.72);border:1px solid rgba(232,224,211,.9);border-radius:15px;padding:10px;box-shadow:0 4px 12px rgba(6,37,77,.06);display:flex;flex-direction:column;justify-content:space-between}.promo-section .product{border-color:rgba(207,22,29,.25)}.promo-section .product h3{color:#a80f18}.product h3{margin:0;color:var(--navy);font-size:21px;line-height:1.15}.meta{font-size:16px;color:var(--muted);font-weight:700;margin-top:4px;min-height:31px}.tag{display:inline-block;margin-top:5px;border:1px solid var(--red);color:var(--red);font-size:11px;font-weight:1000;border-radius:10px;padding:4px 7px}.promo-save{display:inline-block;margin-top:5px;background:rgba(247,185,40,.22);color:#7b4b00;border-radius:10px;padding:4px 7px;font-size:11px;font-weight:1000}.bottom{display:flex;align-items:end;justify-content:space-between;gap:6px;margin-top:8px}.price{font-size:25px;color:var(--red);font-weight:1000}.price small{display:block;color:var(--muted);font-size:10px}.pending{color:var(--muted);font-size:14px;font-weight:900}.qty{display:flex;align-items:center;gap:8px;font-weight:1000;font-size:18px}.qty button{border:0;width:32px;height:32px;border-radius:50%;background:rgba(6,37,77,.94);color:#fff;font-size:22px;line-height:32px}.qty .plus{background:rgba(34,152,58,.94)}
-.checkout{margin-top:12px;background:rgba(255,255,255,.78);border:1px solid rgba(229,220,205,.9);border-radius:17px;padding:14px}.checkout h2{margin:0 0 10px;color:var(--navy);font-size:22px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field-label{display:flex;flex-direction:column;gap:6px;font-size:16px;font-weight:900;color:var(--navy)}.field-label input,.field-label select{font-weight:400;color:var(--ink)}input,select,textarea{width:100%;border:1px solid rgba(215,205,189,.95);border-radius:10px;padding:11px;font-size:16px;background:rgba(255,255,255,.9)}textarea{grid-column:1/-1;min-height:66px;resize:vertical}.full{grid-column:1/-1}.credit{text-align:center;font-size:15px;font-weight:900;color:var(--navy);padding:18px 0 2px}
-.sticky{position:fixed;z-index:8;bottom:0;left:0;right:0;background:var(--navy);color:#fff;padding:9px max(10px,calc((100% - 980px)/2 + 12px)) calc(9px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;box-shadow:0 -5px 18px rgba(0,0,0,.18)}.summary{flex:1;min-width:0}.summary b{font-size:18px}.summary b span{color:#7df18d}.summary small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d8e2ef;font-size:12px}.send{border:0;border-radius:12px;background:#25d366;color:#fff;padding:11px 14px;font-weight:1000;font-size:14px}.send small{display:block;font-size:11px;font-weight:700}
-[hidden]{display:none!important}body.modal-open{overflow:hidden}.cart-modal{position:fixed;inset:0;z-index:50;display:grid;place-items:end center}.cart-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5)}.cart-dialog{position:relative;width:min(680px,100%);max-height:86vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 35px rgba(0,0,0,.28)}.cart-dialog h2{margin:0 42px 14px 0;color:var(--navy);font-size:25px}.cart-close{position:absolute;top:12px;right:12px;width:38px;height:38px;border:0;border-radius:50%;background:#eef2f7;color:var(--navy);font-size:27px;line-height:38px}.cart-items{display:grid;gap:8px}.cart-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid #e4ded3;border-radius:12px;background:#fffdf9}.cart-row strong{display:block;color:var(--navy);font-size:16px}.cart-row small{display:block;margin-top:3px;color:var(--muted);font-size:13px}.cart-row-price{font-weight:1000;color:var(--red);white-space:nowrap}.cart-total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:13px 4px;border-top:2px solid #e5dfd4;color:var(--navy);font-size:19px;font-weight:1000}.cart-total span{color:var(--red);font-size:23px}.cart-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:8px}.cart-actions button{border:0;border-radius:12px;padding:13px 10px;font-weight:1000}.cart-secondary{background:#e9edf3;color:var(--navy)}.cart-primary{background:#25d366;color:#fff}
-@media(min-width:720px){.products{grid-template-columns:repeat(4,minmax(0,1fr))}.product{min-height:140px}.main-logo{width:min(500px,88%);max-height:220px}}
-@media(max-width:560px){.fields{grid-template-columns:1fr}.full,textarea{grid-column:1}.hero h1{font-size:27px}.sticky{gap:7px}.send{padding:10px 11px}}
+:root{--navy:#06254d;--red:#cf161d;--green:#22983a;--cream:#f8f3e8;--ink:#182235;--muted:#647084;--orange:#b84f00;--brown:#7b2f00}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(180deg,#fff 0%,var(--cream) 100%);font-family:Arial,Helvetica,sans-serif;color:var(--ink);padding-bottom:98px}body::before{content:"";position:fixed;inset:0;background:url("logo.png") center 61%/470px auto no-repeat;opacity:.07;pointer-events:none;z-index:0}button,input,select,textarea{font:inherit}.wrap{position:relative;z-index:1;max-width:980px;margin:auto;padding:12px}.hero{position:relative;background:rgba(255,255,255,.72);border:1px solid #eadfcb;border-radius:22px;padding:10px 16px 16px;text-align:center;box-shadow:0 8px 22px rgba(6,37,77,.08)}.main-logo{display:block;width:min(430px,92%);height:auto;max-height:185px;object-fit:contain;margin:0 auto 6px}.hero h1{margin:8px 0 3px;color:var(--navy);font-size:30px}.hero p{margin:0;color:var(--red);font-weight:800;font-size:16px}.cart-top{position:absolute;top:12px;right:12px;width:45px;height:45px;border:0;border-radius:14px;background:#fff;color:var(--navy);box-shadow:0 4px 14px #0002;font-size:23px}.cart-badge{position:absolute;right:-6px;top:-7px;background:var(--red);color:#fff;border-radius:20px;min-width:23px;height:23px;padding:0 6px;display:grid;place-items:center;font-size:12px;font-weight:1000}.benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}.benefit{background:rgba(255,255,255,.78);border:1px solid rgba(231,223,209,.9);border-radius:12px;padding:9px 5px;font-size:13px;font-weight:800}.benefit b{display:block;color:var(--green);font-size:14px}.notice{margin:10px 0;background:rgba(255,244,215,.82);border:1px solid rgba(238,212,156,.9);border-radius:13px;padding:10px 12px;font-size:14px}.notice b{color:#8b4a00}.availability-note{margin:10px 0;background:rgba(225,244,255,.82);border:1px solid rgba(91,158,202,.55);border-radius:13px;padding:10px 12px;font-size:14px;color:var(--navy)}.section{margin-top:10px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:0;cursor:pointer;text-align:left;background:rgba(6,37,77,.94);color:#fff;border-radius:11px;padding:12px;font-size:16px;font-weight:1000}.section-heading{display:flex;align-items:center;gap:7px;min-width:0}.section-right{display:flex;align-items:center;gap:9px;flex-shrink:0}.section-count{display:none;min-width:25px;height:25px;border-radius:999px;align-items:center;justify-content:center;padding:0 7px;background:#fff;color:var(--navy);font-size:13px;font-weight:1000}.section-count.visible{display:inline-flex}.accordion-arrow{font-size:19px;transition:transform .2s}.section.open .accordion-arrow{transform:rotate(180deg)}.section .products{max-height:0;overflow:hidden;opacity:0;margin-top:0;transition:max-height .35s,opacity .22s,margin-top .22s}.section.open .products{max-height:5000px;opacity:1;margin-top:8px}.section-title small{font-size:12px;color:#9ff0ad}.promo-title{background:linear-gradient(90deg,#b40f18,#e3262f)}.cocktail-title{background:var(--orange)}.pre-title{background:var(--brown)}.products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.product{min-height:132px;background:rgba(255,255,255,.72);border:1px solid rgba(232,224,211,.9);border-radius:15px;padding:10px;box-shadow:0 4px 12px rgba(6,37,77,.06);display:flex;flex-direction:column;justify-content:space-between}.promo-section .product h3{color:#a80f18}.product h3{margin:0;color:var(--navy);font-size:21px;line-height:1.15}.meta{font-size:16px;color:var(--muted);font-weight:700;margin-top:4px;min-height:31px}.tag,.promo-save{display:inline-block;margin-top:5px;border-radius:10px;padding:4px 7px;font-size:11px;font-weight:1000}.tag{border:1px solid var(--red);color:var(--red)}.promo-save{background:rgba(247,185,40,.22);color:#7b4b00}.bottom{display:flex;align-items:end;justify-content:space-between;gap:6px;margin-top:8px}.price{font-size:25px;color:var(--red);font-weight:1000}.price small{display:block;color:var(--muted);font-size:10px}.pending{color:var(--muted);font-size:14px;font-weight:900}.qty{display:flex;align-items:center;gap:8px;font-weight:1000;font-size:18px}.qty button{border:0;width:32px;height:32px;border-radius:50%;background:rgba(6,37,77,.94);color:#fff;font-size:22px}.qty .plus{background:rgba(34,152,58,.94)}.checkout{margin-top:12px;background:rgba(255,255,255,.78);border:1px solid rgba(229,220,205,.9);border-radius:17px;padding:14px}.checkout h2{margin:0 0 10px;color:var(--navy);font-size:22px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field-label{display:flex;flex-direction:column;gap:6px;font-size:16px;font-weight:900;color:var(--navy)}.field-label input,.field-label select{font-weight:400;color:var(--ink)}input,select,textarea{width:100%;border:1px solid rgba(215,205,189,.95);border-radius:10px;padding:11px;font-size:16px;background:rgba(255,255,255,.9)}textarea{grid-column:1/-1;min-height:66px;resize:vertical}.full{grid-column:1/-1}.credit{text-align:center;font-size:15px;font-weight:900;color:var(--navy);padding:18px 0 2px}.sticky{position:fixed;z-index:8;bottom:0;left:0;right:0;background:var(--navy);color:#fff;padding:9px max(10px,calc((100% - 980px)/2 + 12px)) calc(9px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;box-shadow:0 -5px 18px rgba(0,0,0,.18)}.summary{flex:1;min-width:0}.summary b{font-size:18px}.summary b span{color:#7df18d}.summary small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d8e2ef;font-size:12px}.send{border:0;border-radius:12px;background:#25d366;color:#fff;padding:11px 14px;font-weight:1000;font-size:14px}.send:disabled,.cart-primary:disabled{opacity:.55}.send small{display:block;font-size:11px;font-weight:700}[hidden]{display:none!important}body.modal-open{overflow:hidden}.cart-modal{position:fixed;inset:0;z-index:50;display:grid;place-items:end center}.cart-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5)}.cart-dialog{position:relative;width:min(680px,100%);max-height:86vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 35px rgba(0,0,0,.28)}.cart-dialog h2{margin:0 42px 14px 0;color:var(--navy);font-size:25px}.cart-close{position:absolute;top:12px;right:12px;width:38px;height:38px;border:0;border-radius:50%;background:#eef2f7;color:var(--navy);font-size:27px}.cart-items{display:grid;gap:8px}.cart-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid #e4ded3;border-radius:12px;background:#fffdf9}.cart-row strong{display:block;color:var(--navy);font-size:16px}.cart-row small{display:block;margin-top:3px;color:var(--muted);font-size:13px}.cart-row-price{font-weight:1000;color:var(--red);white-space:nowrap}.cart-total{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:13px 4px;border-top:2px solid #e5dfd4;color:var(--navy);font-size:19px;font-weight:1000}.cart-total span{color:var(--red);font-size:23px}.cart-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:8px}.cart-actions button{border:0;border-radius:12px;padding:13px 10px;font-weight:1000}.cart-secondary{background:#e9edf3;color:var(--navy)}.cart-primary{background:#25d366;color:#fff}@media(min-width:720px){.products{grid-template-columns:repeat(4,minmax(0,1fr))}.product{min-height:140px}.main-logo{width:min(500px,88%);max-height:220px}}@media(max-width:560px){.fields{grid-template-columns:1fr}.full,textarea{grid-column:1}.hero h1{font-size:27px}.sticky{gap:7px}.send{padding:10px 11px}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <main class="wrap">
-<header class="hero">
-  <button class="cart-top" id="cartTop" type="button" aria-label="Ir al carrito">🛒<span class="cart-badge" id="count">0</span></button>
-  <img class="main-logo" src="logo.png" alt="Ceviches y Cócteles El Chava">
-  <h1>¿Qué se te antoja hoy?</h1>
-  <p>Programa tu pedido · Delivery gratis en área delimitada</p>
-  <div class="benefits">
-    <div class="benefit"><b>💯 Seguro</b>Sin anticipos</div>
-    <div class="benefit"><b>💵 Paga al recibir</b>Efectivo o Cash App</div>
-    <div class="benefit"><b>🚚 Delivery</b>Área delimitada</div>
-  </div>
-</header>
-<div class="notice"><b>📍 Fuera de San Antonio:</b> puede aplicar compra mínima según la distancia.</div>
-<div class="availability-note">⏰ <b>Entregas en horarios de 30 minutos.</b> Cantidad limitada por día y sujeta a disponibilidad.</div>
-<div class="notice"><b>⭐ SOBRE PEDIDO:</b> Pulpo y pescado · Pulpo y camarón. Disponibles en ½ libra y 1 libra.</div>
-
-<section class="section promo-section open" data-group="promotions">
-  <button class="section-title promo-title" type="button" aria-expanded="true"><span class="section-heading">🔥 PROMOCIONES</span><span class="section-right"><small>Precios de lanzamiento</small><span class="section-count" id="count-promotions">0</span><span class="accordion-arrow">⌄</span></span></button>
-  <div class="products" id="promotions"></div>
-</section>
-<section class="section" data-group="immediate">
-  <button class="section-title" type="button" aria-expanded="false"><span class="section-heading">⚡ ENTREGA INMEDIATA</span><span class="section-right"><small>El mismo día</small><span class="section-count" id="count-immediate">0</span><span class="accordion-arrow">⌄</span></span></button>
-  <div class="products" id="immediate"></div>
-</section>
-<section class="section" data-group="cocktails">
-  <button class="section-title cocktail-title" type="button" aria-expanded="false"><span class="section-heading">🍹 CÓCTELES</span><span class="section-right"><small>Precios pendientes</small><span class="section-count" id="count-cocktails">0</span><span class="accordion-arrow">⌄</span></span></button>
-  <div class="products" id="cocktails"></div>
-</section>
-<section class="section" data-group="preorder">
-  <button class="section-title pre-title" type="button" aria-expanded="false"><span class="section-heading">📅 SOBRE PEDIDO</span><span class="section-right"><small>Programa con anticipación</small><span class="section-count" id="count-preorder">0</span><span class="accordion-arrow">⌄</span></span></button>
-  <div class="products" id="preorder"></div>
-</section>
-<section class="section" data-group="drinks">
-  <button class="section-title" type="button" aria-expanded="false"><span class="section-heading">🥤 REFRESCOS</span><span class="section-right"><small>$2.50</small><span class="section-count" id="count-drinks">0</span><span class="accordion-arrow">⌄</span></span></button>
-  <div class="products" id="drinks"></div>
-</section>
-
-<section class="checkout" id="checkout">
-  <h2>Datos de entrega</h2>
-  <div class="fields">
-    <input id="name" placeholder="Nombre">
-    <input id="phone" type="tel" placeholder="Teléfono">
-    <label class="field-label">Día de entrega<input id="date" type="date" aria-label="Día de entrega"></label>
-    <label class="field-label">Hora de entrega<select id="time" aria-label="Hora de entrega"><option value="">Selecciona un horario</option></select></label>
-    <input class="full" id="address" placeholder="Dirección de entrega">
-    <input id="zip" inputmode="numeric" maxlength="5" placeholder="ZIP Code">
-    <select id="payment"><option>Efectivo</option><option>Cash App</option></select>
-    <textarea id="notes" placeholder="Notas del pedido"></textarea>
-  </div>
-</section>
-<footer class="credit">Todos los derechos reservados © 2026 · Desarrollado por Salmar Marketing Digital</footer>
-</main>
-
-<div class="cart-modal" id="cartModal" hidden>
-  <div class="cart-backdrop" id="cartBackdrop"></div>
-  <section class="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
-    <button class="cart-close" id="closeCart" type="button" aria-label="Cerrar carrito">×</button>
-    <h2 id="cartTitle">Tu carrito</h2>
-    <div class="cart-items" id="cartItems"></div>
-    <div class="cart-total"><strong>Total</strong><span id="cartTotal">$0.00</span></div>
-    <div class="cart-actions">
-      <button class="cart-secondary" id="keepShopping" type="button">Seguir comprando</button>
-      <button class="cart-primary" id="continueOrder" type="button">Continuar con el pedido</button>
-    </div>
-  </section>
-</div>
-
-<div class="sticky">
-  <div class="summary"><b>Total: <span id="total">$0.00</span></b><small id="summary">Agrega productos</small></div>
-  <button class="send" id="send" type="button">Ver carrito y continuar<small>Revisar antes de enviar</small></button>
-</div>
-
+<header class="hero"><button class="cart-top" id="cartTop" type="button" aria-label="Ir al carrito">🛒<span class="cart-badge" id="count">0</span></button><img class="main-logo" src="logo.png" alt="Ceviches y Cócteles El Chava"><h1>¿Qué se te antoja hoy?</h1><p>Programa tu pedido · Delivery gratis en área delimitada</p><div class="benefits"><div class="benefit"><b>💯 Seguro</b>Sin anticipos</div><div class="benefit"><b>💵 Paga al recibir</b>Efectivo o Cash App</div><div class="benefit"><b>🚚 Delivery</b>Área delimitada</div></div></header>
+<div class="notice"><b>📍 Fuera de San Antonio:</b> puede aplicar compra mínima según la distancia.</div><div class="availability-note">⏰ <b>Entregas en horarios de 30 minutos.</b> Cantidad limitada por día y sujeta a disponibilidad.</div><div class="notice"><b>⭐ SOBRE PEDIDO:</b> Pulpo y pescado · Pulpo y camarón. Disponibles en ½ libra y 1 libra.</div>
+<section class="section promo-section open" data-group="promotions"><button class="section-title promo-title" type="button" aria-expanded="true"><span class="section-heading">🔥 PROMOCIONES</span><span class="section-right"><small>Precios de lanzamiento</small><span class="section-count" id="count-promotions">0</span><span class="accordion-arrow">⌄</span></span></button><div class="products" id="promotions"></div></section>
+<section class="section" data-group="immediate"><button class="section-title" type="button" aria-expanded="false"><span class="section-heading">⚡ ENTREGA INMEDIATA</span><span class="section-right"><small>El mismo día</small><span class="section-count" id="count-immediate">0</span><span class="accordion-arrow">⌄</span></span></button><div class="products" id="immediate"></div></section>
+<section class="section" data-group="cocktails"><button class="section-title cocktail-title" type="button" aria-expanded="false"><span class="section-heading">🍹 CÓCTELES</span><span class="section-right"><small>Precios pendientes</small><span class="section-count" id="count-cocktails">0</span><span class="accordion-arrow">⌄</span></span></button><div class="products" id="cocktails"></div></section>
+<section class="section" data-group="preorder"><button class="section-title pre-title" type="button" aria-expanded="false"><span class="section-heading">📅 SOBRE PEDIDO</span><span class="section-right"><small>Programa con anticipación</small><span class="section-count" id="count-preorder">0</span><span class="accordion-arrow">⌄</span></span></button><div class="products" id="preorder"></div></section>
+<section class="section" data-group="drinks"><button class="section-title" type="button" aria-expanded="false"><span class="section-heading">🥤 REFRESCOS</span><span class="section-right"><small>$2.50</small><span class="section-count" id="count-drinks">0</span><span class="accordion-arrow">⌄</span></span></button><div class="products" id="drinks"></div></section>
+<section class="checkout" id="checkout"><h2>Datos de entrega</h2><div class="fields"><input id="name" placeholder="Nombre"><input id="phone" type="tel" placeholder="Teléfono"><label class="field-label">Día de entrega<input id="date" type="date" aria-label="Día de entrega"></label><label class="field-label">Hora de entrega<select id="time" aria-label="Hora de entrega"><option value="">Selecciona un horario</option></select></label><input class="full" id="address" placeholder="Dirección de entrega"><input id="zip" inputmode="numeric" maxlength="5" placeholder="ZIP Code"><select id="payment"><option>Efectivo</option><option>Cash App</option></select><textarea id="notes" placeholder="Notas del pedido"></textarea></div></section>
+<footer class="credit">Todos los derechos reservados © 2026 · Desarrollado por Salmar Marketing Digital</footer></main>
+<div class="cart-modal" id="cartModal" hidden><div class="cart-backdrop" id="cartBackdrop"></div><section class="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cartTitle"><button class="cart-close" id="closeCart" type="button" aria-label="Cerrar carrito">×</button><h2 id="cartTitle">Tu carrito</h2><div class="cart-items" id="cartItems"></div><div class="cart-total"><strong>Total</strong><span id="cartTotal">$0.00</span></div><div class="cart-actions"><button class="cart-secondary" id="keepShopping" type="button">Seguir comprando</button><button class="cart-primary" id="continueOrder" type="button">Enviar pedido</button></div></section></div>
+<div class="sticky"><div class="summary"><b>Total: <span id="total">$0.00</span></b><small id="summary">Agrega productos</small></div><button class="send" id="send" type="button">Ver carrito y continuar<small>Revisar antes de enviar</small></button></div>
 <script>
+const firebaseConfig={apiKey:'AIzaSyBbOIXTr2Tvz1FvoTk5GZgP2jx24jpjlL4',authDomain:'ceviches-y-cocteles-el-chava.firebaseapp.com',projectId:'ceviches-y-cocteles-el-chava',storageBucket:'ceviches-y-cocteles-el-chava.firebasestorage.app',messagingSenderId:'227568387475',appId:'1:227568387475:web:6ccd3e67e62d1bf4b0d466',measurementId:'G-1MZS4J9Y4Z'};
+firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
+const base1={tomato:1.76,onion:1.06,cucumber:1.06,cilantro:.35,lemonJuice:1.01,lime:1,clamato:1.01,tostadas:4,containers:1};
+function halfRecipe(r){const x={};Object.entries(r).forEach(([k,v])=>x[k]=k==='containers'?1:v/2);x.tostadas=2;return x}function addRecipes(...list){const out={};list.forEach(r=>Object.entries(r||{}).forEach(([k,v])=>out[k]=Number(((out[k]||0)+v).toFixed(3))));return out}
+const fish1=addRecipes(base1,{fish:.5}),shrimp1=addRecipes(base1,{shrimp:.5}),mixed1=addRecipes(base1,{fish:.25,shrimp:.25}),fishOct1=addRecipes(base1,{fish:.25,octopus:.25}),shrimpOct1=addRecipes(base1,{shrimp:.25,octopus:.25});
 const products=[
-{id:'promo_constructor',group:'promotions',name:'👷 Combo Constructor',detail:'1 libra de ceviche de pescado + 1 cóctel chico',price:22,promo:'Ahorras $3'},
-{id:'promo_hambre',group:'promotions',name:'💪 Combo Hambre',detail:'1 libra de ceviche de camarón + 1 cóctel chico',price:27,promo:'Ahorras $3'},
-{id:'promo_camaradas',group:'promotions',name:'👷‍♂️ Combo Camaradas',detail:'1 libra de pescado + 1 libra de camarón + 2 cócteles chicos',price:49,promo:'Ahorras $6'},
-{id:'fp5',group:'immediate',name:'Ceviche de pescado',detail:'½ libra',price:8},
-{id:'fp1',group:'immediate',name:'Ceviche de pescado',detail:'1 libra',price:15},
-{id:'fc5',group:'immediate',name:'Ceviche de camarón',detail:'½ libra',price:11},
-{id:'fc1',group:'immediate',name:'Ceviche de camarón',detail:'1 libra',price:20},
-{id:'fm5',group:'immediate',name:'Ceviche mixto',detail:'Pescado y camarón · ½ libra',price:13},
-{id:'fm1',group:'immediate',name:'Ceviche mixto',detail:'Pescado y camarón · 1 libra',price:25},
-{id:'cc12',group:'cocktails',name:'Cóctel de camarón',detail:'Chico · 12 oz',price:null},
-{id:'cc16',group:'cocktails',name:'Cóctel de camarón',detail:'Mediano · 16 oz',price:null},
-{id:'cm12',group:'cocktails',name:'Cóctel mixto',detail:'Camarón y pulpo · 12 oz',price:null,pre:true},
-{id:'cm16',group:'cocktails',name:'Cóctel mixto',detail:'Camarón y pulpo · 16 oz',price:null,pre:true},
-{id:'op5',group:'preorder',name:'Ceviche pulpo y pescado',detail:'½ libra',price:13,pre:true},
-{id:'op1',group:'preorder',name:'Ceviche pulpo y pescado',detail:'1 libra',price:25,pre:true},
-{id:'oc5',group:'preorder',name:'Ceviche pulpo y camarón',detail:'½ libra',price:13,pre:true},
-{id:'oc1',group:'preorder',name:'Ceviche pulpo y camarón',detail:'1 libra',price:25,pre:true},
-{id:'coca',group:'drinks',name:'Coca-Cola',detail:'Lata · 12 oz',price:2.5},
-{id:'cokezero',group:'drinks',name:'Coke Zero',detail:'Lata · 12 oz',price:2.5},
-{id:'sprite',group:'drinks',name:'Sprite',detail:'Lata · 12 oz',price:2.5},
-{id:'drpepper',group:'drinks',name:'Dr Pepper',detail:'Lata · 12 oz',price:2.5},
-{id:'bigred',group:'drinks',name:'Big Red',detail:'Lata · 12 oz',price:2.5},
-{id:'fanta',group:'drinks',name:'Fanta',detail:'Lata · 12 oz',price:2.5}
+{id:'promo_constructor',group:'promotions',name:'👷 Combo Constructor',detail:'1 libra de ceviche de pescado + 1 cóctel chico',price:22,cost:null,recipe:fish1,promo:'Ahorras $3',inventoryNote:'El cóctel queda pendiente de receta'},
+{id:'promo_hambre',group:'promotions',name:'💪 Combo Hambre',detail:'1 libra de ceviche de camarón + 1 cóctel chico',price:27,cost:null,recipe:shrimp1,promo:'Ahorras $3',inventoryNote:'El cóctel queda pendiente de receta'},
+{id:'promo_camaradas',group:'promotions',name:'👷‍♂️ Combo Camaradas',detail:'1 libra de pescado + 1 libra de camarón + 2 cócteles chicos',price:49,cost:null,recipe:addRecipes(fish1,shrimp1),promo:'Ahorras $6',inventoryNote:'Los cócteles quedan pendientes de receta'},
+{id:'fp5',group:'immediate',name:'Ceviche de pescado',detail:'½ libra',price:8,cost:2.20,recipe:halfRecipe(fish1)},{id:'fp1',group:'immediate',name:'Ceviche de pescado',detail:'1 libra',price:15,cost:3.81,recipe:fish1},
+{id:'fc5',group:'immediate',name:'Ceviche de camarón',detail:'½ libra',price:11,cost:3.31,recipe:halfRecipe(shrimp1)},{id:'fc1',group:'immediate',name:'Ceviche de camarón',detail:'1 libra',price:20,cost:6.01,recipe:shrimp1},
+{id:'fm5',group:'immediate',name:'Ceviche mixto',detail:'Pescado y camarón · ½ libra',price:13,cost:2.76,recipe:halfRecipe(mixed1)},{id:'fm1',group:'immediate',name:'Ceviche mixto',detail:'Pescado y camarón · 1 libra',price:25,cost:4.91,recipe:mixed1},
+{id:'cc12',group:'cocktails',name:'Cóctel de camarón',detail:'Chico · 12 oz',price:null},{id:'cc16',group:'cocktails',name:'Cóctel de camarón',detail:'Mediano · 16 oz',price:null},{id:'cm12',group:'cocktails',name:'Cóctel mixto',detail:'Camarón y pulpo · 12 oz',price:null,pre:true},{id:'cm16',group:'cocktails',name:'Cóctel mixto',detail:'Camarón y pulpo · 16 oz',price:null,pre:true},
+{id:'op5',group:'preorder',name:'Ceviche pulpo y pescado',detail:'½ libra',price:13,cost:4.14,recipe:halfRecipe(fishOct1),pre:true},{id:'op1',group:'preorder',name:'Ceviche pulpo y pescado',detail:'1 libra',price:25,cost:7.69,recipe:fishOct1,pre:true},
+{id:'oc5',group:'preorder',name:'Ceviche pulpo y camarón',detail:'½ libra',price:13,cost:4.70,recipe:halfRecipe(shrimpOct1),pre:true},{id:'oc1',group:'preorder',name:'Ceviche pulpo y camarón',detail:'1 libra',price:25,cost:8.79,recipe:shrimpOct1,pre:true},
+{id:'coca',group:'drinks',name:'Coca-Cola',detail:'Lata · 12 oz',price:2.5,cost:null,recipe:{coca:1}},{id:'cokezero',group:'drinks',name:'Coke Zero',detail:'Lata · 12 oz',price:2.5,cost:null,recipe:{cokezero:1}},{id:'sprite',group:'drinks',name:'Sprite',detail:'Lata · 12 oz',price:2.5,cost:null,recipe:{sprite:1}},{id:'drpepper',group:'drinks',name:'Dr Pepper',detail:'Lata · 12 oz',price:2.5,cost:null,recipe:{drpepper:1}},{id:'bigred',group:'drinks',name:'Big Red',detail:'Lata · 12 oz',price:2.5,cost:null,recipe:{bigred:1}},{id:'fanta',group:'drinks',name:'Fanta',detail:'Lata · 12 oz',price:2.5,cost:null,recipe:{fanta:1}}
 ];
-const groups=['promotions','immediate','cocktails','preorder','drinks'];
-const state={};products.forEach(p=>state[p.id]=0);
-const money=value=>'$'+Number(value).toFixed(2);
-function card(p){
- const unavailable=p.price===null;
- return `<article class="product"><div><h3>${p.name}</h3><div class="meta">${p.detail}</div>${p.pre?'<span class="tag">SOBRE PEDIDO</span>':''}${p.promo?'<span class="promo-save">'+p.promo+'</span>':''}</div><div class="bottom"><div class="${unavailable?'pending':'price'}">${unavailable?'Precio pendiente':money(p.price)+(p.detail.includes('libra')?'<small>por presentación</small>':'<small>por pieza</small>')}</div>${unavailable?'':`<div class="qty"><button onclick="changeQty('${p.id}',-1)">−</button><span>${state[p.id]}</span><button class="plus" onclick="changeQty('${p.id}',1)">+</button></div>`}</div></article>`;
-}
-function render(){
- groups.forEach(group=>document.getElementById(group).innerHTML=products.filter(p=>p.group===group).map(card).join(''));
- const count=products.reduce((sum,p)=>sum+state[p.id],0);
- const total=products.reduce((sum,p)=>sum+state[p.id]*(p.price||0),0);
- document.getElementById('count').textContent=count;
- document.getElementById('total').textContent=money(total);
- document.getElementById('summary').textContent=count?count+' producto(s) seleccionado(s)':'Agrega productos';
- groups.forEach(group=>{
-   const groupCount=products.filter(p=>p.group===group).reduce((sum,p)=>sum+state[p.id],0);
-   const badge=document.getElementById('count-'+group);
-   badge.textContent=groupCount;
-   badge.classList.toggle('visible',groupCount>0);
- });
-}
-window.changeQty=(id,delta)=>{state[id]=Math.max(0,state[id]+delta);render();};
-const val=id=>document.getElementById(id).value.trim();
-function renderCart(){
- const chosen=products.filter(p=>state[p.id]>0);
- document.getElementById('cartItems').innerHTML=chosen.map(p=>`<div class="cart-row"><div><strong>${state[p.id]} × ${p.name}</strong><small>${p.detail}</small></div><div class="cart-row-price">${money(state[p.id]*p.price)}</div></div>`).join('');
- document.getElementById('cartTotal').textContent=money(chosen.reduce((sum,p)=>sum+state[p.id]*p.price,0));
-}
-function openCart(){
- if(!products.some(p=>state[p.id]>0)){alert('Agrega al menos un producto.');return;}
- renderCart();
- document.getElementById('cartModal').hidden=false;
- document.body.classList.add('modal-open');
-}
-function closeCart(){
- document.getElementById('cartModal').hidden=true;
- document.body.classList.remove('modal-open');
-}
-document.getElementById('cartTop').onclick=openCart;
-document.getElementById('send').onclick=openCart;
-document.getElementById('closeCart').onclick=closeCart;
-document.getElementById('cartBackdrop').onclick=closeCart;
-document.getElementById('keepShopping').onclick=closeCart;
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeCart();});
-document.querySelectorAll('.section[data-group]').forEach(section=>{
- const button=section.querySelector('.section-title');
- button.addEventListener('click',()=>{
-   const open=section.classList.contains('open');
-   section.classList.toggle('open',!open);
-   button.setAttribute('aria-expanded',String(!open));
- });
-});
-function buildOrderMessage(){
- const chosen=products.filter(p=>state[p.id]>0);
- if(!chosen.length){alert('Agrega al menos un producto.');return null;}
- if(['name','phone','date','time','address','zip'].some(id=>!val(id))){
-   document.getElementById('checkout').scrollIntoView({behavior:'smooth'});
-   setTimeout(()=>alert('Completa nombre, teléfono, día, hora, dirección y ZIP Code.'),250);
-   return null;
- }
- const total=chosen.reduce((sum,p)=>sum+state[p.id]*p.price,0);
- const lines=chosen.map(p=>`• ${state[p.id]} x ${p.name} (${p.detail})${p.pre?' [SOBRE PEDIDO]':''} = $${(state[p.id]*p.price).toFixed(2)}`).join('\n');
- return `🦐 *NUEVO PEDIDO - CEVICHES Y CÓCTELES EL CHAVA*\n\n${lines}\n\n💵 *Total:* $${total.toFixed(2)}\n👤 *Nombre:* ${val('name')}\n📞 *Teléfono:* ${val('phone')}\n📅 *Día:* ${val('date')}\n🕒 *Hora:* ${val('time')}\n📍 *Dirección:* ${val('address')}\n🏷️ *ZIP:* ${val('zip')}\n💳 *Pago:* ${val('payment')}\n📝 *Notas:* ${val('notes')||'Sin notas'}\n\n💯 Sin anticipos · Paga al recibir`;
-}
-document.getElementById('continueOrder').onclick=()=>{
- closeCart();
- const message=buildOrderMessage();
- if(message) location.href='https://wa.me/12109432119?text='+encodeURIComponent(message);
-};
-const BUSINESS_START=11*60,BUSINESS_END=20*60,SLOT_MINUTES=30;
-function localDateString(date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
-function formatSlot(totalMinutes){const hour24=Math.floor(totalMinutes/60),minutes=totalMinutes%60,period=hour24>=12?'p. m.':'a. m.',hour12=hour24%12||12;return `${hour12}:${String(minutes).padStart(2,'0')} ${period}`;}
-function updateAvailableTimes(){
- const dateInput=document.getElementById('date'),timeSelect=document.getElementById('time'),selectedDate=dateInput.value,previous=timeSelect.value;
- timeSelect.innerHTML='<option value="">Selecciona un horario</option>';
- if(!selectedDate)return;
- const now=new Date(),today=localDateString(now),currentMinutes=now.getHours()*60+now.getMinutes(),minimumToday=Math.ceil((currentMinutes+30)/SLOT_MINUTES)*SLOT_MINUTES;
- for(let minutes=BUSINESS_START;minutes<=BUSINESS_END;minutes+=SLOT_MINUTES){
-   if(selectedDate===today&&minutes<minimumToday)continue;
-   const label=formatSlot(minutes),option=document.createElement('option');option.value=label;option.textContent=label;timeSelect.appendChild(option);
- }
- if([...timeSelect.options].some(option=>option.value===previous))timeSelect.value=previous;
-}
-(function setupSchedule(){const dateInput=document.getElementById('date'),today=new Date();dateInput.min=localDateString(today);dateInput.addEventListener('change',updateAvailableTimes);updateAvailableTimes();})();
-render();
+const groups=['promotions','immediate','cocktails','preorder','drinks'],state={};products.forEach(p=>state[p.id]=0);const money=v=>'$'+Number(v).toFixed(2),val=id=>document.getElementById(id).value.trim();
+function card(p){const unavailable=p.price===null;return `<article class="product"><div><h3>${p.name}</h3><div class="meta">${p.detail}</div>${p.pre?'<span class="tag">SOBRE PEDIDO</span>':''}${p.promo?'<span class="promo-save">'+p.promo+'</span>':''}</div><div class="bottom"><div class="${unavailable?'pending':'price'}">${unavailable?'Precio pendiente':money(p.price)+(p.detail.includes('libra')?'<small>por presentación</small>':'<small>por pieza</small>')}</div>${unavailable?'':`<div class="qty"><button onclick="changeQty('${p.id}',-1)">−</button><span>${state[p.id]}</span><button class="plus" onclick="changeQty('${p.id}',1)">+</button></div>`}</div></article>`}
+function render(){groups.forEach(g=>document.getElementById(g).innerHTML=products.filter(p=>p.group===g).map(card).join(''));const count=products.reduce((s,p)=>s+state[p.id],0),total=products.reduce((s,p)=>s+state[p.id]*(p.price||0),0);countEl.textContent=count;document.getElementById('total').textContent=money(total);summary.textContent=count?count+' producto(s) seleccionado(s)':'Agrega productos';groups.forEach(g=>{const n=products.filter(p=>p.group===g).reduce((s,p)=>s+state[p.id],0),b=document.getElementById('count-'+g);b.textContent=n;b.classList.toggle('visible',n>0)})}const countEl=document.getElementById('count');window.changeQty=(id,d)=>{state[id]=Math.max(0,state[id]+d);render()};
+function chosenProducts(){return products.filter(p=>state[p.id]>0)}function renderCart(){const chosen=chosenProducts();cartItems.innerHTML=chosen.map(p=>`<div class="cart-row"><div><strong>${state[p.id]} × ${p.name}</strong><small>${p.detail}</small></div><div class="cart-row-price">${money(state[p.id]*p.price)}</div></div>`).join('');cartTotal.textContent=money(chosen.reduce((s,p)=>s+state[p.id]*p.price,0))}function openCart(){if(!chosenProducts().length)return alert('Agrega al menos un producto.');renderCart();cartModal.hidden=false;document.body.classList.add('modal-open')}function closeCart(){cartModal.hidden=true;document.body.classList.remove('modal-open')}
+cartTop.onclick=openCart;send.onclick=openCart;closeCart.onclick=closeCart;cartBackdrop.onclick=closeCart;keepShopping.onclick=closeCart;document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCart()});document.querySelectorAll('.section[data-group]').forEach(s=>{const b=s.querySelector('.section-title');b.addEventListener('click',()=>{const open=s.classList.contains('open');s.classList.toggle('open',!open);b.setAttribute('aria-expanded',String(!open))})});
+function validateOrder(){if(!chosenProducts().length){alert('Agrega al menos un producto.');return false}if(['name','phone','date','time','address','zip'].some(id=>!val(id))){closeCart();checkout.scrollIntoView({behavior:'smooth'});setTimeout(()=>alert('Completa nombre, teléfono, día, hora, dirección y ZIP Code.'),250);return false}return true}
+function buildOrder(){const chosen=chosenProducts(),recipe={},items=[];let total=0,cost=0,costComplete=true;const notes=[];chosen.forEach(p=>{const q=state[p.id];total+=q*p.price;if(p.cost===null)costComplete=false;else cost+=q*p.cost;Object.entries(p.recipe||{}).forEach(([k,v])=>recipe[k]=Number(((recipe[k]||0)+v*q).toFixed(3)));items.push({productId:p.id,name:p.name,detail:p.detail,qty:q,unitPrice:p.price,lineTotal:Number((q*p.price).toFixed(2))});if(p.inventoryNote)notes.push(p.inventoryNote)});return {status:'nuevo',customer:val('name'),phone:val('phone'),deliveryDate:val('date'),time:val('time'),address:val('address'),zip:val('zip'),payment:val('payment'),notes:val('notes')||'Sin notas',items,recipe,total:Number(total.toFixed(2)),cost:costComplete?Number(cost.toFixed(2)):null,profit:costComplete?Number((total-cost).toFixed(2)):null,costComplete,inventoryNotes:[...new Set(notes)],createdAt:firebase.firestore.FieldValue.serverTimestamp(),createdAtClient:new Date().toISOString(),source:'app-clientes'} }
+function buildWhatsApp(order,id){const lines=order.items.map(i=>`• ${i.qty} x ${i.name} (${i.detail}) = $${i.lineTotal.toFixed(2)}`).join('\n');return `🦐 *NUEVO PEDIDO - CEVICHES Y CÓCTELES EL CHAVA*\n🧾 *Folio:* ${id}\n\n${lines}\n\n💵 *Total:* $${order.total.toFixed(2)}\n👤 *Nombre:* ${order.customer}\n📞 *Teléfono:* ${order.phone}\n📅 *Día:* ${order.deliveryDate}\n🕒 *Hora:* ${order.time}\n📍 *Dirección:* ${order.address}\n🏷️ *ZIP:* ${order.zip}\n💳 *Pago:* ${order.payment}\n📝 *Notas:* ${order.notes}\n\n💯 Sin anticipos · Paga al recibir`}
+continueOrder.onclick=async()=>{if(!validateOrder())return;continueOrder.disabled=true;continueOrder.textContent='Guardando pedido...';try{const order=buildOrder(),ref=db.collection('pedidos').doc();await ref.set({...order,id:ref.id});closeCart();location.href='https://wa.me/12109432119?text='+encodeURIComponent(buildWhatsApp(order,ref.id))}catch(err){console.error(err);alert('No se pudo guardar el pedido. Revisa la conexión o Firestore e inténtalo otra vez.')}finally{continueOrder.disabled=false;continueOrder.textContent='Enviar pedido'}};
+const BUSINESS_START=11*60,BUSINESS_END=20*60,SLOT_MINUTES=30;function localDateString(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}function formatSlot(m){const h=Math.floor(m/60),min=m%60,period=h>=12?'p. m.':'a. m.';return `${h%12||12}:${String(min).padStart(2,'0')} ${period}`}function updateAvailableTimes(){const selected=date.value,previous=time.value;time.innerHTML='<option value="">Selecciona un horario</option>';if(!selected)return;const now=new Date(),today=localDateString(now),current=now.getHours()*60+now.getMinutes(),minimum=Math.ceil((current+30)/SLOT_MINUTES)*SLOT_MINUTES;for(let m=BUSINESS_START;m<=BUSINESS_END;m+=SLOT_MINUTES){if(selected===today&&m<minimum)continue;const o=document.createElement('option');o.value=o.textContent=formatSlot(m);time.appendChild(o)}if([...time.options].some(o=>o.value===previous))time.value=previous}(function(){const now=new Date();date.min=localDateString(now);date.addEventListener('change',updateAvailableTimes);updateAvailableTimes()})();render();
 </script>
 </body>
 </html>
