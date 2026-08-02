@@ -1,0 +1,234 @@
+name: Compilar APKs Android v2
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-apks-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Crear proyecto Android
+        shell: bash
+        run: |
+          set -e
+          rm -rf android-v2
+          mkdir -p android-v2
+          cd android-v2
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          rootProject.name = 'ElChavaAppsV2'
+          include ':pedidos', ':control'
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          EOF
+
+          make_app() {
+            MODULE="$1"
+            PACKAGE="$2"
+            LABEL="$3"
+            URL="$4"
+
+            PKG_PATH="${PACKAGE//.//}"
+            mkdir -p "$MODULE/src/main/java/$PKG_PATH"
+            mkdir -p "$MODULE/src/main/res/values"
+            mkdir -p "$MODULE/src/main/res/drawable"
+
+            cat > "$MODULE/build.gradle" <<EOF
+          plugins { id 'com.android.application' }
+
+          android {
+              namespace '$PACKAGE'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId '$PACKAGE'
+                  minSdk 24
+                  targetSdk 35
+                  versionCode 2
+                  versionName '1.0.1'
+              }
+          }
+          EOF
+
+            cat > "$MODULE/src/main/AndroidManifest.xml" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <application
+                  android:allowBackup="true"
+                  android:icon="@drawable/logo"
+                  android:roundIcon="@drawable/logo"
+                  android:label="@string/app_name"
+                  android:supportsRtl="true"
+                  android:theme="@style/AppTheme"
+                  android:usesCleartextTraffic="false">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|uiMode">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+            cat > "$MODULE/src/main/res/values/strings.xml" <<EOF
+          <resources><string name="app_name">$LABEL</string></resources>
+          EOF
+
+            cat > "$MODULE/src/main/res/values/styles.xml" <<'EOF'
+          <resources>
+              <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:colorAccent">#22983A</item>
+                  <item name="android:statusBarColor">#06254D</item>
+                  <item name="android:navigationBarColor">#06254D</item>
+                  <item name="android:windowLightStatusBar">false</item>
+              </style>
+          </resources>
+          EOF
+
+            cp "$GITHUB_WORKSPACE/logo.png" "$MODULE/src/main/res/drawable/logo.png"
+
+            cat > "$MODULE/src/main/java/$PKG_PATH/MainActivity.java" <<EOF
+          package $PACKAGE;
+
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.view.ViewGroup;
+          import android.webkit.CookieManager;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.Toast;
+
+          public class MainActivity extends Activity {
+              private static final String START_URL = "$URL";
+              private WebView webView;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  webView = new WebView(this);
+                  webView.setLayoutParams(new ViewGroup.LayoutParams(-1, -1));
+                  setContentView(webView);
+
+                  WebSettings s = webView.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setDatabaseEnabled(true);
+                  s.setLoadsImagesAutomatically(true);
+                  s.setAllowFileAccess(false);
+                  s.setAllowContentAccess(true);
+
+                  CookieManager.getInstance().setAcceptCookie(true);
+                  CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+                  webView.setWebChromeClient(new WebChromeClient());
+                  webView.setWebViewClient(new WebViewClient() {
+                      @Override
+                      public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                          return openExternal(request.getUrl().toString());
+                      }
+
+                      @Override
+                      public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                          return openExternal(url);
+                      }
+                  });
+
+                  if (savedInstanceState == null) webView.loadUrl(START_URL);
+                  else webView.restoreState(savedInstanceState);
+              }
+
+              private boolean openExternal(String url) {
+                  Uri uri = Uri.parse(url);
+                  String host = uri.getHost() == null ? "" : uri.getHost();
+                  if ((url.startsWith("https://") || url.startsWith("http://")) &&
+                      (host.equals("ceviches-y-cocteles-el-chava.web.app") ||
+                       host.equals("ceviches-y-cocteles-el-chava.firebaseapp.com"))) {
+                      return false;
+                  }
+                  try {
+                      startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                  } catch (Exception e) {
+                      Toast.makeText(this, "No se pudo abrir el enlace", Toast.LENGTH_SHORT).show();
+                  }
+                  return true;
+              }
+
+              @Override
+              protected void onSaveInstanceState(Bundle outState) {
+                  webView.saveState(outState);
+                  super.onSaveInstanceState(outState);
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (webView != null && webView.canGoBack()) webView.goBack();
+                  else super.onBackPressed();
+              }
+          }
+          EOF
+          }
+
+          make_app pedidos com.cevichesycocteleselchava.pedidos "Ceviches y Cócteles El Chava" "https://ceviches-y-cocteles-el-chava.web.app/"
+          make_app control com.cevichesycocteleselchava.control "Control de Inventario" "https://ceviches-y-cocteles-el-chava.web.app/control.html"
+
+      - name: Compilar APKs firmadas de prueba
+        working-directory: android-v2
+        run: gradle --no-daemon :pedidos:assembleDebug :control:assembleDebug
+
+      - name: Publicar APKs v2
+        shell: bash
+        run: |
+          set -e
+          mkdir -p apks
+          cp android-v2/pedidos/build/outputs/apk/debug/pedidos-debug.apk apks/Ceviches-y-Cocteles-El-Chava-v2.apk
+          cp android-v2/control/build/outputs/apk/debug/control-debug.apk apks/Control-de-Inventario-El-Chava-v2.apk
+          sha256sum apks/*-v2.apk > apks/SHA256SUMS-v2.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apks
+          git commit -m "Generar APKs Android v2 corregidas" || exit 0
+          git push
