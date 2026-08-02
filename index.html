@@ -28,8 +28,8 @@
 <script>
 const firebaseConfig={apiKey:'AIzaSyBbOIXTr2Tvz1FvoTk5GZgP2jx24jpjlL4',authDomain:'ceviches-y-cocteles-el-chava.firebaseapp.com',projectId:'ceviches-y-cocteles-el-chava',storageBucket:'ceviches-y-cocteles-el-chava.firebasestorage.app',messagingSenderId:'227568387475',appId:'1:227568387475:web:6ccd3e67e62d1bf4b0d466',measurementId:'G-1MZS4J9Y4Z'};
 firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
-const base1={tomato:1.76,onion:1.06,cucumber:1.06,cilantro:.35,lemonJuice:1.01,lime:1,clamato:1.01,tostadas:4,containers:1};
-function halfRecipe(r){const x={};Object.entries(r).forEach(([k,v])=>x[k]=k==='containers'?1:v/2);x.tostadas=2;return x}function addRecipes(...list){const out={};list.forEach(r=>Object.entries(r||{}).forEach(([k,v])=>out[k]=Number(((out[k]||0)+v).toFixed(3))));return out}
+const base1={tomato:1.76,onion:1.06,cucumber:1.06,cilantro:.35,lemonJuice:1.01,lime:1,clamato:1.01,tostadas:4,container16:1,lid16:1,spoon:1,napkins:2,saltPacket:1,habaneroSauce:2};
+function halfRecipe(r){const x={};Object.entries(r).forEach(([k,v])=>{if(k==='container16'||k==='lid16')return;x[k]=['spoon','napkins','saltPacket','habaneroSauce'].includes(k)?v:v/2});x.container12=1;x.lid12=1;x.tostadas=2;return x}function addRecipes(...list){const out={};list.forEach(r=>Object.entries(r||{}).forEach(([k,v])=>out[k]=Number(((out[k]||0)+v).toFixed(3))));return out}
 const fish1=addRecipes(base1,{fish:.5}),shrimp1=addRecipes(base1,{shrimp:.5}),mixed1=addRecipes(base1,{fish:.25,shrimp:.25}),fishOct1=addRecipes(base1,{fish:.25,octopus:.25}),shrimpOct1=addRecipes(base1,{shrimp:.25,octopus:.25});
 const products=[
 {id:'promo_constructor',group:'promotions',name:'👷 Combo Constructor',detail:'1 libra de ceviche de pescado + 1 cóctel chico',price:22,cost:null,recipe:fish1,promo:'Ahorras $3',inventoryNote:'El cóctel queda pendiente de receta'},
