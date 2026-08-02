@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Activar envío de pedidos con límite de espera
+      - name: Activar envío corregido de pedidos
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -27,7 +27,7 @@ jobs:
           path = Path('index.html')
           html = path.read_text(encoding='utf-8')
           html = re.sub(r'\n?<script src="order-fix\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = html.replace('</body>', '<script src="order-fix.js?v=20260802-0024"></script>\n</body>')
+          html = html.replace('</body>', '<script src="order-fix.js?v=20260802-0958"></script>\n</body>')
           path.write_text(html, encoding='utf-8')
           PY
 
