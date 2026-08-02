@@ -7,11 +7,24 @@ on:
   push:
     branches:
       - main
+concurrency:
+  group: firebase-hosting-live
+  cancel-in-progress: true
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Activar inventario agrupado
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('control.html')
+          s=p.read_text(encoding='utf-8')
+          tag='<script src="control-extra.js"></script>'
+          if tag not in s:
+              p.write_text(s.replace('</body>',tag+'\n</body>'),encoding='utf-8')
+          PY
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
