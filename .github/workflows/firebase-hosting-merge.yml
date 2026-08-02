@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Activar envío corregido de pedidos
+      - name: Activar correcciones definitivas de la app
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -27,30 +27,8 @@ jobs:
           path = Path('index.html')
           html = path.read_text(encoding='utf-8')
           html = re.sub(r'\n?<script src="order-fix\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = html.replace('</body>', '<script src="order-fix.js?v=20260802-0958"></script>\n</body>')
-          path.write_text(html, encoding='utf-8')
-          PY
-
-      - name: Acomodar botones menos y más en celulares
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('index.html')
-          html = path.read_text(encoding='utf-8')
           html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
-          css = '''<style id="mobile-qty-fix">
-          @media(max-width:560px){
-            .product{min-width:0;padding:9px}
-            .bottom{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-items:end}
-            .price{font-size:22px;min-width:0}
-            .qty{width:100%;display:grid;grid-template-columns:32px minmax(18px,1fr) 32px;gap:5px;align-items:center;font-size:16px}
-            .qty button{width:32px;height:32px;padding:0;font-size:21px;line-height:32px}
-            .qty span{min-width:0;text-align:center}
-          }
-          </style>'''
-          html = html.replace('</head>', css + '\n</head>')
+          html = html.replace('</body>', '<script src="order-fix.js?v=20260802-1026"></script>\n</body>')
           path.write_text(html, encoding='utf-8')
           PY
 
