@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /pedidos/{pedidoId} {
+      allow create: if request.resource.data.source == 'app-clientes'
+                    && request.resource.data.id == pedidoId
+                    && request.resource.data.items is list
+                    && request.resource.data.total is number;
+      allow read, update: if true;
+    }
+
+    match /inventario/{documento} {
+      allow read, write: if true;
+    }
+
+    match /movimientos/{movimientoId} {
+      allow read, write: if true;
+    }
+  }
+}
