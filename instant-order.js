@@ -2,6 +2,58 @@
   const buttonId = 'instant-order-button';
   const styleId = 'instant-order-button-style';
 
+  const localDateString = (date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+  const formatSlot = (minutes) => {
+    const hour = Math.floor(minutes / 60);
+    const minute = minutes % 60;
+    const period = hour >= 12 ? 'p. m.' : 'a. m.';
+    return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${period}`;
+  };
+
+  const refreshTwentyMinuteSlots = () => {
+    const dateInput = document.getElementById('date');
+    const timeSelect = document.getElementById('time');
+    if (!dateInput || !timeSelect) return;
+
+    const selectedDate = dateInput.value;
+    const previousTime = timeSelect.value;
+    timeSelect.innerHTML = '<option value="">Selecciona un horario</option>';
+    if (!selectedDate) return;
+
+    const now = new Date();
+    const today = localDateString(now);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const slotMinutes = 20;
+    const firstSlot = 11 * 60;
+    const closingTime = 19 * 60;
+    const minimumToday = Math.ceil((currentMinutes + 30) / slotMinutes) * slotMinutes;
+
+    for (let minutes = firstSlot; minutes < closingTime; minutes += slotMinutes) {
+      if (selectedDate === today && minutes < minimumToday) continue;
+      const option = document.createElement('option');
+      option.value = option.textContent = formatSlot(minutes);
+      timeSelect.appendChild(option);
+    }
+
+    if ([...timeSelect.options].some((option) => option.value === previousTime)) {
+      timeSelect.value = previousTime;
+    }
+  };
+
+  const dateInput = document.getElementById('date');
+  if (dateInput && !dateInput.dataset.twentyMinuteSchedule) {
+    dateInput.dataset.twentyMinuteSchedule = 'true';
+    dateInput.addEventListener('change', refreshTwentyMinuteSlots);
+    setTimeout(refreshTwentyMinuteSlots, 0);
+  }
+
+  const availabilityNote = document.querySelector('.availability-note');
+  if (availabilityNote) {
+    availabilityNote.innerHTML = '⏰ <b>Entregas en horarios de 20 minutos.</b> Cantidad limitada por día y sujeta a disponibilidad.';
+  }
+
   if (document.getElementById(buttonId)) return;
 
   const hero = document.querySelector('.hero');
