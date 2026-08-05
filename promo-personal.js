@@ -16,7 +16,7 @@
     price: 16,
     cost: null,
     recipe,
-    promo: 'Solo $16',
+    promo: 'Ahorras $4.50',
     inventoryNote: 'El cóctel y el refresco quedan pendientes de receta y selección'
   });
 
