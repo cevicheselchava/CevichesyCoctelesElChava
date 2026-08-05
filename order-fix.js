@@ -1,5 +1,5 @@
 (()=>{
-  const styleId='mobile-card-controls-fix-v3';
+  const styleId='mobile-card-controls-fix-v4';
   if(!document.getElementById(styleId)){
     const style=document.createElement('style');
     style.id=styleId;
@@ -8,13 +8,54 @@
         .product{min-width:0;padding:9px;overflow:hidden}
         .bottom{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;align-items:end!important}
         .price{font-size:22px!important;min-width:0}
-        .qty{display:grid!important;grid-template-columns:34px 24px 34px!important;justify-content:center!important;align-items:center!important;gap:7px!important;width:100%!important;max-width:100%!important;font-size:17px!important}
-        .qty button{width:34px!important;height:34px!important;min-width:34px!important;padding:0!important;line-height:34px!important;display:grid!important;place-items:center!important;font-size:22px!important}
-        .qty span{min-width:24px!important;text-align:center!important}
+        .qty{
+          display:flex!important;
+          align-items:center!important;
+          justify-content:center!important;
+          gap:8px!important;
+          width:100%!important;
+          max-width:100%!important;
+          min-height:38px!important;
+          font-size:17px!important;
+        }
+        .qty button{
+          display:inline-flex!important;
+          align-items:center!important;
+          justify-content:center!important;
+          width:36px!important;
+          height:36px!important;
+          min-width:36px!important;
+          min-height:36px!important;
+          padding:0!important;
+          margin:0!important;
+          border:0!important;
+          box-sizing:border-box!important;
+          line-height:1!important;
+          text-align:center!important;
+          vertical-align:middle!important;
+          font-family:Arial,sans-serif!important;
+          font-size:24px!important;
+        }
+        .qty span{
+          display:inline-flex!important;
+          align-items:center!important;
+          justify-content:center!important;
+          width:26px!important;
+          min-width:26px!important;
+          height:36px!important;
+          margin:0!important;
+          padding:0!important;
+          line-height:1!important;
+          text-align:center!important;
+        }
       }
     `;
     document.head.appendChild(style);
   }
+
+  document.querySelectorAll('.qty button').forEach(button=>{
+    if(button.textContent.trim()==='-')button.textContent='−';
+  });
 
   const sendButton=document.getElementById('continueOrder');
   const modal=document.getElementById('cartModal');
