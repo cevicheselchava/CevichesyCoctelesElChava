@@ -50,7 +50,7 @@ jobs:
               '</body>',
               '<script src="instant-order.js?v=20260805-0637"></script>\n'
               '<script src="promo-personal.js?v=20260805-0643"></script>\n'
-              '<script src="order-fix.js?v=20260802-1125"></script>\n'
+              '<script src="order-fix.js?v=20260805-0738"></script>\n'
               '<script src="pwa-init.js?v=20260802-1409"></script>\n'
               '</body>',
               1
