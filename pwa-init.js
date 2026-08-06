@@ -13,7 +13,7 @@
     installButton = document.createElement('button');
     installButton.type = 'button';
     installButton.textContent = '📲 INSTALAR APP';
-    installButton.setAttribute('aria-label', 'Instalar Ceviches y Cócteles El Chava');
+    installButton.setAttribute('aria-label', 'Instalar Ceviches y Cócteles El Cubano');
     Object.assign(installButton.style, {
       position: 'fixed',
       right: '12px',
@@ -22,7 +22,7 @@
       border: '0',
       borderRadius: '14px',
       padding: '13px 16px',
-      background: '#cf161d',
+      background: '#267642',
       color: '#ffffff',
       fontFamily: 'Arial, Helvetica, sans-serif',
       fontSize: '15px',
