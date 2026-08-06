@@ -1,11 +1,11 @@
-const CACHE_NAME = 'el-chava-pwa-v4';
+const CACHE_NAME = 'el-cubano-pwa-v1';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
   '/pwa-icon.svg',
-  '/logo.png',
   '/pwa-init.js',
+  '/customer-theme.js',
   '/order-fix.js'
 ];
 
