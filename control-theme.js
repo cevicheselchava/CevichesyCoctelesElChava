@@ -145,8 +145,10 @@
   }
 
   let scheduled=false;
+  let observer=null;
   function finish(){
     scheduled=false;
+    if(observer)observer.disconnect();
     brandHeader();
     decorateNav();
     decorateIngredients();
@@ -154,10 +156,12 @@
     decorateOrders();
     tidyStatus();
     const footer=document.querySelector('.footer');
-    if(footer)footer.textContent=`Panel Operativo El Cubano · v${VERSION}`;
+    if(footer&&footer.textContent!==`Panel Operativo El Cubano · v${VERSION}`)footer.textContent=`Panel Operativo El Cubano · v${VERSION}`;
+    if(observer)observer.observe(document.body,{childList:true,subtree:true,characterData:true});
   }
   function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(finish)}
 
   finish();
-  new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true,characterData:true});
+  observer=new MutationObserver(schedule);
+  observer.observe(document.body,{childList:true,subtree:true,characterData:true});
 })();
