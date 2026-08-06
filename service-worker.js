@@ -1,4 +1,4 @@
-const CACHE_NAME = 'el-chava-pwa-v3';
+const CACHE_NAME = 'el-chava-pwa-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -30,7 +30,7 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  const isAdmin = url.pathname === '/control.html' || url.pathname === '/control-fix.js';
+  const isAdmin = ['/control.html','/control-fix.js','/control-theme.js'].includes(url.pathname);
 
   if (isAdmin) {
     event.respondWith(fetch(new Request(request, { cache: 'no-store' })));
