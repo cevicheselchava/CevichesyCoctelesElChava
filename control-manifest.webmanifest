@@ -1,0 +1,25 @@
+{
+  "name": "Panel Operativo El Chava",
+  "short_name": "Panel El Chava",
+  "description": "Panel de pedidos, inventario, compras, historial y recetas de Ceviches y Cócteles El Chava.",
+  "start_url": "/control.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#062b5c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
