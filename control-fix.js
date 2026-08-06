@@ -1,12 +1,19 @@
 (()=>{
   const PROJECT_ID='ceviches-y-cocteles-el-chava';
   const API_KEY='AIzaSyBbOIXTr2Tvz1FvoTk5GZgP2jx24jpjlL4';
+  const RECIPES_VERSION=8;
   const status=document.getElementById('syncStatus');
   const footer=document.querySelector('.footer');
   let timer=null;
   let loading=false;
 
-  if(footer)footer.textContent='Control administrativo · Inventario agrupado v6';
+  window.__EL_CHAVA_RECIPES_VERSION__=RECIPES_VERSION;
+  if(footer)footer.textContent=`Control administrativo · Inventario agrupado v${RECIPES_VERSION}`;
+
+  if('caches' in window&&localStorage.getItem('elChavaAdminCacheV8')!=='1'){
+    caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('el-chava-pwa-')).map(key=>caches.delete(key))))
+      .finally(()=>localStorage.setItem('elChavaAdminCacheV8','1'));
+  }
 
   function decodeValue(value){
     if(!value||typeof value!=='object')return null;
@@ -30,17 +37,23 @@
   function addRecipePlanner(){
     const nav=document.querySelector('.nav');
     const main=document.querySelector('main.wrap');
-    if(!nav||!main||document.getElementById('recipes'))return;
+    if(!nav||!main)return;
+
+    document.getElementById('recipes')?.remove();
+    nav.querySelectorAll('button[data-tab="recipes"]').forEach(button=>button.remove());
+    document.getElementById('recipe-planner-v8-style')?.remove();
 
     const style=document.createElement('style');
+    style.id='recipe-planner-v8-style';
     style.textContent=`
       .nav.recipe-nav{grid-template-columns:repeat(5,1fr)}
       .recipe-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
       .recipe-preset{border:0;border-radius:11px;padding:12px 8px;background:#e9eef5;color:var(--navy);font-weight:1000}
       .recipe-preset.active{background:var(--navy);color:#fff}
       .recipe-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+      .recipe-options .full{grid-column:1/-1}
       .recipe-check{display:flex;flex-direction:row;align-items:center;gap:9px;border:1px solid var(--line);border-radius:11px;padding:11px;background:#fff;color:var(--navy)}
-      .recipe-check input{width:20px;height:20px;margin:0}
+      .recipe-check input{width:20px;height:20px;margin:0;flex:0 0 auto}
       .recipe-summary{margin:12px 0 9px;padding:12px;border-radius:12px;background:#eef5ff;border:1px solid #b9cce8;color:var(--navy);font-weight:900}
       .recipe-groups{display:grid;gap:12px}
       .recipe-group{display:grid;gap:7px}
@@ -50,7 +63,7 @@
       .recipe-row small{display:block;color:var(--muted);margin-top:4px;line-height:1.35}
       .recipe-buy{text-align:right;font-weight:1000;color:var(--red)}
       .recipe-buy.enough{color:var(--green)}
-      @media(max-width:560px){.nav.recipe-nav{grid-template-columns:repeat(2,1fr)}.recipe-options{grid-template-columns:1fr}}
+      @media(max-width:560px){.nav.recipe-nav{grid-template-columns:repeat(2,1fr)}.recipe-options{grid-template-columns:1fr}.recipe-options .full{grid-column:1}}
     `;
     document.head.appendChild(style);
 
@@ -67,7 +80,7 @@
     panel.innerHTML=`
       <div class="card">
         <h2>Receta y lista de compra</h2>
-        <div class="notice">Selecciona la receta y cuántas libras vas a preparar. Te muestra todo lo necesario y lo que falta comprar según el inventario.</div>
+        <div class="notice">Selecciona el tipo de ceviche y cuántas libras vas a preparar. Te muestra la receta completa y lo que falta comprar según el inventario.</div>
         <div class="recipe-presets">
           <button type="button" class="recipe-preset active" data-pounds="5">5 libras</button>
           <button type="button" class="recipe-preset" data-pounds="10">10 libras</button>
@@ -76,11 +89,11 @@
         <div class="recipe-options">
           <label class="full">Tipo de receta
             <select id="recipeType">
-              <option value="mixed">Ceviche mixto · pescado y camarón</option>
+              <option value="mixed">Mixto · pescado y camarón</option>
               <option value="fish">Ceviche de pescado</option>
               <option value="shrimp">Ceviche de camarón</option>
-              <option value="octopusShrimp">Ceviche de pulpo y camarón</option>
-              <option value="octopusFish">Ceviche de pulpo y pescado</option>
+              <option value="octopusShrimp">Pulpo y camarón</option>
+              <option value="octopusFish">Pulpo y pescado</option>
             </select>
           </label>
           <label>Libras a preparar<input id="recipePounds" type="number" min="1" step="1" value="5"></label>
@@ -91,10 +104,10 @@
       </div>`;
     main.insertBefore(panel,document.getElementById('history'));
 
-    const recipeType=document.getElementById('recipeType');
-    const recipePounds=document.getElementById('recipePounds');
-    const recipeSodas=document.getElementById('recipeSodas');
-    const recipePackaging=document.getElementById('recipePackaging');
+    const recipeType=panel.querySelector('#recipeType');
+    const recipePounds=panel.querySelector('#recipePounds');
+    const recipeSodas=panel.querySelector('#recipeSodas');
+    const recipePackaging=panel.querySelector('#recipePackaging');
 
     button.addEventListener('click',()=>{
       document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
@@ -104,11 +117,11 @@
       renderRecipe();
     });
 
-    document.querySelectorAll('.recipe-preset').forEach(preset=>preset.addEventListener('click',()=>{
+    panel.querySelectorAll('.recipe-preset').forEach(preset=>preset.addEventListener('click',()=>{
       const pounds=Number(preset.dataset.pounds);
       recipePounds.value=pounds;
       recipeSodas.value=Math.min(pounds,10);
-      document.querySelectorAll('.recipe-preset').forEach(x=>x.classList.toggle('active',x===preset));
+      panel.querySelectorAll('.recipe-preset').forEach(x=>x.classList.toggle('active',x===preset));
       renderRecipe();
     }));
 
@@ -116,7 +129,7 @@
     recipePounds.addEventListener('input',()=>{
       const pounds=Math.max(1,Math.floor(Number(recipePounds.value)||1));
       recipeSodas.value=Math.min(pounds,10);
-      document.querySelectorAll('.recipe-preset').forEach(x=>x.classList.toggle('active',Number(x.dataset.pounds)===pounds));
+      panel.querySelectorAll('.recipe-preset').forEach(x=>x.classList.toggle('active',Number(x.dataset.pounds)===pounds));
       renderRecipe();
     });
     recipeSodas.addEventListener('input',renderRecipe);
@@ -134,26 +147,11 @@
   };
 
   const RECIPE_TYPES={
-    mixed:{
-      name:'Ceviche mixto · pescado y camarón',
-      proteins:{fish:.25,shrimp:.25}
-    },
-    fish:{
-      name:'Ceviche de pescado',
-      proteins:{fish:.5}
-    },
-    shrimp:{
-      name:'Ceviche de camarón',
-      proteins:{shrimp:.5}
-    },
-    octopusShrimp:{
-      name:'Ceviche de pulpo y camarón',
-      proteins:{octopus:.25,shrimp:.25}
-    },
-    octopusFish:{
-      name:'Ceviche de pulpo y pescado',
-      proteins:{octopus:.25,fish:.25}
-    }
+    mixed:{name:'Ceviche mixto · pescado y camarón',proteins:{fish:.25,shrimp:.25}},
+    fish:{name:'Ceviche de pescado',proteins:{fish:.5}},
+    shrimp:{name:'Ceviche de camarón',proteins:{shrimp:.5}},
+    octopusShrimp:{name:'Ceviche de pulpo y camarón',proteins:{octopus:.25,shrimp:.25}},
+    octopusFish:{name:'Ceviche de pulpo y pescado',proteins:{octopus:.25,fish:.25}}
   };
 
   const RECIPE_GROUPS={
@@ -225,14 +223,9 @@
       const url=`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/pedidos?pageSize=100&orderBy=createdAt%20desc&key=${encodeURIComponent(API_KEY)}&_=${Date.now()}`;
       const response=await fetch(url,{cache:'no-store'});
       const data=await response.json().catch(()=>({}));
-      if(!response.ok){
-        throw new Error(data?.error?.message||`Firebase respondió ${response.status}`);
-      }
+      if(!response.ok)throw new Error(data?.error?.message||`Firebase respondió ${response.status}`);
 
-      orders=(data.documents||[]).map(document=>({
-        id:document.name.split('/').pop(),
-        ...decodeFields(document.fields||{})
-      }));
+      orders=(data.documents||[]).map(document=>({id:document.name.split('/').pop(),...decodeFields(document.fields||{})}));
 
       if(status){
         status.classList.remove('error');
