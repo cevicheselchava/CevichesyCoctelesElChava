@@ -1,25 +1,25 @@
 {
   "id": "/",
-  "name": "Ceviches y Cócteles El Chava",
-  "short_name": "El Chava",
+  "name": "Ceviches y Cócteles El Cubano",
+  "short_name": "El Cubano",
   "description": "Pedidos de ceviches y cócteles con entrega a domicilio.",
   "lang": "es",
   "start_url": "/?utm_source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f8f3e8",
-  "theme_color": "#06254d",
+  "background_color": "#fffdf7",
+  "theme_color": "#267642",
   "categories": ["food", "shopping"],
   "icons": [
     {
-      "src": "/pwa-icon.svg",
+      "src": "/pwa-icon.svg?v=20260806",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/pwa-icon.svg",
+      "src": "/pwa-icon.svg?v=20260806",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
