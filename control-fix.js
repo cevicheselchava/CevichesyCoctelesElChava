@@ -6,7 +6,7 @@
   let timer=null;
   let loading=false;
 
-  if(footer)footer.textContent='Control administrativo · Inventario agrupado v5';
+  if(footer)footer.textContent='Control administrativo · Inventario agrupado v6';
 
   function decodeValue(value){
     if(!value||typeof value!=='object')return null;
@@ -67,20 +67,34 @@
     panel.innerHTML=`
       <div class="card">
         <h2>Receta y lista de compra</h2>
-        <div class="notice">Selecciona cuántas libras de <b>ceviche mixto</b> vas a preparar. Te muestra la receta completa y lo que falta comprar según el inventario.</div>
+        <div class="notice">Selecciona la receta y cuántas libras vas a preparar. Te muestra todo lo necesario y lo que falta comprar según el inventario.</div>
         <div class="recipe-presets">
           <button type="button" class="recipe-preset active" data-pounds="5">5 libras</button>
           <button type="button" class="recipe-preset" data-pounds="10">10 libras</button>
           <button type="button" class="recipe-preset" data-pounds="12">12 libras</button>
         </div>
         <div class="recipe-options">
+          <label class="full">Tipo de receta
+            <select id="recipeType">
+              <option value="mixed">Ceviche mixto · pescado y camarón</option>
+              <option value="fish">Ceviche de pescado</option>
+              <option value="shrimp">Ceviche de camarón</option>
+              <option value="octopusShrimp">Ceviche de pulpo y camarón</option>
+              <option value="octopusFish">Ceviche de pulpo y pescado</option>
+            </select>
+          </label>
           <label>Libras a preparar<input id="recipePounds" type="number" min="1" step="1" value="5"></label>
           <label>Refrescos gratis<input id="recipeSodas" type="number" min="0" step="1" value="5"></label>
-          <label class="recipe-check"><input id="recipePackaging" type="checkbox" checked>Incluir envases, tapas, tenedores y servilletas</label>
+          <label class="recipe-check full"><input id="recipePackaging" type="checkbox" checked>Incluir envases, tapas, tenedores y servilletas</label>
         </div>
         <div id="recipeResult"></div>
       </div>`;
     main.insertBefore(panel,document.getElementById('history'));
+
+    const recipeType=document.getElementById('recipeType');
+    const recipePounds=document.getElementById('recipePounds');
+    const recipeSodas=document.getElementById('recipeSodas');
+    const recipePackaging=document.getElementById('recipePackaging');
 
     button.addEventListener('click',()=>{
       document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
@@ -98,6 +112,7 @@
       renderRecipe();
     }));
 
+    recipeType.addEventListener('change',renderRecipe);
     recipePounds.addEventListener('input',()=>{
       const pounds=Math.max(1,Math.floor(Number(recipePounds.value)||1));
       recipeSodas.value=Math.min(pounds,10);
@@ -109,9 +124,7 @@
     renderRecipe();
   }
 
-  const RECIPE_PER_LB={
-    fish:.25,
-    shrimp:.25,
+  const COMMON_RECIPE_PER_LB={
     tomato:1.6,
     cucumber:1.6,
     onion:.8,
@@ -120,8 +133,31 @@
     clamato:1.4
   };
 
+  const RECIPE_TYPES={
+    mixed:{
+      name:'Ceviche mixto · pescado y camarón',
+      proteins:{fish:.25,shrimp:.25}
+    },
+    fish:{
+      name:'Ceviche de pescado',
+      proteins:{fish:.5}
+    },
+    shrimp:{
+      name:'Ceviche de camarón',
+      proteins:{shrimp:.5}
+    },
+    octopusShrimp:{
+      name:'Ceviche de pulpo y camarón',
+      proteins:{octopus:.25,shrimp:.25}
+    },
+    octopusFish:{
+      name:'Ceviche de pulpo y pescado',
+      proteins:{octopus:.25,fish:.25}
+    }
+  };
+
   const RECIPE_GROUPS={
-    ingredients:['fish','shrimp','tomato','cucumber','onion','cilantro','lemonJuice','clamato'],
+    ingredients:['fish','shrimp','octopus','tomato','cucumber','onion','cilantro','lemonJuice','clamato'],
     packaging:['container16','lid16','spoon','napkins'],
     drinks:['coca']
   };
@@ -155,11 +191,16 @@
   function renderRecipe(){
     const result=document.getElementById('recipeResult');
     if(!result)return;
+    const selectedType=document.getElementById('recipeType')?.value||'mixed';
+    const recipe=RECIPE_TYPES[selectedType]||RECIPE_TYPES.mixed;
     const pounds=Math.max(1,Math.floor(Number(document.getElementById('recipePounds')?.value)||1));
     const sodas=Math.max(0,Math.min(pounds,Math.floor(Number(document.getElementById('recipeSodas')?.value)||0)));
     const includePackaging=Boolean(document.getElementById('recipePackaging')?.checked);
     const required={};
-    Object.entries(RECIPE_PER_LB).forEach(([key,value])=>required[key]=Math.round((value*pounds+Number.EPSILON)*1000)/1000);
+
+    Object.entries(recipe.proteins).forEach(([key,value])=>required[key]=Math.round((value*pounds+Number.EPSILON)*1000)/1000);
+    Object.entries(COMMON_RECIPE_PER_LB).forEach(([key,value])=>required[key]=Math.round((value*pounds+Number.EPSILON)*1000)/1000);
+
     if(includePackaging){
       required.container16=pounds;
       required.lid16=pounds;
@@ -174,7 +215,7 @@
       if(rows)groups.push(`<section class="recipe-group"><h3>${RECIPE_LABELS[group]}</h3>${rows}</section>`);
     });
 
-    result.innerHTML=`<div class="recipe-summary">Para ${pounds} libras terminadas: ${pounds} órdenes de 1 libra${sodas?` · ${sodas} refrescos gratis`:''}.</div><div class="recipe-groups">${groups.join('')}</div>`;
+    result.innerHTML=`<div class="recipe-summary"><b>${recipe.name}</b><br>Para ${pounds} libras terminadas: ${pounds} órdenes de 1 libra${sodas?` · ${sodas} refrescos gratis`:''}.</div><div class="recipe-groups">${groups.join('')}</div>`;
   }
 
   async function loadOrders(){
