@@ -1,4 +1,4 @@
-const CACHE_NAME = 'el-chava-pwa-v1';
+const CACHE_NAME = 'el-chava-pwa-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -32,16 +32,17 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  const isAdmin = url.pathname === '/control.html' || url.pathname === '/control-fix.js';
 
-  if (request.mode === 'navigate') {
+  if (request.mode === 'navigate' || isAdmin) {
     event.respondWith((async () => {
       try {
-        const response = await fetch(request);
-        const cache = await caches.open(CACHE_NAME);
-        cache.put('/index.html', response.clone());
-        return response;
+        return await fetch(new Request(request, { cache: 'no-store' }));
       } catch (error) {
-        return (await caches.match('/index.html')) || (await caches.match('/'));
+        if (request.mode === 'navigate') {
+          return (await caches.match(request)) || (await caches.match('/index.html')) || (await caches.match('/'));
+        }
+        return caches.match(request);
       }
     })());
     return;
