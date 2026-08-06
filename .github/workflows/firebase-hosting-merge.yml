@@ -66,10 +66,11 @@ jobs:
               count=1
           )
           panel = re.sub(r'\n?<script src="control-fix\.js(?:\?[^\"]*)?"></script>', '', panel)
-          panel = panel.replace('Inventario agrupado v2', 'Inventario agrupado v5')
-          panel = panel.replace('Inventario agrupado v3', 'Inventario agrupado v5')
-          panel = panel.replace('Inventario agrupado v4', 'Inventario agrupado v5')
-          panel = panel.replace('</body>', '<script src="control-fix.js?v=20260805-2155"></script>\n</body>')
+          panel = panel.replace('Inventario agrupado v2', 'Inventario agrupado v6')
+          panel = panel.replace('Inventario agrupado v3', 'Inventario agrupado v6')
+          panel = panel.replace('Inventario agrupado v4', 'Inventario agrupado v6')
+          panel = panel.replace('Inventario agrupado v5', 'Inventario agrupado v6')
+          panel = panel.replace('</body>', '<script src="control-fix.js?v=20260805-2212"></script>\n</body>')
           control.write_text(panel, encoding='utf-8')
           PY
 
