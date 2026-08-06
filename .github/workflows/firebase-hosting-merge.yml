@@ -23,7 +23,10 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import os
           import re
+
+          version = os.environ.get('GITHUB_SHA', 'v8')[:12]
 
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
@@ -66,12 +69,8 @@ jobs:
               count=1
           )
           panel = re.sub(r'\n?<script src="control-fix\.js(?:\?[^\"]*)?"></script>', '', panel)
-          panel = panel.replace('Inventario agrupado v2', 'Inventario agrupado v7')
-          panel = panel.replace('Inventario agrupado v3', 'Inventario agrupado v7')
-          panel = panel.replace('Inventario agrupado v4', 'Inventario agrupado v7')
-          panel = panel.replace('Inventario agrupado v5', 'Inventario agrupado v7')
-          panel = panel.replace('Inventario agrupado v6', 'Inventario agrupado v7')
-          panel = panel.replace('</body>', '<script src="control-fix.js?v=20260805-2245"></script>\n</body>')
+          panel = re.sub(r'Inventario agrupado v\d+', 'Inventario agrupado v8', panel)
+          panel = panel.replace('</body>', f'<script src="control-fix.js?v={version}"></script>\n</body>')
           control.write_text(panel, encoding='utf-8')
           PY
 
