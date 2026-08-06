@@ -1,25 +1,25 @@
 {
-  "name": "Panel Operativo El Chava",
-  "short_name": "Panel El Chava",
-  "description": "Panel de pedidos, inventario, compras, historial y recetas de Ceviches y Cócteles El Chava.",
+  "name": "Panel Operativo El Cubano",
+  "short_name": "Panel El Cubano",
+  "description": "Panel de pedidos, inventario, compras, historial y recetas de Ceviches y Cócteles El Cubano.",
   "start_url": "/control.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#fffaf0",
-  "theme_color": "#062b5c",
+  "background_color": "#fffdf7",
+  "theme_color": "#267642",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/pwa-icon.svg",
+      "src": "/pwa-icon.svg?v=20260806",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/logo.png",
+      "src": "/pwa-icon.svg?v=20260806",
       "sizes": "any",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }
