@@ -1,4 +1,4 @@
-const CACHE_NAME = 'el-chava-pwa-v2';
+const CACHE_NAME = 'el-chava-pwa-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -12,9 +12,7 @@ const APP_SHELL = [
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await Promise.allSettled(
-      APP_SHELL.map(url => cache.add(new Request(url, { cache: 'reload' })))
-    );
+    await Promise.allSettled(APP_SHELL.map(url => cache.add(new Request(url, { cache: 'reload' }))));
     await self.skipWaiting();
   })());
 });
@@ -34,15 +32,17 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   const isAdmin = url.pathname === '/control.html' || url.pathname === '/control-fix.js';
 
-  if (request.mode === 'navigate' || isAdmin) {
+  if (isAdmin) {
+    event.respondWith(fetch(new Request(request, { cache: 'no-store' })));
+    return;
+  }
+
+  if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
         return await fetch(new Request(request, { cache: 'no-store' }));
       } catch (error) {
-        if (request.mode === 'navigate') {
-          return (await caches.match(request)) || (await caches.match('/index.html')) || (await caches.match('/'));
-        }
-        return caches.match(request);
+        return (await caches.match('/index.html')) || (await caches.match('/'));
       }
     })());
     return;
@@ -52,17 +52,14 @@ self.addEventListener('fetch', event => {
 
   event.respondWith((async () => {
     const cached = await caches.match(request);
-    if (cached) return cached;
-
-    try {
-      const response = await fetch(request);
+    const network = fetch(request).then(async response => {
       if (response && response.ok) {
         const cache = await caches.open(CACHE_NAME);
-        cache.put(request, response.clone());
+        await cache.put(request, response.clone());
       }
       return response;
-    } catch (error) {
-      return cached;
-    }
+    });
+
+    return cached || network;
   })());
 });
