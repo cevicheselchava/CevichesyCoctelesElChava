@@ -22,25 +22,27 @@ jobs:
           import os
           import re
 
-          version = os.environ.get('GITHUB_SHA', 'v10')[:12]
+          version = os.environ.get('GITHUB_SHA', 'v11')[:12]
 
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
           html = re.sub(r'\n?<script src="order-fix\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<script src="promo-personal\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<script src="instant-order\.js(?:\?[^\"]*)?"></script>', '', html)
+          html = re.sub(r'\n?<script src="customer-theme\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<script src="pwa-init\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
+          html = re.sub(r'<title>.*?</title>', '<title>Ceviches y Cócteles El Cubano</title>', html, count=1)
 
           pwa_head = (
-              '<meta name="description" content="Ordena ceviches y cócteles El Chava con entrega a domicilio.">\n'
+              '<meta name="description" content="Ordena ceviches y cócteles El Cubano con entrega a domicilio.">\n'
               '<meta name="mobile-web-app-capable" content="yes">\n'
               '<meta name="apple-mobile-web-app-capable" content="yes">\n'
               '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
-              '<meta name="apple-mobile-web-app-title" content="El Chava">\n'
+              '<meta name="apple-mobile-web-app-title" content="El Cubano">\n'
               '<link rel="manifest" href="/manifest.webmanifest">\n'
-              '<link rel="icon" href="/pwa-icon.svg" type="image/svg+xml">\n'
-              '<link rel="apple-touch-icon" href="/logo.png">'
+              '<link rel="icon" href="/pwa-icon.svg?v=20260806" type="image/svg+xml">\n'
+              '<link rel="apple-touch-icon" href="/pwa-icon.svg?v=20260806">'
           )
           if 'rel="manifest"' not in html:
               html = html.replace('</head>', pwa_head + '\n</head>', 1)
@@ -50,7 +52,8 @@ jobs:
               '<script src="instant-order.js?v=20260805-0637"></script>\n'
               '<script src="promo-personal.js?v=20260805-0643"></script>\n'
               '<script src="order-fix.js?v=20260805-0738"></script>\n'
-              '<script src="pwa-init.js?v=20260802-1409"></script>\n'
+              f'<script src="customer-theme.js?v={version}"></script>\n'
+              f'<script src="pwa-init.js?v={version}"></script>\n'
               '</body>',
               1
           )
@@ -64,24 +67,24 @@ jobs:
               panel,
               count=1
           )
-          panel = re.sub(r'<title>.*?</title>', '<title>Panel Operativo El Chava</title>', panel, count=1)
+          panel = re.sub(r'<title>.*?</title>', '<title>Panel Operativo El Cubano</title>', panel, count=1)
           panel = panel.replace(
               '<meta name="theme-color" content="#06254d">',
-              '<meta name="theme-color" content="#062b5c">\n'
+              '<meta name="theme-color" content="#267642">\n'
               '<meta name="mobile-web-app-capable" content="yes">\n'
               '<meta name="apple-mobile-web-app-capable" content="yes">\n'
-              '<meta name="apple-mobile-web-app-title" content="Panel El Chava">\n'
+              '<meta name="apple-mobile-web-app-title" content="Panel El Cubano">\n'
               '<link rel="manifest" href="/control-manifest.webmanifest">\n'
-              '<link rel="apple-touch-icon" href="/logo.png">',
+              '<link rel="apple-touch-icon" href="/pwa-icon.svg?v=20260806">',
               1
           )
-          panel = panel.replace('<h1>Control de Inventario</h1>', '<h1>Panel Operativo <span>El Chava</span></h1>', 1)
+          panel = panel.replace('<h1>Control de Inventario</h1>', '<h1>Panel Operativo <span>El Cubano</span></h1>', 1)
           panel = re.sub(r'\n?<script src="control-fix\.js(?:\?[^\"]*)?"></script>', '', panel)
           panel = re.sub(r'\n?<script src="control-theme\.js(?:\?[^\"]*)?"></script>', '', panel)
           panel = re.sub(r'\n?<script src="pwa-init\.js(?:\?[^\"]*)?"></script>', '', panel)
           panel = re.sub(
               r'<div class="footer">.*?</div>',
-              '<div class="footer">Panel Operativo El Chava · v10</div>',
+              '<div class="footer">Panel Operativo El Cubano · v10</div>',
               panel,
               count=1
           )
