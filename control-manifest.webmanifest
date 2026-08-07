@@ -1,8 +1,9 @@
 {
+  "id": "/panel-operativo-el-cubano",
   "name": "Panel Operativo El Cubano",
   "short_name": "Panel El Cubano",
   "description": "Panel de pedidos, inventario, compras, historial y recetas de Ceviches y Cócteles El Cubano.",
-  "start_url": "/control.html",
+  "start_url": "/control.html?panel=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#fffdf7",
@@ -10,16 +11,17 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/pwa-icon.svg?v=20260806",
+      "src": "/pwa-icon.svg?v=20260806-panel2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/pwa-icon.svg?v=20260806",
+      "src": "/pwa-icon.svg?v=20260806-panel2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }
