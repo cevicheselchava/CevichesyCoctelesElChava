@@ -19,23 +19,32 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          from urllib.parse import quote
+          import base64
           import os
           import re
 
-          version = os.environ.get('GITHUB_SHA', 'v12')[:12]
+          version = os.environ.get('GITHUB_SHA', 'final')[:12]
 
+          # ---------- APP DE PEDIDOS: UNA SOLA VERSIÓN DESDE EL PRIMER PINTADO ----------
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
-          html = re.sub(r'\n?<script src="order-fix\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = re.sub(r'\n?<script src="promo-personal\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = re.sub(r'\n?<script src="instant-order\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = re.sub(r'\n?<script src="customer-theme\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = re.sub(r'\n?<script src="customer-buttons\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = re.sub(r'\n?<script src="customer-nav\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = re.sub(r'\n?<script src="pwa-init\.js(?:\?[^\"]*)?"></script>', '', html)
-          html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
-          html = re.sub(r'<title>.*?</title>', '<title>Ceviches y Cócteles El Cubano</title>', html, count=1)
 
+          # Quitar todas las capas/inyectores anteriores. La versión final se ensambla aquí.
+          for script_name in [
+              'order-fix.js', 'promo-personal.js', 'instant-order.js',
+              'customer-theme.js', 'customer-buttons.js', 'customer-nav.js', 'pwa-init.js'
+          ]:
+              html = re.sub(
+                  rf'\n?<script src="{re.escape(script_name)}(?:\?[^\"]*)?"></script>',
+                  '', html
+              )
+          html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
+          html = re.sub(r'\n?<style id="el-cubano-final-ui">.*?</style>', '', html, flags=re.S)
+          html = re.sub(r'<title>.*?</title>', '<title>Ceviches y Cócteles El Cubano</title>', html, count=1)
+          html = html.replace('<meta name="theme-color" content="#06254d">', '<meta name="theme-color" content="#1f6f3b">', 1)
+
+          # PWA
           pwa_head = (
               '<meta name="description" content="Ordena ceviches y cócteles El Cubano con entrega a domicilio.">\n'
               '<meta name="mobile-web-app-capable" content="yes">\n'
@@ -43,25 +52,121 @@ jobs:
               '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
               '<meta name="apple-mobile-web-app-title" content="El Cubano">\n'
               '<link rel="manifest" href="/manifest.webmanifest">\n'
-              f'<link rel="icon" href="/pwa-icon.svg?v={version}" type="image/svg+xml">\n'
-              f'<link rel="apple-touch-icon" href="/pwa-icon.svg?v={version}">'
+              f'<link rel="icon" href="/pwa-icon-final.svg?v={version}" type="image/svg+xml">\n'
+              f'<link rel="apple-touch-icon" href="/pwa-icon-final.svg?v={version}">'
           )
           if 'rel="manifest"' not in html:
               html = html.replace('</head>', pwa_head + '\n</head>', 1)
 
+          # Crear una versión del icono sin el rectángulo blanco externo.
+          icon_path = Path('pwa-icon.svg')
+          if icon_path.exists():
+              icon_svg = icon_path.read_text(encoding='utf-8')
+              icon_svg = re.sub(r'<rect\b[^>]*/>', '', icon_svg, count=1)
+              Path('pwa-icon-final.svg').write_text(icon_svg, encoding='utf-8')
+
+          # Extraer la foto JPEG real que ya está embebida en ceviche-real.svg.
+          food_svg_path = Path('ceviche-real.svg')
+          if food_svg_path.exists():
+              food_svg = food_svg_path.read_text(encoding='utf-8')
+              match = re.search(r'data:image/jpeg;base64,([^\"]+)', food_svg)
+              if match:
+                  Path('ceviche-real-final.jpg').write_bytes(base64.b64decode(match.group(1)))
+
+          # Tomar los estilos finales ya aprobados, pero meterlos en HEAD para que no haya flashes.
+          def extract_css(filename):
+              text = Path(filename).read_text(encoding='utf-8')
+              m = re.search(r'style\.textContent=`(.*?)`;\s*document\.head\.appendChild', text, flags=re.S)
+              return m.group(1) if m else ''
+
+          theme_css = extract_css('customer-theme.js')
+          nav_css = extract_css('customer-nav.js').replace('${NAV_ID}', 'customer-category-nav')
+          instant_css = extract_css('instant-order.js')
+          final_css = theme_css + '\n' + nav_css + '\n' + instant_css + '''
+            /* La estructura ya viene lista desde Firebase: nada se monta encima después. */
+            #customer-category-nav{position:relative;z-index:2}
+            .main-logo{background:transparent!important;box-shadow:none!important;mix-blend-mode:multiply!important}
+            .customer-food-hero img{image-rendering:auto!important;filter:none!important}
+          '''
+          html = html.replace('</head>', f'<style id="el-cubano-final-ui">{final_css}</style>\n</head>', 1)
+
+          # Hero FINAL ya armado: logo grande, foto real y beneficios. No lo crea JavaScript después.
+          hero = f'''<header class="hero">
+            <button class="cart-top" id="cartTop" type="button" aria-label="Ir al carrito">🛒<span class="cart-badge" id="count">0</span></button>
+            <div class="customer-brand-row">
+              <img class="main-logo" src="/pwa-icon-final.svg?v={version}" alt="Ceviches y Cócteles El Cubano">
+              <div class="customer-brand-copy"><strong>Ceviches & Cócteles</strong><span>El Cubano</span><small>Fresco · preparado al momento</small></div>
+            </div>
+            <div class="customer-food-hero"><img src="/ceviche-real-final.jpg?v={version}" alt="Ceviche real preparado fresco"><div class="customer-food-copy"><strong>🥣 Ceviche real, preparado fresco</strong><span>Hecho al momento · Sabor que sí se antoja</span></div></div>
+            <h1>¿Qué se te antoja hoy?</h1>
+            <p>Programa tu pedido · Delivery gratis en área delimitada</p>
+            <div class="benefits"><div class="benefit"><b>💯 Seguro</b>Sin anticipos</div><div class="benefit"><b>💵 Paga al recibir</b>Efectivo o Cash App</div><div class="benefit"><b>🚚 Delivery</b>Área delimitada</div></div>
+          </header>'''
+          html = re.sub(r'<header class="hero">.*?</header>', hero, html, count=1, flags=re.S)
+
+          # Texto correcto de horarios desde el HTML servido.
+          html = re.sub(
+              r'<div class="availability-note">.*?</div>',
+              '<div class="availability-note">⏰ <b>Entregas en horarios de 20 minutos.</b> Cantidad limitada por día y sujeta a disponibilidad.</div>',
+              html,
+              count=1,
+              flags=re.S
+          )
+
+          # Navegación de categorías ya presente en el HTML inicial, estilo Panel Operativo.
+          nav = '''<div id="customer-category-nav" aria-label="Categorías del menú">
+            <button type="button" class="active" data-group="promotions"><span class="cat-icon">🔥</span><span class="cat-label">Promociones</span></button>
+            <button type="button" data-group="immediate"><span class="cat-icon">⚡</span><span class="cat-label">Entrega</span></button>
+            <button type="button" data-group="cocktails"><span class="cat-icon">🍹</span><span class="cat-label">Cócteles</span></button>
+            <button type="button" data-group="preorder"><span class="cat-icon">📅</span><span class="cat-label">Sobre pedido</span></button>
+            <button type="button" data-group="drinks"><span class="cat-icon">🥤</span><span class="cat-label">Refrescos</span></button>
+          </div>'''
+          if 'id="customer-category-nav"' not in html:
+              html = html.replace('<section class="section promo-section open"', nav + '\n<section class="section promo-section open"', 1)
+
+          # Botón para ahorita DESPUÉS del menú y ANTES de los datos de entrega.
+          instant_message = 'Hola, vengo desde la app y quiero pedir para ahorita. ¿Qué tienes disponible y en cuánto tiempo me lo puedes entregar?'
+          instant_url = 'https://wa.me/12109432119?text=' + quote(instant_message)
+          instant = f'''<div class="instant-order-wrap"><a id="instant-order-button" class="instant-order-button" href="{instant_url}" target="_blank" rel="noopener">PEDIR PARA AHORITA</a></div>'''
+          if 'id="instant-order-button"' not in html:
+              html = html.replace('<section class="checkout" id="checkout">', instant + '\n<section class="checkout" id="checkout">', 1)
+
+          # Comportamiento de tabs listo sin crear elementos visuales nuevos.
+          nav_script = '''<script>
+          (()=>{
+            const nav=document.getElementById('customer-category-nav');
+            if(!nav)return;
+            function setActive(group){
+              document.querySelectorAll('.section[data-group]').forEach(section=>{
+                const open=section.dataset.group===group;
+                section.classList.toggle('open',open);
+                const title=section.querySelector('.section-title');
+                if(title)title.setAttribute('aria-expanded',open?'true':'false');
+              });
+              nav.querySelectorAll('button[data-group]').forEach(button=>button.classList.toggle('active',button.dataset.group===group));
+            }
+            nav.addEventListener('click',event=>{
+              const button=event.target.closest('button[data-group]');
+              if(button)setActive(button.dataset.group);
+            });
+            setActive('promotions');
+          })();
+          </script>'''
+
+          # Solo quedan scripts funcionales. customer-theme/customer-nav YA NO se cargan.
           html = html.replace(
               '</body>',
               f'<script src="instant-order.js?v={version}"></script>\n'
               f'<script src="promo-personal.js?v={version}"></script>\n'
               f'<script src="order-fix.js?v={version}"></script>\n'
-              f'<script src="customer-theme.js?v={version}"></script>\n'
-              f'<script src="customer-nav.js?v={version}"></script>\n'
-              f'<script src="pwa-init.js?v={version}"></script>\n'
-              '</body>',
+              + nav_script + '\n'
+              + f'<script src="pwa-init.js?v={version}"></script>\n'
+              + '</body>',
               1
           )
           index.write_text(html, encoding='utf-8')
 
+          # ---------- PANEL OPERATIVO ----------
           control = Path('control.html')
           panel = control.read_text(encoding='utf-8')
           panel = re.sub(
@@ -78,7 +183,7 @@ jobs:
               '<meta name="apple-mobile-web-app-capable" content="yes">\n'
               '<meta name="apple-mobile-web-app-title" content="Panel El Cubano">\n'
               '<link rel="manifest" href="/control-manifest.webmanifest">\n'
-              f'<link rel="apple-touch-icon" href="/pwa-icon.svg?v={version}">',
+              f'<link rel="apple-touch-icon" href="/pwa-icon-final.svg?v={version}">',
               1
           )
           panel = panel.replace('<h1>Control de Inventario</h1>', '<h1>Panel Operativo <span>El Cubano</span></h1>', 1)
