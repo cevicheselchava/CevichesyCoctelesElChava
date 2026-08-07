@@ -32,44 +32,56 @@
         #${NAV_ID}{
           display:grid;
           grid-template-columns:repeat(5,minmax(0,1fr));
-          gap:5px;
-          margin:12px 0 14px;
-          padding:8px;
-          background:rgba(255,255,255,.94);
-          border:1px solid #e8e1d4;
-          border-radius:20px;
-          box-shadow:0 9px 24px rgba(24,55,70,.10);
+          gap:7px;
+          margin:13px 0 15px;
+          padding:9px;
+          background:rgba(255,255,255,.80);
+          border:1px solid #e8dfcf;
+          border-radius:22px;
+          box-shadow:0 10px 26px rgba(24,55,70,.09);
+          backdrop-filter:blur(8px);
+          -webkit-backdrop-filter:blur(8px);
         }
         #${NAV_ID} button{
+          position:relative;
+          overflow:hidden;
           min-width:0;
-          min-height:64px;
-          padding:7px 2px;
-          border:0;
-          border-radius:14px;
-          background:#f4f6f4;
-          color:#123458;
+          min-height:70px;
+          padding:8px 3px 10px;
+          border:1px solid rgba(231,223,210,.9);
+          border-radius:16px;
+          background:rgba(250,250,247,.96);
+          color:#14365b;
           display:flex;
           flex-direction:column;
           align-items:center;
           justify-content:center;
-          gap:3px;
+          gap:4px;
           font-size:10px;
           line-height:1.05;
           font-weight:900;
-          box-shadow:none;
+          box-shadow:0 5px 13px rgba(24,55,70,.05);
         }
-        #${NAV_ID} button.active{
-          background:linear-gradient(135deg,#267642,#319552);
-          color:#fff;
-          box-shadow:inset 0 -4px 0 #f2b632,0 5px 12px rgba(38,118,66,.24);
-        }
-        #${NAV_ID} .cat-icon{font-size:20px;line-height:1}
+        #${NAV_ID} button:after{content:"";position:absolute;left:13%;right:13%;bottom:0;height:4px;border-radius:9px;background:#257344}
+        #${NAV_ID} button:nth-child(1):after{background:#dc4638}
+        #${NAV_ID} button:nth-child(2):after{background:#f4bf32}
+        #${NAV_ID} button:nth-child(3):after{background:#257344}
+        #${NAV_ID} button:nth-child(4):after{background:#dc4638}
+        #${NAV_ID} button:nth-child(5):after{background:#f4bf32}
+        #${NAV_ID} button.active{color:#fff;box-shadow:0 7px 16px rgba(32,70,55,.18);transform:translateY(-1px)}
+        #${NAV_ID} button:nth-child(1).active{background:linear-gradient(135deg,#c83a30,#e75e4e)}
+        #${NAV_ID} button:nth-child(2).active{background:linear-gradient(135deg,#edb020,#f6c944);color:#14365b}
+        #${NAV_ID} button:nth-child(3).active{background:linear-gradient(135deg,#257344,#3d9960)}
+        #${NAV_ID} button:nth-child(4).active{background:linear-gradient(135deg,#c83a30,#e75e4e)}
+        #${NAV_ID} button:nth-child(5).active{background:linear-gradient(135deg,#edb020,#f6c944);color:#14365b}
+        #${NAV_ID} .cat-icon{font-size:22px;line-height:1}
         #${NAV_ID} .cat-label{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .section[data-group]{margin-top:0!important}
         .section[data-group]>.section-title{display:none!important}
         .section[data-group]>.products{margin-top:0!important}
-        .section[data-group].open>.products{margin-top:8px!important}
-        @media(min-width:720px){#${NAV_ID} button{font-size:13px}#${NAV_ID} .cat-icon{font-size:24px}}
+        .section[data-group].open>.products{margin-top:9px!important}
+        @media(min-width:720px){#${NAV_ID} button{font-size:13px;min-height:76px}#${NAV_ID} .cat-icon{font-size:25px}}
+        @media(max-width:420px){#${NAV_ID}{gap:5px;padding:7px}#${NAV_ID} button{min-height:65px;border-radius:14px;font-size:9px}#${NAV_ID} .cat-icon{font-size:20px}}
       `;
       document.head.appendChild(style);
     }
