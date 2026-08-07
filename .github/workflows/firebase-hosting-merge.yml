@@ -31,6 +31,7 @@ jobs:
           html = re.sub(r'\n?<script src="instant-order\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<script src="customer-theme\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<script src="customer-buttons\.js(?:\?[^\"]*)?"></script>', '', html)
+          html = re.sub(r'\n?<script src="customer-nav\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<script src="pwa-init\.js(?:\?[^\"]*)?"></script>', '', html)
           html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
           html = re.sub(r'<title>.*?</title>', '<title>Ceviches y Cócteles El Cubano</title>', html, count=1)
@@ -54,7 +55,7 @@ jobs:
               '<script src="promo-personal.js?v=20260805-0643"></script>\n'
               '<script src="order-fix.js?v=20260805-0738"></script>\n'
               f'<script src="customer-theme.js?v={version}"></script>\n'
-              f'<script src="customer-buttons.js?v={version}"></script>\n'
+              f'<script src="customer-nav.js?v={version}"></script>\n'
               f'<script src="pwa-init.js?v={version}"></script>\n'
               '</body>',
               1
