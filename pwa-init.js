@@ -61,4 +61,38 @@
     installPrompt = null;
     removeInstallButton();
   });
+
+  // Menú de categorías: tocar abre; tocar el mismo botón otra vez cierra.
+  document.addEventListener('click', event => {
+    const button = event.target.closest('#customer-category-nav button[data-group]');
+    if (!button) return;
+
+    const nav = document.getElementById('customer-category-nav');
+    if (!nav) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const group = button.dataset.group;
+    const section = document.querySelector(`.section[data-group="${group}"]`);
+    const wasOpen = !!section?.classList.contains('open');
+
+    document.querySelectorAll('.section[data-group]').forEach(item => {
+      item.classList.remove('open');
+      const title = item.querySelector('.section-title');
+      if (title) title.setAttribute('aria-expanded', 'false');
+    });
+
+    nav.querySelectorAll('button[data-group]').forEach(item => {
+      item.classList.remove('active');
+    });
+
+    if (!wasOpen && section) {
+      section.classList.add('open');
+      const title = section.querySelector('.section-title');
+      if (title) title.setAttribute('aria-expanded', 'true');
+      button.classList.add('active');
+    }
+  }, true);
 })();
