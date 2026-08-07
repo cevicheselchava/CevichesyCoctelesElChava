@@ -1,5 +1,6 @@
 (()=>{
   const LOGO='/pwa-icon.svg?v=20260807-reggae3';
+  const FOOD='/ceviche-real.svg?v=20260807-real1';
   document.title='Ceviches y Cócteles El Cubano';
   const theme=document.querySelector('meta[name="theme-color"]');
   if(theme)theme.setAttribute('content','#1f6f3b');
@@ -31,6 +32,10 @@
     .customer-brand-copy strong{display:block;color:var(--navy);font-size:25px;line-height:1.03}
     .customer-brand-copy span{display:block;margin-top:4px;color:var(--green);font-family:Georgia,serif;font-size:39px;font-style:italic;line-height:1}
     .customer-brand-copy small{display:block;margin-top:8px;color:#6a5c48;font-size:14px;font-weight:800}
+    .customer-food-hero{position:relative;overflow:hidden;margin:10px 0 14px;border-radius:21px;border:1px solid rgba(219,208,190,.95);background:#ece5d9;box-shadow:0 10px 24px rgba(24,49,73,.11)}
+    .customer-food-hero img{display:block;width:100%;height:auto;aspect-ratio:2/1;object-fit:cover;object-position:center 48%}
+    .customer-food-copy{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 11px;text-align:left;color:#fff;background:linear-gradient(180deg,transparent 0%,rgba(10,26,31,.82) 88%);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+    .customer-food-copy strong{display:block;font-size:17px;line-height:1.15}.customer-food-copy span{display:block;margin-top:4px;font-size:12px;font-weight:800}
     .hero h1{text-align:center!important;color:var(--navy)!important;font-size:30px!important;margin:8px 0 4px!important}
     .hero p{text-align:center!important;color:#8e302b!important;font-weight:900!important;margin:0!important}
     .cart-top{z-index:3!important;background:rgba(255,255,255,.92)!important;color:var(--green)!important;border:1px solid var(--line)!important;box-shadow:0 6px 16px rgba(24,55,70,.12)!important}
@@ -55,6 +60,7 @@
       .customer-brand-row{grid-template-columns:126px 1fr;gap:12px;padding-right:42px;min-height:128px}
       .main-logo{width:126px!important;height:126px!important}
       .customer-brand-copy strong{font-size:19px}.customer-brand-copy span{font-size:31px}.customer-brand-copy small{font-size:11px;margin-top:6px}
+      .customer-food-hero{margin:8px 0 12px;border-radius:18px}.customer-food-copy strong{font-size:15px}.customer-food-copy span{font-size:11px}
       .hero h1{font-size:27px!important}.hero p{font-size:15px!important}
     }
   `;
@@ -74,7 +80,13 @@
       row.appendChild(logo);
       row.appendChild(copy);
     }
-    document.querySelectorAll('.customer-food-hero,.real-food-hero,.food-hero,.food-spotlight,[data-customer-food-hero]').forEach(el=>el.remove());
+    if(hero&&!hero.querySelector('.customer-food-hero')){
+      const food=document.createElement('div');
+      food.className='customer-food-hero';
+      food.innerHTML=`<img src="${FOOD}" alt="Ceviche real preparado fresco"><div class="customer-food-copy"><strong>🥣 Ceviche real, preparado fresco</strong><span>Hecho al momento · Sabor que sí se antoja</span></div>`;
+      const h1=hero.querySelector('h1');
+      if(h1)hero.insertBefore(food,h1);else hero.appendChild(food);
+    }
   }
   apply();
   new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});
