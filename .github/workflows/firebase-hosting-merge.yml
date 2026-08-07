@@ -22,7 +22,7 @@ jobs:
           import os
           import re
 
-          version = os.environ.get('GITHUB_SHA', 'v11')[:12]
+          version = os.environ.get('GITHUB_SHA', 'v12')[:12]
 
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
@@ -43,17 +43,17 @@ jobs:
               '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
               '<meta name="apple-mobile-web-app-title" content="El Cubano">\n'
               '<link rel="manifest" href="/manifest.webmanifest">\n'
-              '<link rel="icon" href="/pwa-icon.svg?v=20260806" type="image/svg+xml">\n'
-              '<link rel="apple-touch-icon" href="/pwa-icon.svg?v=20260806">'
+              f'<link rel="icon" href="/pwa-icon.svg?v={version}" type="image/svg+xml">\n'
+              f'<link rel="apple-touch-icon" href="/pwa-icon.svg?v={version}">'
           )
           if 'rel="manifest"' not in html:
               html = html.replace('</head>', pwa_head + '\n</head>', 1)
 
           html = html.replace(
               '</body>',
-              '<script src="instant-order.js?v=20260805-0637"></script>\n'
-              '<script src="promo-personal.js?v=20260805-0643"></script>\n'
-              '<script src="order-fix.js?v=20260805-0738"></script>\n'
+              f'<script src="instant-order.js?v={version}"></script>\n'
+              f'<script src="promo-personal.js?v={version}"></script>\n'
+              f'<script src="order-fix.js?v={version}"></script>\n'
               f'<script src="customer-theme.js?v={version}"></script>\n'
               f'<script src="customer-nav.js?v={version}"></script>\n'
               f'<script src="pwa-init.js?v={version}"></script>\n'
@@ -78,7 +78,7 @@ jobs:
               '<meta name="apple-mobile-web-app-capable" content="yes">\n'
               '<meta name="apple-mobile-web-app-title" content="Panel El Cubano">\n'
               '<link rel="manifest" href="/control-manifest.webmanifest">\n'
-              '<link rel="apple-touch-icon" href="/pwa-icon.svg?v=20260806">',
+              f'<link rel="apple-touch-icon" href="/pwa-icon.svg?v={version}">',
               1
           )
           panel = panel.replace('<h1>Control de Inventario</h1>', '<h1>Panel Operativo <span>El Cubano</span></h1>', 1)
