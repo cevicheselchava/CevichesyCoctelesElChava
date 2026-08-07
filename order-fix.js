@@ -1,5 +1,5 @@
 (()=>{
-  const styleId='mobile-card-controls-fix-v5';
+  const styleId='mobile-card-controls-fix-v6';
   if(!document.getElementById(styleId)){
     const style=document.createElement('style');
     style.id=styleId;
@@ -13,9 +13,9 @@
         z-index:0!important;
         pointer-events:none!important;
         background:url('/pwa-icon.svg?v=watermark-reggae') center 58%/min(58vw,390px) auto no-repeat!important;
-        opacity:.055!important;
+        opacity:.14!important;
         mix-blend-mode:multiply!important;
-        filter:saturate(.8)!important;
+        filter:saturate(.9)!important;
       }
       .wrap>*{position:relative!important;z-index:1!important}
 
@@ -149,6 +149,22 @@
   document.querySelectorAll('.qty button').forEach(button=>{
     if(button.textContent.trim()==='-')button.textContent='−';
   });
+
+  /* Si se toca otra vez la misma categoría abierta, se vuelve a cerrar. */
+  document.addEventListener('click',event=>{
+    const button=event.target.closest('#customer-category-nav button[data-group]');
+    if(!button || !button.classList.contains('active'))return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    document.querySelectorAll('.section[data-group]').forEach(section=>{
+      section.classList.remove('open');
+      const title=section.querySelector('.section-title');
+      if(title)title.setAttribute('aria-expanded','false');
+    });
+    document.querySelectorAll('#customer-category-nav button[data-group]').forEach(item=>{
+      item.classList.remove('active');
+    });
+  },true);
 
   const sendButton=document.getElementById('continueOrder');
   const modal=document.getElementById('cartModal');
