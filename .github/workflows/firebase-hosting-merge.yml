@@ -1,4 +1,4 @@
-# Despliega únicamente la app y el panel en Firebase Hosting
+# Despliega la app y el panel en Firebase Hosting
 name: Deploy to Firebase Hosting on merge
 on:
   workflow_dispatch:
@@ -15,22 +15,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Preparar app, PWA y panel administrativo
+      - name: Preparar app y panel
         run: |
+          python -m pip install --quiet pillow
           python - <<'PY'
           from pathlib import Path
           from urllib.parse import quote
+          from collections import deque
+          from PIL import Image
           import base64
+          import io
           import os
           import re
 
           version = os.environ.get('GITHUB_SHA', 'final')[:12]
 
-          # ---------- APP DE PEDIDOS: UNA SOLA VERSIÓN DESDE EL PRIMER PINTADO ----------
+          # ---------- APP DE PEDIDOS: UNA SOLA VERSIÓN ----------
           index = Path('index.html')
           html = index.read_text(encoding='utf-8')
 
-          # Quitar todas las capas/inyectores anteriores. La versión final se ensambla aquí.
+          # Quitar todas las capas visuales/parches anteriores.
           for script_name in [
               'order-fix.js', 'promo-personal.js', 'instant-order.js',
               'customer-theme.js', 'customer-buttons.js', 'customer-nav.js', 'pwa-init.js'
@@ -42,78 +46,283 @@ jobs:
           html = re.sub(r'\n?<style id="mobile-qty-fix">.*?</style>', '', html, flags=re.S)
           html = re.sub(r'\n?<style id="el-cubano-final-ui">.*?</style>', '', html, flags=re.S)
           html = re.sub(r'<title>.*?</title>', '<title>Ceviches y Cócteles El Cubano</title>', html, count=1)
-          html = html.replace('<meta name="theme-color" content="#06254d">', '<meta name="theme-color" content="#1f6f3b">', 1)
+          html = re.sub(
+              r'<meta name="theme-color" content="[^"]+">',
+              '<meta name="theme-color" content="#1f6f3b">',
+              html,
+              count=1
+          )
+
+          # Crear logo transparente: quita solo el blanco conectado a los bordes,
+          # conservando los blancos internos del arte y las letras.
+          icon_svg = Path('pwa-icon.svg').read_text(encoding='utf-8')
+          logo_match = re.search(r'data:image/jpeg;base64,([^\"]+)', icon_svg)
+          if logo_match:
+              logo = Image.open(io.BytesIO(base64.b64decode(logo_match.group(1)))).convert('RGBA')
+              px = logo.load()
+              w, h = logo.size
+              seen = set()
+              q = deque()
+
+              def is_bg(x, y):
+                  r, g, b, a = px[x, y]
+                  return a > 0 and r >= 232 and g >= 232 and b >= 232
+
+              for x in range(w):
+                  if is_bg(x, 0): q.append((x, 0))
+                  if is_bg(x, h - 1): q.append((x, h - 1))
+              for y in range(h):
+                  if is_bg(0, y): q.append((0, y))
+                  if is_bg(w - 1, y): q.append((w - 1, y))
+
+              while q:
+                  x, y = q.popleft()
+                  if (x, y) in seen or not is_bg(x, y):
+                      continue
+                  seen.add((x, y))
+                  r, g, b, a = px[x, y]
+                  px[x, y] = (r, g, b, 0)
+                  if x > 0: q.append((x - 1, y))
+                  if x + 1 < w: q.append((x + 1, y))
+                  if y > 0: q.append((x, y - 1))
+                  if y + 1 < h: q.append((x, y + 1))
+
+              bbox = logo.getchannel('A').getbbox()
+              if bbox:
+                  logo = logo.crop(bbox)
+              logo.save('el-cubano-logo-transparent.png', 'PNG', optimize=True)
 
           # PWA
-          pwa_head = (
-              '<meta name="description" content="Ordena ceviches y cócteles El Cubano con entrega a domicilio.">\n'
-              '<meta name="mobile-web-app-capable" content="yes">\n'
-              '<meta name="apple-mobile-web-app-capable" content="yes">\n'
-              '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
-              '<meta name="apple-mobile-web-app-title" content="El Cubano">\n'
-              '<link rel="manifest" href="/manifest.webmanifest">\n'
-              f'<link rel="icon" href="/pwa-icon-final.svg?v={version}" type="image/svg+xml">\n'
-              f'<link rel="apple-touch-icon" href="/pwa-icon-final.svg?v={version}">'
-          )
           if 'rel="manifest"' not in html:
-              html = html.replace('</head>', pwa_head + '\n</head>', 1)
+              pwa = (
+                  '<meta name="description" content="Ordena ceviches y cócteles El Cubano con entrega a domicilio.">\n'
+                  '<meta name="mobile-web-app-capable" content="yes">\n'
+                  '<meta name="apple-mobile-web-app-capable" content="yes">\n'
+                  '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+                  '<meta name="apple-mobile-web-app-title" content="El Cubano">\n'
+                  '<link rel="manifest" href="/manifest.webmanifest">\n'
+                  f'<link rel="icon" href="/pwa-icon.svg?v={version}" type="image/svg+xml">'
+              )
+              html = html.replace('</head>', pwa + '\n</head>', 1)
 
-          # Crear una versión del icono sin el rectángulo blanco externo.
-          icon_path = Path('pwa-icon.svg')
-          if icon_path.exists():
-              icon_svg = icon_path.read_text(encoding='utf-8')
-              icon_svg = re.sub(r'<rect\b[^>]*/>', '', icon_svg, count=1)
-              Path('pwa-icon-final.svg').write_text(icon_svg, encoding='utf-8')
+          # Estilo final: reggae elegante, más rojo y amarillo, botones tipo Panel Operativo.
+          final_css = r'''
+          :root{
+            --navy:#14365b;--green:#237443;--green2:#37985c;
+            --yellow:#f3bd2f;--gold:#d99f18;--red:#d94638;--red2:#ef6655;
+            --cream:#fff9ed;--ink:#18304f;--muted:#69778b;--line:#e6dccb;
+          }
+          html{background:var(--cream)}
+          body{
+            position:relative!important;min-height:100vh;
+            background:#fff9ed!important;color:var(--ink)!important;
+          }
+          body::before{
+            content:""!important;position:fixed!important;inset:0!important;z-index:0!important;
+            background:
+              radial-gradient(circle at 7% 8%,rgba(217,70,56,.27),transparent 30%),
+              radial-gradient(circle at 91% 9%,rgba(243,189,47,.38),transparent 32%),
+              radial-gradient(circle at 10% 73%,rgba(35,116,67,.19),transparent 32%),
+              radial-gradient(circle at 92% 80%,rgba(217,70,56,.15),transparent 29%),
+              linear-gradient(155deg,#fffdf8 0%,#fff7e6 48%,#fffdf8 100%)!important;
+            opacity:1!important;pointer-events:none!important;
+          }
+          body::after{
+            content:"";position:fixed;left:-10%;right:-10%;bottom:10%;height:125px;z-index:0;
+            background:linear-gradient(7deg,
+              transparent 0 18%,rgba(217,70,56,.16) 19% 32%,
+              transparent 33% 42%,rgba(243,189,47,.23) 43% 57%,
+              transparent 58% 67%,rgba(35,116,67,.14) 68% 81%,transparent 82%);
+            transform:rotate(-3deg);pointer-events:none;
+          }
+          .wrap{position:relative!important;z-index:1!important;max-width:980px!important;padding:12px!important}
+          .hero{
+            position:relative!important;overflow:hidden!important;
+            background:rgba(255,255,255,.80)!important;border:1px solid rgba(226,216,199,.94)!important;
+            border-radius:28px!important;padding:16px 17px 20px!important;
+            box-shadow:0 14px 34px rgba(35,55,75,.11)!important;
+            backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+          }
+          .hero::before{
+            content:"";position:absolute;inset:0;pointer-events:none;
+            background:
+              radial-gradient(circle at 3% 20%,rgba(217,70,56,.19),transparent 28%),
+              radial-gradient(circle at 90% 9%,rgba(243,189,47,.31),transparent 34%),
+              radial-gradient(circle at 92% 94%,rgba(35,116,67,.14),transparent 31%);
+          }
+          .hero::after{
+            content:"";position:absolute;left:0;right:0;bottom:0;height:5px;
+            background:linear-gradient(90deg,var(--red) 0 33%,var(--yellow) 33% 66%,var(--green) 66% 100%);
+          }
+          .hero>*{position:relative;z-index:1}
+          .customer-brand-row{
+            display:grid;grid-template-columns:160px 1fr;align-items:center;gap:16px;
+            padding-right:48px;margin-bottom:10px;min-height:160px;text-align:left;
+          }
+          .main-logo{
+            display:block!important;width:160px!important;height:160px!important;max-height:none!important;
+            object-fit:contain!important;margin:0!important;padding:0!important;border-radius:0!important;
+            background:transparent!important;box-shadow:none!important;
+            filter:drop-shadow(0 8px 12px rgba(20,54,68,.16))!important;
+          }
+          .customer-brand-copy strong{display:block;color:var(--navy);font-size:25px;line-height:1.03}
+          .customer-brand-copy span{
+            display:block;margin-top:4px;color:var(--green);font-family:Georgia,serif;
+            font-size:40px;font-style:italic;line-height:1;
+          }
+          .customer-brand-copy small{display:block;margin-top:8px;color:#765c43;font-size:14px;font-weight:800}
+          .customer-food-hero{
+            position:relative;overflow:hidden;margin:10px 0 15px;border-radius:22px;
+            border:1px solid rgba(218,206,187,.95);background:#171717;
+            box-shadow:0 10px 24px rgba(24,49,73,.13);
+          }
+          .customer-food-hero img{
+            display:block;width:100%;aspect-ratio:4/3;object-fit:cover;object-position:center;
+            image-rendering:auto!important;filter:none!important;
+          }
+          .customer-food-copy{
+            position:absolute;left:0;right:0;bottom:0;padding:34px 14px 12px;color:#fff;text-align:left;
+            background:linear-gradient(180deg,transparent 0%,rgba(8,20,24,.86) 90%);
+            text-shadow:0 1px 2px rgba(0,0,0,.4);
+          }
+          .customer-food-copy strong{display:block;font-size:17px;line-height:1.15}
+          .customer-food-copy span{display:block;margin-top:4px;font-size:12px;font-weight:800}
+          .hero h1{text-align:center!important;color:var(--navy)!important;font-size:30px!important;margin:8px 0 4px!important}
+          .hero p{text-align:center!important;color:#9d332d!important;font-weight:900!important;margin:0!important}
+          .cart-top{
+            z-index:3!important;background:rgba(255,255,255,.94)!important;color:var(--green)!important;
+            border:1px solid var(--line)!important;box-shadow:0 6px 16px rgba(24,55,70,.12)!important;
+          }
+          .cart-badge{background:var(--red)!important}
+          .benefits{gap:8px!important;margin-top:14px!important}
+          .benefit{
+            position:relative;overflow:hidden;background:rgba(255,255,255,.84)!important;
+            border:1px solid rgba(225,219,207,.94)!important;border-radius:18px!important;
+            box-shadow:0 7px 18px rgba(24,49,73,.06)!important;padding:11px 5px 14px!important;
+          }
+          .benefit::after{content:"";position:absolute;left:22%;right:22%;bottom:0;height:4px;border-radius:99px}
+          .benefit:nth-child(1)::after{background:var(--red)}
+          .benefit:nth-child(2)::after{background:var(--yellow)}
+          .benefit:nth-child(3)::after{background:var(--green)}
+          .benefit:nth-child(1) b{color:var(--red)!important}
+          .benefit:nth-child(2) b{color:#9a6a00!important}
+          .benefit:nth-child(3) b{color:var(--green)!important}
+          .notice,.availability-note{
+            border-radius:18px!important;background:rgba(255,255,255,.82)!important;
+            border:1px solid var(--line)!important;box-shadow:0 6px 16px rgba(24,49,73,.055)!important;
+          }
+          .notice b{color:#a23b31!important}
+          .availability-note{color:var(--navy)!important;border-left:5px solid var(--green)!important}
 
-          # Extraer la foto JPEG real que ya está embebida en ceviche-real.svg.
-          food_svg_path = Path('ceviche-real.svg')
-          if food_svg_path.exists():
-              food_svg = food_svg_path.read_text(encoding='utf-8')
-              match = re.search(r'data:image/jpeg;base64,([^\"]+)', food_svg)
-              if match:
-                  Path('ceviche-real-final.jpg').write_bytes(base64.b64decode(match.group(1)))
+          #customer-category-nav{
+            display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:14px 0 16px;padding:9px;
+            background:rgba(255,255,255,.84);border:1px solid var(--line);border-radius:22px;
+            box-shadow:0 10px 26px rgba(24,55,70,.09);
+            backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+          }
+          #customer-category-nav button{
+            position:relative;overflow:hidden;min-width:0;min-height:70px;padding:8px 3px 10px;
+            border:1px solid rgba(231,223,210,.9);border-radius:16px;background:rgba(250,250,247,.97);
+            color:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;
+            gap:4px;font-size:10px;line-height:1.05;font-weight:900;
+            box-shadow:0 5px 13px rgba(24,55,70,.05);
+          }
+          #customer-category-nav button::after{
+            content:"";position:absolute;left:13%;right:13%;bottom:0;height:4px;border-radius:9px;background:var(--green);
+          }
+          #customer-category-nav button:nth-child(1)::after{background:var(--red)}
+          #customer-category-nav button:nth-child(2)::after{background:var(--yellow)}
+          #customer-category-nav button:nth-child(3)::after{background:var(--green)}
+          #customer-category-nav button:nth-child(4)::after{background:var(--red)}
+          #customer-category-nav button:nth-child(5)::after{background:var(--yellow)}
+          #customer-category-nav button.active{color:#fff;transform:translateY(-1px);box-shadow:0 8px 17px rgba(32,70,55,.18)}
+          #customer-category-nav button:nth-child(1).active{background:linear-gradient(135deg,#c83a30,#e75e4e)}
+          #customer-category-nav button:nth-child(2).active{background:linear-gradient(135deg,#edb020,#f6c944);color:var(--navy)}
+          #customer-category-nav button:nth-child(3).active{background:linear-gradient(135deg,#257344,#3d9960)}
+          #customer-category-nav button:nth-child(4).active{background:linear-gradient(135deg,#c83a30,#e75e4e)}
+          #customer-category-nav button:nth-child(5).active{background:linear-gradient(135deg,#edb020,#f6c944);color:var(--navy)}
+          #customer-category-nav .cat-icon{font-size:22px;line-height:1}
+          #customer-category-nav .cat-label{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          .section[data-group]{margin-top:0!important}
+          .section[data-group]>.section-title{display:none!important}
+          .section[data-group]>.products{margin-top:0!important}
+          .section[data-group].open>.products{margin-top:9px!important}
 
-          # Tomar los estilos finales ya aprobados, pero meterlos en HEAD para que no haya flashes.
-          def extract_css(filename):
-              text = Path(filename).read_text(encoding='utf-8')
-              m = re.search(r'style\.textContent=`(.*?)`;\s*document\.head\.appendChild', text, flags=re.S)
-              return m.group(1) if m else ''
+          .product{
+            background:rgba(255,255,255,.88)!important;border:1px solid rgba(226,218,204,.96)!important;
+            border-radius:19px!important;box-shadow:0 7px 18px rgba(24,49,73,.065)!important;
+          }
+          .promo-section .product{border-top:3px solid rgba(217,70,56,.65)!important}
+          .promo-save{background:rgba(243,189,47,.23)!important;color:#745100!important}
+          .checkout{
+            background:rgba(255,255,255,.90)!important;border:1px solid var(--line)!important;
+            border-radius:22px!important;box-shadow:0 9px 25px rgba(25,48,80,.07)!important;
+          }
+          input,select,textarea{border:1.5px solid #d9d2c5!important;border-radius:14px!important;background:rgba(255,255,255,.96)!important}
+          input:focus,select:focus,textarea:focus{outline:3px solid rgba(243,189,47,.22)!important;border-color:var(--yellow)!important}
 
-          theme_css = extract_css('customer-theme.js')
-          nav_css = extract_css('customer-nav.js').replace('${NAV_ID}', 'customer-category-nav')
-          instant_css = extract_css('instant-order.js')
-          final_css = theme_css + '\n' + nav_css + '\n' + instant_css + '''
-            /* La estructura ya viene lista desde Firebase: nada se monta encima después. */
-            #customer-category-nav{position:relative;z-index:2}
-            .main-logo{background:transparent!important;box-shadow:none!important;mix-blend-mode:multiply!important}
-            .customer-food-hero img{image-rendering:auto!important;filter:none!important}
+          .instant-order-wrap{margin:18px 0 14px;text-align:center}
+          .instant-order-button{
+            display:flex!important;align-items:center;justify-content:center;width:100%;min-height:60px;
+            padding:15px 18px;border-radius:19px;text-decoration:none!important;
+            background:linear-gradient(100deg,#d94638 0%,#ee7a2d 48%,#f3bd2f 100%)!important;
+            color:#14365b!important;font-size:19px;font-weight:1000;border:1px solid rgba(190,131,19,.46);
+            box-shadow:0 9px 22px rgba(185,123,22,.20);
+          }
+          .instant-order-button::before{content:"⚡";margin-right:8px}
+
+          .sticky{
+            background:linear-gradient(90deg,#153c2a,#246f42)!important;border-top:0!important;
+            box-shadow:0 -5px 18px rgba(0,0,0,.16)!important;
+          }
+          .sticky::before{
+            content:"";position:absolute;top:0;left:0;right:0;height:4px;
+            background:linear-gradient(90deg,var(--red) 0 33%,var(--yellow) 33% 66%,var(--green) 66% 100%);
+          }
+          .summary b span{color:#ffe16a!important}
+          .send,.cart-primary{background:linear-gradient(135deg,#279d50,#32bd63)!important}
+
+          @media(max-width:560px){
+            .wrap{padding:10px!important}
+            .hero{padding:13px 13px 18px!important}
+            .customer-brand-row{grid-template-columns:142px 1fr;gap:10px;padding-right:38px;min-height:142px}
+            .main-logo{width:142px!important;height:142px!important}
+            .customer-brand-copy strong{font-size:18px}
+            .customer-brand-copy span{font-size:31px}
+            .customer-brand-copy small{font-size:11px;margin-top:6px}
+            .customer-food-hero{margin:8px 0 12px;border-radius:19px}
+            .customer-food-copy strong{font-size:15px}
+            .customer-food-copy span{font-size:11px}
+            .hero h1{font-size:27px!important}
+            .hero p{font-size:15px!important}
+            #customer-category-nav{gap:5px;padding:7px}
+            #customer-category-nav button{min-height:66px;border-radius:14px;font-size:9px}
+            #customer-category-nav .cat-icon{font-size:20px}
+          }
           '''
           html = html.replace('</head>', f'<style id="el-cubano-final-ui">{final_css}</style>\n</head>', 1)
 
-          # Hero FINAL ya armado: logo grande, foto real y beneficios. No lo crea JavaScript después.
+          # Hero final
           hero = f'''<header class="hero">
             <button class="cart-top" id="cartTop" type="button" aria-label="Ir al carrito">🛒<span class="cart-badge" id="count">0</span></button>
             <div class="customer-brand-row">
-              <img class="main-logo" src="/pwa-icon-final.svg?v={version}" alt="Ceviches y Cócteles El Cubano">
+              <img class="main-logo" src="/el-cubano-logo-transparent.png?v={version}" alt="Ceviches y Cócteles El Cubano">
               <div class="customer-brand-copy"><strong>Ceviches & Cócteles</strong><span>El Cubano</span><small>Fresco · preparado al momento</small></div>
             </div>
-            <div class="customer-food-hero"><img src="/ceviche-real-final.jpg?v={version}" alt="Ceviche real preparado fresco"><div class="customer-food-copy"><strong>🥣 Ceviche real, preparado fresco</strong><span>Hecho al momento · Sabor que sí se antoja</span></div></div>
+            <div class="customer-food-hero"><img src="/ceviche-real.svg?v={version}" alt="Ceviche real preparado fresco"><div class="customer-food-copy"><strong>🥣 Ceviche real, preparado fresco</strong><span>Hecho al momento · Sabor que sí se antoja</span></div></div>
             <h1>¿Qué se te antoja hoy?</h1>
             <p>Programa tu pedido · Delivery gratis en área delimitada</p>
             <div class="benefits"><div class="benefit"><b>💯 Seguro</b>Sin anticipos</div><div class="benefit"><b>💵 Paga al recibir</b>Efectivo o Cash App</div><div class="benefit"><b>🚚 Delivery</b>Área delimitada</div></div>
           </header>'''
           html = re.sub(r'<header class="hero">.*?</header>', hero, html, count=1, flags=re.S)
 
-          # Texto correcto de horarios desde el HTML servido.
           html = re.sub(
               r'<div class="availability-note">.*?</div>',
               '<div class="availability-note">⏰ <b>Entregas en horarios de 20 minutos.</b> Cantidad limitada por día y sujeta a disponibilidad.</div>',
-              html,
-              count=1,
-              flags=re.S
+              html, count=1, flags=re.S
           )
 
-          # Navegación de categorías ya presente en el HTML inicial, estilo Panel Operativo.
+          # Botones de categorías tipo Panel Operativo.
           nav = '''<div id="customer-category-nav" aria-label="Categorías del menú">
             <button type="button" class="active" data-group="promotions"><span class="cat-icon">🔥</span><span class="cat-label">Promociones</span></button>
             <button type="button" data-group="immediate"><span class="cat-icon">⚡</span><span class="cat-label">Entrega</span></button>
@@ -121,21 +330,18 @@ jobs:
             <button type="button" data-group="preorder"><span class="cat-icon">📅</span><span class="cat-label">Sobre pedido</span></button>
             <button type="button" data-group="drinks"><span class="cat-icon">🥤</span><span class="cat-label">Refrescos</span></button>
           </div>'''
-          if 'id="customer-category-nav"' not in html:
-              html = html.replace('<section class="section promo-section open"', nav + '\n<section class="section promo-section open"', 1)
+          html = html.replace('<section class="section promo-section open"', nav + '\n<section class="section promo-section open"', 1)
 
-          # Botón para ahorita DESPUÉS del menú y ANTES de los datos de entrega.
+          # Botón PEDIR PARA AHORITA: después de los productos y antes de Datos de entrega.
           instant_message = 'Hola, vengo desde la app y quiero pedir para ahorita. ¿Qué tienes disponible y en cuánto tiempo me lo puedes entregar?'
           instant_url = 'https://wa.me/12109432119?text=' + quote(instant_message)
           instant = f'''<div class="instant-order-wrap"><a id="instant-order-button" class="instant-order-button" href="{instant_url}" target="_blank" rel="noopener">PEDIR PARA AHORITA</a></div>'''
-          if 'id="instant-order-button"' not in html:
-              html = html.replace('<section class="checkout" id="checkout">', instant + '\n<section class="checkout" id="checkout">', 1)
+          html = html.replace('<section class="checkout" id="checkout">', instant + '\n<section class="checkout" id="checkout">', 1)
 
-          # Comportamiento de tabs listo sin crear elementos visuales nuevos.
-          nav_script = '''<script>
+          # Comportamiento de tabs + horarios de 20 minutos.
+          behavior = r'''<script>
           (()=>{
             const nav=document.getElementById('customer-category-nav');
-            if(!nav)return;
             function setActive(group){
               document.querySelectorAll('.section[data-group]').forEach(section=>{
                 const open=section.dataset.group===group;
@@ -143,66 +349,71 @@ jobs:
                 const title=section.querySelector('.section-title');
                 if(title)title.setAttribute('aria-expanded',open?'true':'false');
               });
-              nav.querySelectorAll('button[data-group]').forEach(button=>button.classList.toggle('active',button.dataset.group===group));
+              nav?.querySelectorAll('button[data-group]').forEach(button=>button.classList.toggle('active',button.dataset.group===group));
             }
-            nav.addEventListener('click',event=>{
+            nav?.addEventListener('click',event=>{
               const button=event.target.closest('button[data-group]');
               if(button)setActive(button.dataset.group);
             });
-            setActive('promotions');
+            if(nav)setActive('promotions');
+
+            const localDateString=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+            const formatSlot=minutes=>{
+              const hour=Math.floor(minutes/60), minute=minutes%60, period=hour>=12?'p. m.':'a. m.';
+              return `${hour%12||12}:${String(minute).padStart(2,'0')} ${period}`;
+            };
+            const refresh=()=>{
+              const dateInput=document.getElementById('date'), timeSelect=document.getElementById('time');
+              if(!dateInput||!timeSelect)return;
+              const selected=dateInput.value, previous=timeSelect.value;
+              timeSelect.innerHTML='<option value="">Selecciona un horario</option>';
+              if(!selected)return;
+              const now=new Date(), today=localDateString(now), current=now.getHours()*60+now.getMinutes();
+              const minimumToday=Math.ceil((current+30)/20)*20;
+              for(let minutes=660;minutes<1140;minutes+=20){
+                if(selected===today&&minutes<minimumToday)continue;
+                const option=document.createElement('option');
+                option.value=option.textContent=formatSlot(minutes);
+                timeSelect.appendChild(option);
+              }
+              if([...timeSelect.options].some(o=>o.value===previous))timeSelect.value=previous;
+            };
+            document.getElementById('date')?.addEventListener('change',refresh);
+            setTimeout(refresh,0);
           })();
           </script>'''
 
-          # Solo quedan scripts funcionales. customer-theme/customer-nav YA NO se cargan.
+          # Solo lógica funcional; no se carga customer-theme, customer-nav ni instant-order.
           html = html.replace(
               '</body>',
-              f'<script src="instant-order.js?v={version}"></script>\n'
               f'<script src="promo-personal.js?v={version}"></script>\n'
               f'<script src="order-fix.js?v={version}"></script>\n'
-              + nav_script + '\n'
+              + behavior + '\n'
               + f'<script src="pwa-init.js?v={version}"></script>\n'
               + '</body>',
               1
           )
           index.write_text(html, encoding='utf-8')
 
-          # ---------- PANEL OPERATIVO ----------
+          # ---------- PANEL OPERATIVO: dejar lo que ya funciona ----------
           control = Path('control.html')
           panel = control.read_text(encoding='utf-8')
           panel = re.sub(
               r"const db=firebase\.firestore\(\)(?:;db\.settings\(\{experimentalForceLongPolling:true,useFetchStreams:false\}\))?;const inventoryRef",
               "const db=firebase.firestore();db.settings({experimentalForceLongPolling:true,useFetchStreams:false});const inventoryRef",
-              panel,
-              count=1
+              panel, count=1
           )
           panel = re.sub(r'<title>.*?</title>', '<title>Panel Operativo El Cubano</title>', panel, count=1)
-          panel = panel.replace(
-              '<meta name="theme-color" content="#06254d">',
-              '<meta name="theme-color" content="#267642">\n'
-              '<meta name="mobile-web-app-capable" content="yes">\n'
-              '<meta name="apple-mobile-web-app-capable" content="yes">\n'
-              '<meta name="apple-mobile-web-app-title" content="Panel El Cubano">\n'
-              '<link rel="manifest" href="/control-manifest.webmanifest">\n'
-              f'<link rel="apple-touch-icon" href="/pwa-icon-final.svg?v={version}">',
-              1
-          )
           panel = panel.replace('<h1>Control de Inventario</h1>', '<h1>Panel Operativo <span>El Cubano</span></h1>', 1)
-          panel = re.sub(r'\n?<script src="control-fix\.js(?:\?[^\"]*)?"></script>', '', panel)
-          panel = re.sub(r'\n?<script src="control-theme\.js(?:\?[^\"]*)?"></script>', '', panel)
-          panel = re.sub(r'\n?<script src="pwa-init\.js(?:\?[^\"]*)?"></script>', '', panel)
-          panel = re.sub(
-              r'<div class="footer">.*?</div>',
-              '<div class="footer">Panel Operativo El Cubano · v10</div>',
-              panel,
-              count=1
-          )
+          for script_name in ['control-fix.js','control-theme.js','pwa-init.js']:
+              panel = re.sub(rf'\n?<script src="{re.escape(script_name)}(?:\?[^\"]*)?"></script>', '', panel)
+          panel = re.sub(r'<div class="footer">.*?</div>', '<div class="footer">Panel Operativo El Cubano · v10</div>', panel, count=1)
           panel = panel.replace(
               '</body>',
               f'<script src="control-fix.js?v={version}"></script>\n'
               f'<script src="control-theme.js?v={version}"></script>\n'
               f'<script src="pwa-init.js?v={version}"></script>\n'
-              '</body>',
-              1
+              '</body>', 1
           )
           control.write_text(panel, encoding='utf-8')
           PY
