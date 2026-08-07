@@ -97,6 +97,50 @@
   }, true);
 })();
 
+// Marca de agua: un poco más sólida, sin tapar el contenido.
+(() => {
+  function addWatermark() {
+    if (!document.getElementById('el-cubano-watermark-style')) {
+      const style = document.createElement('style');
+      style.id = 'el-cubano-watermark-style';
+      style.textContent = `
+        #el-cubano-watermark{
+          position:fixed;
+          left:50%;
+          top:58%;
+          width:min(620px,92vw);
+          aspect-ratio:1/1;
+          transform:translate(-50%,-50%);
+          background:url('/el-cubano-logo-transparent.png') center/contain no-repeat;
+          opacity:.18;
+          pointer-events:none;
+          z-index:0;
+          filter:saturate(.92) contrast(.98);
+        }
+        .wrap,.sticky,.cart-modal{position:relative;z-index:1}
+        .sticky,.cart-modal{position:fixed}
+        @media(max-width:560px){
+          #el-cubano-watermark{width:96vw;top:59%;opacity:.18}
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    if (!document.getElementById('el-cubano-watermark')) {
+      const watermark = document.createElement('div');
+      watermark.id = 'el-cubano-watermark';
+      watermark.setAttribute('aria-hidden', 'true');
+      document.body.prepend(watermark);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addWatermark, { once:true });
+  } else {
+    addWatermark();
+  }
+})();
+
 // ---------- Español / English ----------
 (() => {
   const STORAGE_KEY = 'el-cubano-language';
