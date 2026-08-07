@@ -56,28 +56,35 @@
 
   if (document.getElementById(buttonId)) return;
 
-  const hero = document.querySelector('.hero');
-  if (!hero) return;
-
   if (!document.getElementById(styleId)) {
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
+      .instant-order-wrap{
+        margin:14px 0 6px;
+        padding:14px;
+        border:1px solid rgba(225,219,207,.92);
+        border-radius:20px;
+        background:rgba(255,255,255,.88);
+        box-shadow:0 8px 22px rgba(24,49,73,.07);
+        text-align:center;
+      }
+      .instant-order-wrap strong{display:block;color:#123458;font-size:16px;margin-bottom:8px}
       .instant-order-button{
         display:flex;
         align-items:center;
         justify-content:center;
         width:100%;
-        margin:10px 0;
         min-height:52px;
         padding:13px 16px;
-        border-radius:13px;
-        background:#25d366;
-        color:#fff;
+        border-radius:15px;
+        background:linear-gradient(135deg,#f2b632,#e8a61e);
+        color:#123458;
         text-decoration:none;
         font-size:17px;
         font-weight:1000;
-        box-shadow:0 6px 14px rgba(37,211,102,.25);
+        border:1px solid rgba(211,154,22,.55);
+        box-shadow:0 7px 16px rgba(198,143,20,.16);
       }
       .instant-order-button:active{transform:translateY(1px)}
     `;
@@ -87,6 +94,10 @@
   const message = 'Hola, vengo desde la app y quiero pedir para ahorita. ¿Qué tienes disponible y en cuánto tiempo me lo puedes entregar?';
   const whatsappUrl = `https://wa.me/12109432119?text=${encodeURIComponent(message)}`;
 
+  const wrap = document.createElement('div');
+  wrap.className = 'instant-order-wrap';
+  wrap.innerHTML = `<strong>¿Lo necesitas para ahorita?</strong>`;
+
   const button = document.createElement('a');
   button.id = buttonId;
   button.className = 'instant-order-button';
@@ -94,6 +105,9 @@
   button.target = '_blank';
   button.rel = 'noopener';
   button.textContent = '⚡ PEDIR PARA AHORITA';
+  wrap.appendChild(button);
 
-  hero.insertAdjacentElement('afterend', button);
+  const checkout = document.getElementById('checkout');
+  if (checkout) checkout.insertAdjacentElement('afterend', wrap);
+  else document.querySelector('main.wrap')?.appendChild(wrap);
 })();
