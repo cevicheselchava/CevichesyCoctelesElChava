@@ -7,6 +7,29 @@
   let timer=null;
   let loading=false;
 
+  // PWA independiente para el panel administrador.
+  const existingManifest=document.querySelector('link[rel="manifest"]');
+  const adminManifest=existingManifest||document.createElement('link');
+  adminManifest.rel='manifest';
+  adminManifest.href='/admin-manifest.webmanifest?v=20260807';
+  if(!existingManifest)document.head.appendChild(adminManifest);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content','#267642');
+  const appleTitle=document.querySelector('meta[name="apple-mobile-web-app-title"]')||document.createElement('meta');
+  appleTitle.name='apple-mobile-web-app-title';
+  appleTitle.content='Panel El Cubano';
+  if(!appleTitle.parentNode)document.head.appendChild(appleTitle);
+
+  // El instalador compartido mostrará un botón, pero aquí lo identificamos como PANEL.
+  const installLabelObserver=new MutationObserver(()=>{
+    document.querySelectorAll('button').forEach(button=>{
+      if(button.textContent.includes('INSTALAR APP')||button.textContent.includes('INSTALL APP')){
+        button.textContent='📲 INSTALAR PANEL';
+        button.setAttribute('aria-label','Instalar Panel Operativo El Cubano');
+      }
+    });
+  });
+  installLabelObserver.observe(document.documentElement,{childList:true,subtree:true});
+
   window.__EL_CHAVA_RECIPES_VERSION__=RECIPES_VERSION;
   if(footer)footer.textContent=`Control administrativo · Inventario agrupado v${RECIPES_VERSION}`;
 
