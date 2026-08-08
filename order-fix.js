@@ -1,56 +1,58 @@
 (()=>{
-  const styleId='mobile-card-controls-fix-v8';
-  if(!document.getElementById(styleId)){
-    const style=document.createElement('style');
-    style.id=styleId;
-    style.textContent=`
-      .hero{background:rgba(255,255,255,.60)!important;border-color:rgba(226,216,199,.72)!important;backdrop-filter:blur(11px)!important;-webkit-backdrop-filter:blur(11px)!important}
-      .main-logo{background:transparent!important;mix-blend-mode:multiply!important;box-shadow:none!important}
-      .cart-top{background:rgba(255,255,255,.58)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important}
-      .benefit{background:rgba(255,255,255,.52)!important;border-color:rgba(225,219,207,.68)!important;box-shadow:0 7px 18px rgba(24,49,73,.045)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important}
-      .notice,.availability-note{background:rgba(255,255,255,.52)!important;border-color:rgba(230,220,203,.68)!important;backdrop-filter:blur(9px)!important;-webkit-backdrop-filter:blur(9px)!important}
-      #customer-category-nav{background:rgba(255,255,255,.48)!important;border-color:rgba(230,220,203,.68)!important;backdrop-filter:blur(11px)!important;-webkit-backdrop-filter:blur(11px)!important}
-      #customer-category-nav button{background:rgba(255,255,255,.52)!important;border-color:rgba(231,223,210,.62)!important;box-shadow:0 5px 13px rgba(24,55,70,.035)!important;backdrop-filter:blur(9px)!important;-webkit-backdrop-filter:blur(9px)!important}
-      #customer-category-nav button:nth-child(1).active{background:linear-gradient(135deg,rgba(200,58,48,.78),rgba(231,94,78,.72))!important}
-      #customer-category-nav button:nth-child(2).active{background:linear-gradient(135deg,rgba(237,176,32,.80),rgba(246,201,68,.72))!important}
-      #customer-category-nav button:nth-child(3).active{background:linear-gradient(135deg,rgba(37,115,68,.78),rgba(61,153,96,.72))!important}
-      #customer-category-nav button:nth-child(4).active{background:linear-gradient(135deg,rgba(200,58,48,.78),rgba(231,94,78,.72))!important}
-      #customer-category-nav button:nth-child(5).active{background:linear-gradient(135deg,rgba(237,176,32,.80),rgba(246,201,68,.72))!important}
-      .product{background:rgba(255,255,255,.54)!important;border-color:rgba(226,218,204,.68)!important;box-shadow:0 7px 18px rgba(24,49,73,.045)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important}
-      .checkout{background:rgba(255,255,255,.56)!important;border-color:rgba(230,220,203,.70)!important;box-shadow:0 8px 24px rgba(25,48,80,.045)!important;backdrop-filter:blur(11px)!important;-webkit-backdrop-filter:blur(11px)!important}
-      input,select,textarea{background:rgba(255,255,255,.66)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
-      .instant-order-button{background:linear-gradient(100deg,rgba(217,70,56,.82),rgba(243,189,47,.78))!important;border:1px solid rgba(255,255,255,.42)!important;box-shadow:0 8px 20px rgba(120,75,20,.11)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
-      .qty button{background:rgba(20,54,91,.80)!important;backdrop-filter:blur(6px)!important}
-      .qty .plus{background:rgba(35,116,67,.80)!important}
+  'use strict';
 
-      @media(max-width:560px){
-        /* Rendimiento móvil: mismo look, sin filtros que obligan a repintar al hacer scroll. */
-        body::before,body::after{position:absolute!important}
-        .hero,.cart-top,.benefit,.notice,.availability-note,#customer-category-nav,#customer-category-nav button,.product,.checkout,input,select,textarea,.instant-order-button,.qty button{
-          backdrop-filter:none!important;
-          -webkit-backdrop-filter:none!important;
-        }
-        .main-logo{mix-blend-mode:normal!important}
-        #el-cubano-watermark{filter:none!important;mix-blend-mode:normal!important}
-        .benefit,.notice,.availability-note,.product,.checkout,#customer-category-nav,#customer-category-nav button{
-          box-shadow:0 3px 8px rgba(24,49,73,.035)!important;
-        }
-        .product{min-width:0;padding:9px;overflow:hidden;contain:layout paint style}
-        .section[data-group],#customer-info-after-menu,.checkout{contain:layout style}
-        .bottom{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;align-items:end!important}
-        .price{font-size:22px!important;min-width:0}
-        .qty{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;width:100%!important;max-width:100%!important;min-height:38px!important;font-size:17px!important}
-        .qty button{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;padding:0!important;margin:0!important;border:0!important;box-sizing:border-box!important;line-height:1!important;text-align:center!important;vertical-align:middle!important;font-family:Arial,sans-serif!important;font-size:24px!important}
-        .qty span{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:26px!important;min-width:26px!important;height:36px!important;margin:0!important;padding:0!important;line-height:1!important;text-align:center!important}
-        .cart-dialog{max-height:92vh!important;padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
-        .cart-actions button{min-height:54px!important;font-size:16px!important}
-      }
-      .cart-modal{z-index:1000!important}
-      .cart-actions{position:relative!important;z-index:3!important;margin-top:12px!important}
-      body.modal-open .sticky{display:none!important}
-    `;
-    document.head.appendChild(style);
-  }
+  // Una sola capa visual ligera: sin blur ni filtros pesados al hacer scroll.
+  const style=document.createElement('style');
+  style.id='customer-light-ui-v9';
+  style.textContent=`
+    .wrap{isolation:isolate!important}
+    .wrap::before{
+      content:""!important;
+      position:fixed!important;
+      inset:12% 0 8%!important;
+      z-index:0!important;
+      pointer-events:none!important;
+      background:url('/el-cubano-logo-transparent.png') center 56%/min(72vw,460px) auto no-repeat!important;
+      opacity:.22!important;
+    }
+    .wrap>*{position:relative!important;z-index:1!important}
+
+    .hero{background:rgba(255,255,255,.58)!important;border-color:rgba(226,216,199,.72)!important}
+    .main-logo{background:transparent!important;box-shadow:none!important}
+    .cart-top{background:rgba(255,255,255,.56)!important}
+    .benefit{background:rgba(255,255,255,.46)!important;border-color:rgba(225,219,207,.68)!important;box-shadow:0 3px 8px rgba(24,49,73,.035)!important}
+    .notice,.availability-note{background:rgba(255,255,255,.46)!important;border-color:rgba(230,220,203,.68)!important}
+    #customer-category-nav{background:rgba(255,255,255,.44)!important;border-color:rgba(230,220,203,.68)!important;box-shadow:0 3px 8px rgba(24,49,73,.035)!important}
+    #customer-category-nav button{background:rgba(255,255,255,.48)!important;border-color:rgba(231,223,210,.62)!important;box-shadow:0 2px 6px rgba(24,55,70,.03)!important}
+    #customer-category-nav button:nth-child(1).active{background:linear-gradient(135deg,rgba(200,58,48,.82),rgba(231,94,78,.78))!important}
+    #customer-category-nav button:nth-child(2).active{background:linear-gradient(135deg,rgba(237,176,32,.84),rgba(246,201,68,.78))!important}
+    #customer-category-nav button:nth-child(3).active{background:linear-gradient(135deg,rgba(37,115,68,.82),rgba(61,153,96,.78))!important}
+    #customer-category-nav button:nth-child(4).active{background:linear-gradient(135deg,rgba(200,58,48,.82),rgba(231,94,78,.78))!important}
+    #customer-category-nav button:nth-child(5).active{background:linear-gradient(135deg,rgba(237,176,32,.84),rgba(246,201,68,.78))!important}
+    .product{background:rgba(255,255,255,.40)!important;border-color:rgba(226,218,204,.68)!important;box-shadow:0 3px 8px rgba(24,49,73,.035)!important}
+    .checkout{background:rgba(255,255,255,.43)!important;border-color:rgba(230,220,203,.70)!important;box-shadow:0 3px 8px rgba(25,48,80,.035)!important}
+    input,select,textarea{background:rgba(255,255,255,.62)!important}
+    .instant-order-button{background:linear-gradient(100deg,rgba(217,70,56,.86),rgba(243,189,47,.82))!important;border:1px solid rgba(255,255,255,.42)!important;box-shadow:0 4px 10px rgba(120,75,20,.08)!important}
+    .qty button{background:rgba(20,54,91,.84)!important}
+    .qty .plus{background:rgba(35,116,67,.84)!important}
+
+    .cart-modal{z-index:1000!important}
+    .cart-actions{position:relative!important;z-index:3!important;margin-top:12px!important}
+    body.modal-open .sticky{display:none!important}
+
+    @media(max-width:560px){
+      body::before,body::after{position:absolute!important}
+      .product{min-width:0;padding:9px;overflow:hidden}
+      .bottom{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;align-items:end!important}
+      .price{font-size:22px!important;min-width:0}
+      .qty{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;width:100%!important;max-width:100%!important;min-height:38px!important;font-size:17px!important}
+      .qty button{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;padding:0!important;margin:0!important;border:0!important;box-sizing:border-box!important;line-height:1!important;text-align:center!important;font-size:24px!important}
+      .qty span{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:26px!important;min-width:26px!important;height:36px!important;margin:0!important;padding:0!important;line-height:1!important;text-align:center!important}
+      .cart-dialog{max-height:92vh!important;padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
+      .cart-actions button{min-height:54px!important;font-size:16px!important}
+    }
+  `;
+  document.head.appendChild(style);
 
   document.querySelectorAll('.qty button').forEach(button=>{
     if(button.textContent.trim()==='-')button.textContent='−';
@@ -130,11 +132,13 @@
     const order={...buildOrder(),id,createdAt:new Date(),createdAtClient:new Date().toISOString()};
     try{
       await saveWithRest(order,id);
-      sessionStorage.removeItem('pendingOrderId');pendingOrderId='';
+      sessionStorage.removeItem('pendingOrderId');
+      pendingOrderId='';
       openWhatsApp(order,id);
     }catch(error){
       console.error('No se pudo sincronizar el pedido con Firestore:',error);
-      sessionStorage.removeItem('pendingOrderId');pendingOrderId='';
+      sessionStorage.removeItem('pendingOrderId');
+      pendingOrderId='';
       openWhatsApp(order,id);
     }finally{
       sendButton.disabled=false;
