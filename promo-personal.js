@@ -102,5 +102,71 @@
     }
   }
 
+  // Horarios en intervalos de 20 minutos. Se vuelve a llenar el selector
+  // al cambiar el día o tocar el campo, para evitar que Android lo deje vacío.
+  function setupDeliveryTimes() {
+    const dateInput = document.getElementById('date');
+    const timeSelect = document.getElementById('time');
+    if (!dateInput || !timeSelect) return;
+
+    const localDateString = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const formatSlot = minutes => {
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      const period = hour >= 12 ? 'p. m.' : 'a. m.';
+      return `${hour % 12 || 12}:${String(minute).padStart(2,'0')} ${period}`;
+    };
+
+    const fill = () => {
+      const selected = dateInput.value;
+      const previous = timeSelect.value;
+      timeSelect.disabled = false;
+      timeSelect.innerHTML = '<option value="">Selecciona un horario</option>';
+      if (!selected) return;
+
+      const now = new Date();
+      const today = localDateString(now);
+      const current = now.getHours() * 60 + now.getMinutes();
+      const minimumToday = Math.ceil((current + 30) / 20) * 20;
+
+      for (let minutes = 660; minutes <= 1140; minutes += 20) {
+        if (selected === today && minutes < minimumToday) continue;
+        const option = document.createElement('option');
+        option.value = formatSlot(minutes);
+        option.textContent = formatSlot(minutes);
+        timeSelect.appendChild(option);
+      }
+
+      if ([...timeSelect.options].some(option => option.value === previous)) {
+        timeSelect.value = previous;
+      }
+    };
+
+    dateInput.addEventListener('change', fill);
+    timeSelect.addEventListener('focus', fill);
+    timeSelect.addEventListener('pointerdown', fill);
+    fill();
+  }
+
+  // En el carrito móvil la barra fija estaba tapando los botones finales.
+  function fixCartButtons() {
+    if (document.getElementById('mobile-cart-actions-fix')) return;
+    const style = document.createElement('style');
+    style.id = 'mobile-cart-actions-fix';
+    style.textContent = `
+      .cart-modal{z-index:1000!important}
+      .cart-dialog{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
+      .cart-actions{position:relative!important;z-index:3!important;margin-top:12px!important}
+      body.modal-open .sticky{display:none!important}
+      @media(max-width:560px){
+        .cart-dialog{max-height:92vh!important}
+        .cart-actions button{min-height:54px!important;font-size:16px!important}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   reorderCustomerLayout();
+  setupDeliveryTimes();
+  fixCartButtons();
 })();
