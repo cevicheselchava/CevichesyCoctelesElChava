@@ -59,4 +59,48 @@
     watermark.setAttribute('aria-hidden', 'true');
     document.body.appendChild(watermark);
   }
+
+  // Orden de compra más directo:
+  // foto/título -> categorías -> productos -> información -> pedido/checkout.
+  function reorderCustomerLayout() {
+    const wrap = document.querySelector('.wrap');
+    const hero = document.querySelector('.hero');
+    const nav = document.getElementById('customer-category-nav');
+    const sections = [...document.querySelectorAll('.section[data-group]')];
+    if (!wrap || !hero || !nav || !sections.length) return;
+
+    hero.insertAdjacentElement('afterend', nav);
+
+    let info = document.getElementById('customer-info-after-menu');
+    if (!info) {
+      info = document.createElement('div');
+      info.id = 'customer-info-after-menu';
+    }
+
+    const benefits = document.querySelector('.benefits');
+    if (benefits) info.appendChild(benefits);
+
+    [...wrap.children].forEach(element => {
+      if (element.classList?.contains('notice') || element.classList?.contains('availability-note')) {
+        info.appendChild(element);
+      }
+    });
+
+    sections[sections.length - 1].insertAdjacentElement('afterend', info);
+
+    if (!document.getElementById('customer-layout-order-style')) {
+      const style = document.createElement('style');
+      style.id = 'customer-layout-order-style';
+      style.textContent = `
+        #customer-category-nav{margin-top:12px!important;margin-bottom:14px!important}
+        #customer-info-after-menu{margin:14px 0 4px}
+        #customer-info-after-menu .benefits{margin:0 0 10px!important}
+        #customer-info-after-menu .notice,
+        #customer-info-after-menu .availability-note{margin:10px 0!important}
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  reorderCustomerLayout();
 })();
