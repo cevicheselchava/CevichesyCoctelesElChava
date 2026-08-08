@@ -102,8 +102,8 @@
     }
   }
 
-  // Horarios en intervalos de 20 minutos. Se vuelve a llenar el selector
-  // al cambiar el día o tocar el campo, para evitar que Android lo deje vacío.
+  // Horarios en intervalos de 20 minutos. En Android otros scripts podían
+  // volver a vaciar el selector después de llenarlo, por eso este corre al final.
   function setupDeliveryTimes() {
     const dateInput = document.getElementById('date');
     const timeSelect = document.getElementById('time');
@@ -142,10 +142,18 @@
       }
     };
 
-    dateInput.addEventListener('change', fill);
-    timeSelect.addEventListener('focus', fill);
+    const fillLast = () => setTimeout(fill, 0);
+    dateInput.addEventListener('change', fillLast);
+    dateInput.addEventListener('input', fillLast);
+
+    timeSelect.addEventListener('touchstart', fill, {passive:true});
     timeSelect.addEventListener('pointerdown', fill);
-    fill();
+    timeSelect.addEventListener('focus', fill);
+    timeSelect.addEventListener('click', fill);
+
+    setTimeout(fill, 100);
+    setTimeout(fill, 500);
+    setTimeout(fill, 1200);
   }
 
   // En el carrito móvil la barra fija estaba tapando los botones finales.
