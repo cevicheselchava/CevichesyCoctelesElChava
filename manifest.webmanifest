@@ -13,13 +13,13 @@
   "categories": ["food", "shopping"],
   "icons": [
     {
-      "src": "/pwa-icon.svg?v=20260806",
+      "src": "/pwa-icon.svg?v=20260808-2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/pwa-icon.svg?v=20260806",
+      "src": "/pwa-icon.svg?v=20260808-2",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
