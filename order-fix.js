@@ -1,15 +1,10 @@
 (()=>{
-  const styleId='mobile-card-controls-fix-v7';
+  const styleId='mobile-card-controls-fix-v8';
   if(!document.getElementById(styleId)){
     const style=document.createElement('style');
     style.id=styleId;
     style.textContent=`
-      .hero{
-        background:rgba(255,255,255,.60)!important;
-        border-color:rgba(226,216,199,.72)!important;
-        backdrop-filter:blur(11px)!important;
-        -webkit-backdrop-filter:blur(11px)!important;
-      }
+      .hero{background:rgba(255,255,255,.60)!important;border-color:rgba(226,216,199,.72)!important;backdrop-filter:blur(11px)!important;-webkit-backdrop-filter:blur(11px)!important}
       .main-logo{background:transparent!important;mix-blend-mode:multiply!important;box-shadow:none!important}
       .cart-top{background:rgba(255,255,255,.58)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important}
       .benefit{background:rgba(255,255,255,.52)!important;border-color:rgba(225,219,207,.68)!important;box-shadow:0 7px 18px rgba(24,49,73,.045)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important}
@@ -27,8 +22,21 @@
       .instant-order-button{background:linear-gradient(100deg,rgba(217,70,56,.82),rgba(243,189,47,.78))!important;border:1px solid rgba(255,255,255,.42)!important;box-shadow:0 8px 20px rgba(120,75,20,.11)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
       .qty button{background:rgba(20,54,91,.80)!important;backdrop-filter:blur(6px)!important}
       .qty .plus{background:rgba(35,116,67,.80)!important}
+
       @media(max-width:560px){
-        .product{min-width:0;padding:9px;overflow:hidden}
+        /* Rendimiento móvil: mismo look, sin filtros que obligan a repintar al hacer scroll. */
+        body::before,body::after{position:absolute!important}
+        .hero,.cart-top,.benefit,.notice,.availability-note,#customer-category-nav,#customer-category-nav button,.product,.checkout,input,select,textarea,.instant-order-button,.qty button{
+          backdrop-filter:none!important;
+          -webkit-backdrop-filter:none!important;
+        }
+        .main-logo{mix-blend-mode:normal!important}
+        #el-cubano-watermark{filter:none!important;mix-blend-mode:normal!important}
+        .benefit,.notice,.availability-note,.product,.checkout,#customer-category-nav,#customer-category-nav button{
+          box-shadow:0 3px 8px rgba(24,49,73,.035)!important;
+        }
+        .product{min-width:0;padding:9px;overflow:hidden;contain:layout paint style}
+        .section[data-group],#customer-info-after-menu,.checkout{contain:layout style}
         .bottom{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:7px!important;align-items:end!important}
         .price{font-size:22px!important;min-width:0}
         .qty{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;width:100%!important;max-width:100%!important;min-height:38px!important;font-size:17px!important}
