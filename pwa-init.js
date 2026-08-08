@@ -1,5 +1,7 @@
 (() => {
-  // Runtime final ligero: instalación, categorías, horarios y traducción.
+  'use strict';
+
+  // ---------- PWA ----------
   let installPrompt = null;
   let installButton = null;
 
@@ -18,7 +20,7 @@
       position: 'fixed', right: '12px', bottom: '102px', zIndex: '9999',
       border: '0', borderRadius: '14px', padding: '13px 16px',
       background: '#267642', color: '#fff', fontSize: '15px', fontWeight: '900',
-      boxShadow: '0 7px 20px rgba(0,0,0,.28)', cursor: 'pointer'
+      boxShadow: '0 7px 20px rgba(0,0,0,.28)'
     });
     installButton.addEventListener('click', async () => {
       if (!installPrompt) return;
@@ -32,24 +34,40 @@
   }
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(console.error));
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+    });
   }
+
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     installPrompt = event;
     showInstallButton();
   });
-  window.addEventListener('appinstalled', () => {
-    installPrompt = null;
-    removeInstallButton();
-  });
+  window.addEventListener('appinstalled', removeInstallButton);
 
-  // Categorías: abrir una; tocar la misma otra vez la cierra.
+  // ---------- LIMPIEZA DE CAPAS VIEJAS ----------
+  function cleanupOldLayers() {
+    document.getElementById('el-cubano-watermark')?.remove();
+    document.getElementById('el-cubano-watermark-stronger')?.remove();
+    document.getElementById('el-cubano-watermark-style')?.remove();
+
+    if (!document.getElementById('single-watermark-strength')) {
+      const style = document.createElement('style');
+      style.id = 'single-watermark-strength';
+      style.textContent = '.wrap::before{opacity:.22!important}';
+      document.head.appendChild(style);
+    }
+  }
+
+  // ---------- CATEGORÍAS: UN SOLO CONTROL ----------
   document.addEventListener('click', event => {
     const button = event.target.closest('#customer-category-nav button[data-group]');
     if (!button) return;
+
     const nav = document.getElementById('customer-category-nav');
-    const section = document.querySelector(`.section[data-group="${button.dataset.group}"]`);
+    const group = button.dataset.group;
+    const section = document.querySelector(`.section[data-group="${group}"]`);
     if (!nav || !section) return;
 
     event.preventDefault();
@@ -70,56 +88,55 @@
     }
   }, true);
 
-  // Horarios: SIEMPRE hay opciones. Si se elige hoy, oculta horas ya pasadas.
-  function setupDeliveryTimes() {
-    const dateInput = document.getElementById('date');
-    const timeSelect = document.getElementById('time');
-    if (!dateInput || !timeSelect) return;
+  // ---------- HORARIOS: SE ELIMINAN LOS LISTENERS VIEJOS Y QUEDA UNO SOLO ----------
+  function setupCleanDeliveryTime() {
+    const oldDate = document.getElementById('date');
+    const oldTime = document.getElementById('time');
+    if (!oldDate || !oldTime) return;
 
-    const localDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-    const label = minutes => {
+    const dateInput = oldDate.cloneNode(true);
+    const timeSelect = oldTime.cloneNode(false);
+    timeSelect.id = 'time';
+    timeSelect.setAttribute('aria-label', 'Hora de entrega');
+
+    oldDate.replaceWith(dateInput);
+    oldTime.replaceWith(timeSelect);
+
+    function formatSlot(minutes) {
       const hour = Math.floor(minutes / 60);
       const minute = minutes % 60;
       const period = hour >= 12 ? 'p. m.' : 'a. m.';
-      return `${hour % 12 || 12}:${String(minute).padStart(2,'0')} ${period}`;
-    };
+      return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${period}`;
+    }
 
     function fillTimes() {
       const previous = timeSelect.value;
-      const selectedDate = dateInput.value;
-      const now = new Date();
-      const isToday = selectedDate && selectedDate === localDate(now);
-      const minimum = Math.ceil((now.getHours() * 60 + now.getMinutes() + 30) / 20) * 20;
-
-      timeSelect.disabled = false;
-      timeSelect.replaceChildren();
-      const first = document.createElement('option');
-      first.value = '';
-      first.textContent = 'Selecciona un horario';
-      timeSelect.appendChild(first);
-
+      timeSelect.innerHTML = '<option value="">Selecciona un horario</option>';
       for (let minutes = 660; minutes <= 1140; minutes += 20) {
-        if (isToday && minutes < minimum) continue;
+        const label = formatSlot(minutes);
         const option = document.createElement('option');
-        option.value = label(minutes);
-        option.textContent = label(minutes);
+        option.value = label;
+        option.textContent = label;
         timeSelect.appendChild(option);
       }
-
-      if ([...timeSelect.options].some(option => option.value === previous)) timeSelect.value = previous;
-      else timeSelect.value = '';
+      if ([...timeSelect.options].some(option => option.value === previous)) {
+        timeSelect.value = previous;
+      }
     }
 
-    dateInput.addEventListener('change', fillTimes);
-    timeSelect.addEventListener('pointerdown', fillTimes);
-    timeSelect.addEventListener('focus', fillTimes);
     fillTimes();
+    timeSelect.addEventListener('pointerdown', fillTimes, { passive: true });
+    timeSelect.addEventListener('focus', fillTimes, { passive: true });
+    dateInput.addEventListener('change', fillTimes);
+
+    // Android a veces abre el selector antes de que otros scripts terminen.
+    setTimeout(fillTimes, 50);
+    setTimeout(fillTimes, 300);
   }
 
-  // ---------- Español / English sin MutationObserver ----------
+  // ---------- ESPAÑOL / ENGLISH SIN OBSERVER ----------
   const STORAGE_KEY = 'el-cubano-language';
   let language = localStorage.getItem(STORAGE_KEY) || 'es';
-  let applying = false;
 
   const exact = new Map([
     ['Ceviches & Cócteles', 'Ceviches & Seafood Cocktails'],
@@ -130,82 +147,83 @@
     ['Programa tu pedido · Delivery gratis en área delimitada', 'Schedule your order · Free delivery within the service area'],
     ['💯 Seguro', '💯 Secure'], ['Sin anticipos', 'No prepayment'],
     ['💵 Paga al recibir', '💵 Pay on delivery'], ['Efectivo o Cash App', 'Cash or Cash App'],
-    ['Área delimitada', 'Service area'],
+    ['🚚 Delivery', '🚚 Delivery'], ['Área delimitada', 'Service area'],
     ['Promociones', 'Promotions'], ['Entrega', 'Same-day'], ['Cócteles', 'Cocktails'],
     ['Sobre pedido', 'Preorder'], ['Refrescos', 'Sodas'],
-    ['PEDIR PARA AHORITA', 'ORDER FOR NOW'],
-    ['Datos de entrega', 'Delivery details'], ['Día de entrega', 'Delivery date'],
-    ['Hora de entrega', 'Delivery time'], ['Selecciona un horario', 'Select a time'],
-    ['Tu carrito', 'Your cart'], ['Seguir comprando', 'Keep shopping'], ['Enviar pedido', 'Send order'],
+    ['PEDIR PARA AHORITA', 'ORDER FOR NOW'], ['Datos de entrega', 'Delivery details'],
+    ['Día de entrega', 'Delivery date'], ['Hora de entrega', 'Delivery time'],
+    ['Selecciona un horario', 'Select a time'], ['Tu carrito', 'Your cart'],
+    ['Seguir comprando', 'Keep shopping'], ['Enviar pedido', 'Send order'],
     ['Agrega productos', 'Add products'], ['Ver carrito y continuar', 'View cart and continue'],
     ['Revisar antes de enviar', 'Review before sending'], ['Precio pendiente', 'Price pending'],
     ['por presentación', 'per serving']
   ]);
 
-  const attrMap = {
-    'Nombre': 'Name', 'Teléfono': 'Phone', 'Dirección de entrega': 'Delivery address',
-    'Notas del pedido': 'Order notes', 'Día de entrega': 'Delivery date', 'Hora de entrega': 'Delivery time',
-    'Ir al carrito': 'Go to cart', 'Cerrar carrito': 'Close cart'
-  };
+  const attrMap = new Map([
+    ['Nombre', 'Name'], ['Teléfono', 'Phone'], ['Dirección de entrega', 'Delivery address'],
+    ['Notas del pedido', 'Order notes'], ['Día de entrega', 'Delivery date'],
+    ['Hora de entrega', 'Delivery time'], ['Ir al carrito', 'Go to cart'], ['Cerrar carrito', 'Close cart']
+  ]);
 
-  function translateString(original) {
-    const trimmed = original.trim();
-    if (!trimmed) return original;
-    if (exact.has(trimmed)) return original.replace(trimmed, exact.get(trimmed));
-    let out = original;
-    [
-      [/Elige tu refresco en notas/gi, 'Choose your soda in notes'],
-      [/cócteles chicos/gi, 'small seafood cocktails'], [/cóctel chico/gi, 'small seafood cocktail'],
-      [/ceviche de pescado/gi, 'fish ceviche'], [/ceviche de camarón/gi, 'shrimp ceviche'],
-      [/ceviche mixto/gi, 'mixed ceviche'], [/pulpo y pescado/gi, 'octopus & fish'],
-      [/pulpo y camarón/gi, 'octopus & shrimp'], [/Ahorras\s*\$([0-9.]+)/gi, 'Save $$$1'],
-      [/refrescos/gi, 'sodas'], [/refresco/gi, 'soda'], [/camarón/gi, 'shrimp'],
-      [/pescado/gi, 'fish'], [/pulpo/gi, 'octopus'], [/mixto/gi, 'mixed'],
-      [/½ libra/gi, '½ lb'], [/1 libra/gi, '1 lb']
-    ].forEach(([pattern, replacement]) => { out = out.replace(pattern, replacement); });
-    return out;
+  function translateString(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return text;
+    if (exact.has(trimmed)) return text.replace(trimmed, exact.get(trimmed));
+    return text
+      .replace(/Ahorras\s*\$([0-9.]+)/gi, 'Save $$$1')
+      .replace(/ceviche de pescado/gi, 'fish ceviche')
+      .replace(/ceviche de camarón/gi, 'shrimp ceviche')
+      .replace(/ceviche mixto/gi, 'mixed ceviche')
+      .replace(/pulpo y pescado/gi, 'octopus & fish')
+      .replace(/pulpo y camarón/gi, 'octopus & shrimp')
+      .replace(/cóctel chico/gi, 'small seafood cocktail')
+      .replace(/cócteles chicos/gi, 'small seafood cocktails')
+      .replace(/refresco/gi, 'soda')
+      .replace(/½ libra/gi, '½ lb')
+      .replace(/1 libra/gi, '1 lb');
   }
 
-  function translateNode(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
+  function translateElement(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      if (node.parentElement?.closest('script,style,#language-switch')) return;
       if (node.__esText === undefined) node.__esText = node.nodeValue;
       node.nodeValue = language === 'en' ? translateString(node.__esText) : node.__esText;
-      return;
-    }
-    if (node.nodeType !== Node.ELEMENT_NODE || node.id === 'language-switch' || node.matches('script,style')) return;
-    ['placeholder','aria-label','title'].forEach(attr => {
-      if (!node.hasAttribute(attr)) return;
-      const key = '__es_' + attr.replace('-', '_');
-      if (node[key] === undefined) node[key] = node.getAttribute(attr);
-      node.setAttribute(attr, language === 'en' ? (attrMap[node[key]] || translateString(node[key])) : node[key]);
     });
-    if (node.tagName === 'OPTION') {
-      if (node.__esOption === undefined) node.__esOption = node.textContent;
-      node.textContent = language === 'en' ? translateString(node.__esOption) : node.__esOption;
-      return;
-    }
-    [...node.childNodes].forEach(translateNode);
+
+    root.querySelectorAll('[placeholder],[aria-label],[title]').forEach(node => {
+      ['placeholder', 'aria-label', 'title'].forEach(attr => {
+        if (!node.hasAttribute(attr)) return;
+        const key = '__es_' + attr.replace('-', '_');
+        if (node[key] === undefined) node[key] = node.getAttribute(attr);
+        node.setAttribute(attr, language === 'en' ? (attrMap.get(node[key]) || translateString(node[key])) : node[key]);
+      });
+    });
   }
 
   function applyLanguage() {
-    if (applying) return;
-    applying = true;
-    document.documentElement.lang = language;
-    document.querySelectorAll('.wrap,#cartModal,.sticky').forEach(translateNode);
-    document.querySelectorAll('#language-switch button').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
+    document.documentElement.lang = language === 'en' ? 'en' : 'es';
+    translateElement(document.body);
+    document.querySelectorAll('#language-switch button').forEach(button => {
+      button.classList.toggle('active', button.dataset.lang === language);
+    });
     if (installButton) installButton.textContent = language === 'en' ? '📲 INSTALL APP' : '📲 INSTALAR APP';
-    applying = false;
   }
 
-  function buildSwitch() {
+  function buildLanguageSwitch() {
     if (document.getElementById('language-switch')) return;
     const style = document.createElement('style');
-    style.textContent = `#language-switch{display:flex;align-items:center;gap:6px;margin:3px 2px 10px;position:relative;z-index:5}#language-switch button{border:0;background:transparent;color:#14365b;font-weight:900;font-size:15px;padding:7px 9px;border-radius:12px}#language-switch button.active{background:rgba(255,255,255,.82);box-shadow:0 4px 12px rgba(20,54,91,.10);outline:1px solid rgba(230,218,195,.9)}#language-switch .divider{font-weight:900;color:#9a8d78}`;
+    style.textContent = '#language-switch{display:flex;align-items:center;gap:6px;margin:3px 2px 10px;position:relative;z-index:5}#language-switch button{border:0;background:transparent;color:#14365b;font-weight:900;font-size:15px;padding:7px 9px;border-radius:12px}#language-switch button.active{background:rgba(255,255,255,.82);box-shadow:0 4px 12px rgba(20,54,91,.10);outline:1px solid rgba(230,218,195,.9)}#language-switch .divider{font-weight:900;color:#9a8d78}';
     document.head.appendChild(style);
+
     const switcher = document.createElement('div');
     switcher.id = 'language-switch';
     switcher.innerHTML = '<button type="button" data-lang="es">🇲🇽 ES</button><span class="divider">|</span><button type="button" data-lang="en">🇺🇸 EN</button>';
-    document.querySelector('.wrap')?.prepend(switcher);
+    const wrap = document.querySelector('.wrap');
+    if (wrap) wrap.insertBefore(switcher, wrap.firstChild);
+
     switcher.addEventListener('click', event => {
       const button = event.target.closest('button[data-lang]');
       if (!button) return;
@@ -215,27 +233,16 @@
     });
   }
 
-  function hookDynamicContent() {
-    if (typeof window.changeQty === 'function' && !window.changeQty.__languageHooked) {
-      const original = window.changeQty;
-      const wrapped = function(...args) {
-        const result = original.apply(this, args);
-        requestAnimationFrame(applyLanguage);
-        return result;
-      };
-      wrapped.__languageHooked = true;
-      window.changeQty = wrapped;
-    }
-    ['cartTop','send'].forEach(id => document.getElementById(id)?.addEventListener('click', () => setTimeout(applyLanguage, 0)));
-  }
-
   function init() {
-    setupDeliveryTimes();
-    buildSwitch();
-    hookDynamicContent();
+    cleanupOldLayers();
+    setupCleanDeliveryTime();
+    buildLanguageSwitch();
     applyLanguage();
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, {once:true});
-  else init();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();
