@@ -1,0 +1,29 @@
+{
+  "id": "/panel-operativo-el-cubano",
+  "name": "Panel Operativo El Cubano",
+  "short_name": "Panel El Cubano",
+  "description": "Panel administrativo de pedidos, inventario, compras e historial de El Cubano.",
+  "lang": "es",
+  "start_url": "/control.html?utm_source=admin_pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fff9ed",
+  "theme_color": "#1f6f3b",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg?v=20260807",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.svg?v=20260807",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}
