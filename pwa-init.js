@@ -129,7 +129,6 @@
     timeSelect.addEventListener('focus', fillTimes, { passive: true });
     dateInput.addEventListener('change', fillTimes);
 
-    // Android a veces abre el selector antes de que otros scripts terminen.
     setTimeout(fillTimes, 50);
     setTimeout(fillTimes, 300);
   }
@@ -233,10 +232,121 @@
     });
   }
 
+  // ---------- PANEL: CORREGIR / BORRAR COMPRAS ----------
+  function setupPurchaseCorrections() {
+    const history = document.getElementById('historyList');
+    if (!history || window.__elCubanoPurchaseCorrections) return;
+    if (typeof window.renderHistory !== 'function' || typeof db === 'undefined' || typeof inventoryRef === 'undefined' || typeof ITEMS === 'undefined') return;
+    window.__elCubanoPurchaseCorrections = true;
+
+    const style = document.createElement('style');
+    style.id = 'purchase-correction-style';
+    style.textContent = '.purchase-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}.purchase-actions button{border:0;border-radius:11px;padding:10px;font-weight:900}.purchase-edit{background:#fff3cf;color:#7d5600}.purchase-delete{background:#ffe5e6;color:#a30f16}';
+    document.head.appendChild(style);
+
+    function purchaseKey(movement) {
+      if (movement.itemKey && ITEMS[movement.itemKey]) return movement.itemKey;
+      return Object.keys(ITEMS).find(key => ITEMS[key]?.name === movement.name) || '';
+    }
+
+    function internalAmount(movement, key) {
+      if (Number.isFinite(Number(movement.internalQty))) return Number(movement.internalQty);
+      return round(Number(movement.qty || 0) * Number(ITEMS[key]?.factor || 1));
+    }
+
+    window.renderHistory = function () {
+      if (!movements.length) {
+        historyList.innerHTML = '<div class="empty">Todavía no hay movimientos.</div>';
+        return;
+      }
+      historyList.innerHTML = movements.map(m => {
+        const d = timestampDate(m.date);
+        const label = d ? d.toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : '';
+        if (m.type === 'sale') {
+          return `<div class="movement"><div><strong>Venta entregada · ${m.name || 'Pedido'}</strong><small>${label}<br>Costo ${money(m.cost)} · Utilidad ${money(m.profit)}</small></div><div class="money">${money(m.total)}</div></div>`;
+        }
+        return `<div class="movement"><div><strong>Compra · ${m.name}</strong><small>${m.qty} ${m.unit} · ${m.store} · ${label}</small></div><div class="money">-${money(m.cost)}</div><div class="purchase-actions"><button type="button" class="purchase-edit" onclick="editPurchase('${m.id}')">Editar compra</button><button type="button" class="purchase-delete" onclick="deletePurchase('${m.id}')">Borrar compra</button></div></div>`;
+      }).join('');
+    };
+
+    window.editPurchase = async function (id) {
+      const movement = movements.find(item => item.id === id && item.type === 'purchase');
+      if (!movement) return;
+      const key = purchaseKey(movement);
+      if (!key) return alert('No pude identificar el producto de esta compra.');
+
+      const qtyText = prompt(`Cantidad (${movement.unit})`, String(movement.qty ?? ''));
+      if (qtyText === null) return;
+      const costText = prompt('Costo total', String(movement.cost ?? 0));
+      if (costText === null) return;
+      const storeText = prompt('Tienda', String(movement.store || ''));
+      if (storeText === null) return;
+
+      const newQty = Number(qtyText);
+      const newCost = Number(costText);
+      const newStore = storeText.trim() || 'Sin tienda';
+      if (!Number.isFinite(newQty) || newQty <= 0) return alert('La cantidad no es válida.');
+      if (!Number.isFinite(newCost) || newCost < 0) return alert('El costo no es válido.');
+
+      const oldInternal = internalAmount(movement, key);
+      const newInternal = round(newQty * Number(ITEMS[key]?.factor || 1));
+      try {
+        await db.runTransaction(async tx => {
+          const invSnap = await tx.get(inventoryRef);
+          const current = { ...EMPTY, ...(invSnap.exists ? (invSnap.data().items || {}) : {}) };
+          const adjusted = round(Number(current[key] || 0) - oldInternal + newInternal);
+          if (adjusted < 0) throw new Error('No se puede reducir esa compra porque parte de ese inventario ya fue usado.');
+          current[key] = adjusted;
+          tx.set(inventoryRef, { items: current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          tx.update(db.collection('movimientos').doc(id), {
+            qty: newQty,
+            cost: newCost,
+            store: newStore,
+            itemKey: key,
+            internalQty: newInternal,
+            editedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        });
+        toast('Compra corregida e inventario ajustado');
+      } catch (error) {
+        alert(error.message || 'No se pudo corregir la compra.');
+        if (typeof showError === 'function') showError(error);
+      }
+    };
+
+    window.deletePurchase = async function (id) {
+      const movement = movements.find(item => item.id === id && item.type === 'purchase');
+      if (!movement) return;
+      if (!confirm(`¿Borrar esta compra de ${movement.name}? El inventario se ajustará automáticamente.`)) return;
+      const key = purchaseKey(movement);
+      if (!key) return alert('No pude identificar el producto de esta compra.');
+      const oldInternal = internalAmount(movement, key);
+
+      try {
+        await db.runTransaction(async tx => {
+          const invSnap = await tx.get(inventoryRef);
+          const current = { ...EMPTY, ...(invSnap.exists ? (invSnap.data().items || {}) : {}) };
+          const adjusted = round(Number(current[key] || 0) - oldInternal);
+          if (adjusted < 0) throw new Error('No se puede borrar porque parte de ese inventario ya fue usado.');
+          current[key] = adjusted;
+          tx.set(inventoryRef, { items: current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          tx.delete(db.collection('movimientos').doc(id));
+        });
+        toast('Compra borrada e inventario corregido');
+      } catch (error) {
+        alert(error.message || 'No se pudo borrar la compra.');
+        if (typeof showError === 'function') showError(error);
+      }
+    };
+
+    window.renderHistory();
+  }
+
   function init() {
     cleanupOldLayers();
     setupCleanDeliveryTime();
     buildLanguageSwitch();
+    setupPurchaseCorrections();
     applyLanguage();
   }
 
