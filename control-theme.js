@@ -1,5 +1,5 @@
 (()=>{
-  const VERSION='10';
+  const VERSION='11';
   const LOGO='/pwa-icon.svg?v=20260806';
   const NAV_ICONS={orders:'🧾',inventory:'📦',purchases:'🛒',history:'🕒',recipes:'👨‍🍳'};
   const INGREDIENT_ICONS={
@@ -52,6 +52,7 @@
     .recipe-group h3,.group-title{background:linear-gradient(90deg,#edf7ef,#f8fbf8)!important;border-left:5px solid var(--yellow);border-radius:12px!important;color:var(--navy)!important}.recipe-row{position:relative;padding-left:58px!important;border-radius:15px!important;border:1px solid #e5ded2!important;box-shadow:0 4px 12px rgba(25,48,80,.05)}.ingredient-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#fff3d6;font-size:21px}.recipe-buy{padding:7px 10px;border-radius:12px;background:#fff0ed;color:var(--red)!important}.recipe-buy.enough{background:#effaef;color:var(--green)!important}
     .inv,.movement{border-radius:15px;border-color:#e5ded2;box-shadow:0 4px 12px rgba(25,48,80,.045)}
     .footer{background:linear-gradient(90deg,#173b2a,var(--green));border-top:4px solid var(--yellow);font-size:13px;text-align:center}
+    .purchase-mode-help{grid-column:1/-1;margin:-2px 0 2px;padding:9px 11px;border-radius:11px;background:#f6f7f4;color:#66758a;font-size:12px;font-weight:800;line-height:1.35}
     @media(min-width:760px){.hero>div{max-width:none}.nav button{font-size:13px}.nav-icon{font-size:25px}.order-counters{grid-template-columns:repeat(3,180px)}}
     @media(max-width:560px){.wrap{padding:10px}.hero{min-height:126px;padding:13px}.hero img{width:92px;height:92px}.hero h1{font-size:22px}.hero h1 span{font-size:29px}.hero p{font-size:13px}.hero>div{max-width:63%}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{min-height:108px;padding-left:52px}.nav button{font-size:10px}.nav-icon{font-size:19px}.card{padding:12px}.card h2{font-size:21px}.order-counters{grid-template-columns:repeat(3,1fr)}.order-counter{font-size:11px;padding:8px 4px}.recipe-row{padding-left:54px!important}}
   `;
@@ -86,6 +87,92 @@
       icon.textContent=INGREDIENT_ICONS[name]||'✓';
       row.prepend(icon);
     });
+  }
+
+  function simplifyPurchaseModal(){
+    const modal=document.getElementById('recipePurchaseModal');
+    const grid=modal?.querySelector('.purchase-grid');
+    if(!modal||!grid)return;
+
+    const content=document.getElementById('purchasePackContent');
+    const unit=document.getElementById('purchasePackUnit');
+    const price=document.getElementById('purchasePackPrice');
+    const count=document.getElementById('purchasePackCount');
+    if(!content||!unit||!price||!count)return;
+
+    const contentLabel=content.closest('label');
+    const unitLabel=unit.closest('label');
+    const priceLabel=price.closest('label');
+    const countLabel=count.closest('label');
+
+    let mode=document.getElementById('purchaseBuyMode');
+    if(!mode){
+      const modeLabel=document.createElement('label');
+      modeLabel.className='full';
+      modeLabel.innerHTML='¿Cómo lo estás comprando?<select id="purchaseBuyMode"><option value="weight">⚖️ Por peso</option><option value="package">📦 En bolsa / paquete</option></select>';
+      grid.insertBefore(modeLabel,contentLabel);
+      const help=document.createElement('div');
+      help.id='purchaseModeHelp';
+      help.className='purchase-mode-help';
+      modeLabel.insertAdjacentElement('afterend',help);
+      mode=document.getElementById('purchaseBuyMode');
+      mode.addEventListener('change',()=>applyPurchaseMode(true));
+
+      const forceOne=()=>{
+        if(mode.value!=='weight')return;
+        if(count.value!=='1')count.value='1';
+        count.dispatchEvent(new Event('input',{bubbles:true}));
+        setTimeout(cleanWeightCalc,0);
+      };
+      content.addEventListener('input',()=>setTimeout(forceOne,0));
+      unit.addEventListener('change',()=>setTimeout(forceOne,0));
+      price.addEventListener('input',()=>setTimeout(cleanWeightCalc,0));
+      count.addEventListener('input',()=>setTimeout(cleanWeightCalc,0));
+    }
+
+    function setLabel(label,text){
+      if(!label)return;
+      const node=[...label.childNodes].find(n=>n.nodeType===Node.TEXT_NODE);
+      if(node)node.nodeValue=text;
+    }
+
+    function cleanWeightCalc(){
+      if(mode.value!=='weight')return;
+      const calc=document.getElementById('purchaseCalc');
+      if(!calc)return;
+      calc.innerHTML=calc.innerHTML.replace(/Comprarás <b>1<\/b> paquete = <b>([^<]+)<\/b><br>/,'Comprarás <b>$1</b><br>');
+    }
+
+    function applyPurchaseMode(resetCount){
+      const help=document.getElementById('purchaseModeHelp');
+      if(mode.value==='weight'){
+        setLabel(contentLabel,'Peso REAL que vas a comprar');
+        setLabel(unitLabel,'Unidad del peso');
+        setLabel(priceLabel,'Costo TOTAL de ese peso');
+        countLabel.style.display='none';
+        if(resetCount||count.value!=='1')count.value='1';
+        if(help)help.textContent='Ejemplo: cebolla a granel → pesa 0.8 lb y pagaste $0.95. Aquí pones 0.8 lb y $0.95.';
+        count.dispatchEvent(new Event('input',{bubbles:true}));
+        setTimeout(cleanWeightCalc,0);
+      }else{
+        setLabel(contentLabel,'¿Cuánto trae UNA bolsa / paquete?');
+        setLabel(unitLabel,'Ese contenido está en');
+        setLabel(priceLabel,'Precio de UNA bolsa / paquete');
+        setLabel(countLabel,'¿Cuántas bolsas / paquetes compras?');
+        countLabel.style.display='flex';
+        if(help)help.textContent='Ejemplo: camarón → cada bolsa trae 12 oz, cuesta $6.76 y compras 4 bolsas.';
+      }
+    }
+
+    const title=(document.getElementById('purchaseModalTitle')?.textContent||'').replace('Editar · ','').trim();
+    if(!modal.hidden&&modal.dataset.modeTitle!==title){
+      modal.dataset.modeTitle=title;
+      const loose=new Set(['Tomate','Pepino','Cebolla morada']);
+      mode.value=loose.has(title)?'weight':'package';
+      applyPurchaseMode(true);
+    }else{
+      applyPurchaseMode(false);
+    }
   }
 
   function ensureOrderTools(){
@@ -152,6 +239,7 @@
     brandHeader();
     decorateNav();
     decorateIngredients();
+    simplifyPurchaseModal();
     ensureOrderTools();
     decorateOrders();
     tidyStatus();
