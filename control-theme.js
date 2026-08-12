@@ -1,7 +1,7 @@
 (()=>{
-  const VERSION='12';
+  const VERSION='13';
   const LOGO='/pwa-icon.svg?v=20260806';
-  const NAV_ICONS={orders:'🧾',inventory:'📦',purchases:'🛒',history:'🕒',recipes:'👨‍🍳'};
+  const NAV_ICONS={orders:'🧾',inventory:'📦',history:'🕒',recipes:'👨‍🍳'};
   const INGREDIENT_ICONS={
     'Filete de pescado':'🐟','Camarón':'🍤','Tentáculo de pulpo':'🐙','Tomate':'🍅','Pepino':'🥒',
     'Cebolla morada':'🧅','Cilantro':'🌿','Jugo de limón':'🍋','Clamato':'🥤',
@@ -35,7 +35,7 @@
     .stat:nth-child(3){background:linear-gradient(145deg,#f2f7ff,#fff);border-color:#d2dfef}.stat:nth-child(3):before{content:'📋';background:var(--navy)}
     .stat:nth-child(4){background:linear-gradient(145deg,#fff2ef,#fff);border-color:#f0cbc6}.stat:nth-child(4):before{content:'⚠️';background:var(--red)}
     .stat small{font-size:13px;line-height:1.25}.stat b{font-size:25px;margin-top:7px}
-    .nav,.nav.recipe-nav{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:12px 0 14px;padding:8px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:20px;box-shadow:0 9px 24px rgba(24,55,70,.1);top:max(0px,env(safe-area-inset-top))}
+    .nav,.nav.recipe-nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:12px 0 14px;padding:8px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:20px;box-shadow:0 9px 24px rgba(24,55,70,.1);top:max(0px,env(safe-area-inset-top))}
     .nav button{min-width:0;min-height:64px;padding:7px 2px;border-radius:14px;background:#f4f6f4;color:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;line-height:1.1}
     .nav button.active{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;box-shadow:inset 0 -4px 0 var(--yellow),0 5px 12px rgba(38,118,66,.24)}
     .nav-icon{font-size:22px;line-height:1}.nav-label{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -325,6 +325,7 @@
   function finish(){
     scheduled=false;
     if(observer)observer.disconnect();
+    document.querySelector('.nav button[data-tab="purchases"]')?.remove();
     brandHeader();
     decorateNav();
     decorateIngredients();
