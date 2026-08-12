@@ -1,5 +1,5 @@
 (()=>{
-  const VERSION='11';
+  const VERSION='12';
   const LOGO='/pwa-icon.svg?v=20260806';
   const NAV_ICONS={orders:'🧾',inventory:'📦',purchases:'🛒',history:'🕒',recipes:'👨‍🍳'};
   const INGREDIENT_ICONS={
@@ -52,9 +52,9 @@
     .recipe-group h3,.group-title{background:linear-gradient(90deg,#edf7ef,#f8fbf8)!important;border-left:5px solid var(--yellow);border-radius:12px!important;color:var(--navy)!important}.recipe-row{position:relative;padding-left:58px!important;border-radius:15px!important;border:1px solid #e5ded2!important;box-shadow:0 4px 12px rgba(25,48,80,.05)}.ingredient-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#fff3d6;font-size:21px}.recipe-buy{padding:7px 10px;border-radius:12px;background:#fff0ed;color:var(--red)!important}.recipe-buy.enough{background:#effaef;color:var(--green)!important}
     .inv,.movement{border-radius:15px;border-color:#e5ded2;box-shadow:0 4px 12px rgba(25,48,80,.045)}
     .footer{background:linear-gradient(90deg,#173b2a,var(--green));border-top:4px solid var(--yellow);font-size:13px;text-align:center}
-    .purchase-mode-help{grid-column:1/-1;margin:-2px 0 2px;padding:9px 11px;border-radius:11px;background:#f6f7f4;color:#66758a;font-size:12px;font-weight:800;line-height:1.35}
+    .simple-purchase-form{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:8px}.simple-purchase-form .full{grid-column:1/-1}.simple-purchase-form label{font-size:14px}.simple-purchase-form input,.simple-purchase-form select{padding:12px}.simple-store-other[hidden],.simple-package-fields[hidden]{display:none!important}.simple-package-fields{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:10px;border-radius:13px;background:#f6f7f4;border:1px solid #e4e1d8}.simple-buy-note{grid-column:1/-1;margin:0;padding:9px 11px;border-radius:11px;background:#eff8ef;color:#17304f;font-size:13px;font-weight:900;line-height:1.4}
     @media(min-width:760px){.hero>div{max-width:none}.nav button{font-size:13px}.nav-icon{font-size:25px}.order-counters{grid-template-columns:repeat(3,180px)}}
-    @media(max-width:560px){.wrap{padding:10px}.hero{min-height:126px;padding:13px}.hero img{width:92px;height:92px}.hero h1{font-size:22px}.hero h1 span{font-size:29px}.hero p{font-size:13px}.hero>div{max-width:63%}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{min-height:108px;padding-left:52px}.nav button{font-size:10px}.nav-icon{font-size:19px}.card{padding:12px}.card h2{font-size:21px}.order-counters{grid-template-columns:repeat(3,1fr)}.order-counter{font-size:11px;padding:8px 4px}.recipe-row{padding-left:54px!important}}
+    @media(max-width:560px){.wrap{padding:10px}.hero{min-height:126px;padding:13px}.hero img{width:92px;height:92px}.hero h1{font-size:22px}.hero h1 span{font-size:29px}.hero p{font-size:13px}.hero>div{max-width:63%}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{min-height:108px;padding-left:52px}.nav button{font-size:10px}.nav-icon{font-size:19px}.card{padding:12px}.card h2{font-size:21px}.order-counters{grid-template-columns:repeat(3,1fr)}.order-counter{font-size:11px;padding:8px 4px}.recipe-row{padding-left:54px!important}.simple-purchase-form{grid-template-columns:1fr}.simple-purchase-form .full{grid-column:1}.simple-package-fields{grid-column:1;grid-template-columns:1fr}}
   `;
   document.head.appendChild(style);
 
@@ -89,90 +89,179 @@
     });
   }
 
+  let lastPurchaseTitle='';
+
+  function itemByTitle(title){
+    if(typeof ITEMS==='undefined')return null;
+    return Object.entries(ITEMS).find(([,item])=>item?.name===title)?.[1]||null;
+  }
+
+  function niceUnit(unit,singular=false){
+    const map={lb:'lb',oz:'oz',pzas:singular?'pieza':'piezas',latas:singular?'lata':'latas',sobres:singular?'sobre':'sobres',manojo:singular?'manojo':'manojos','fl oz':'fl oz'};
+    return map[unit]||unit||'unidad';
+  }
+
+  function directChoices(item){
+    const base=item?.purchaseUnit||item?.unit||'pzas';
+    if(base==='lb')return [{v:'lb',t:'lb'},{v:'oz',t:'oz'},{v:'package',t:'paquete'}];
+    return [{v:base,t:niceUnit(base,true)},{v:'package',t:'paquete'}];
+  }
+
+  function contentChoices(item){
+    const base=item?.purchaseUnit||item?.unit||'pzas';
+    if(base==='lb')return [{v:'oz',t:'oz'},{v:'lb',t:'lb'}];
+    return [{v:base,t:niceUnit(base,false)}];
+  }
+
   function simplifyPurchaseModal(){
     const modal=document.getElementById('recipePurchaseModal');
-    const grid=modal?.querySelector('.purchase-grid');
-    if(!modal||!grid)return;
+    const oldGrid=modal?.querySelector('.purchase-grid');
+    const oldStore=document.getElementById('purchaseModalStore');
+    const oldContent=document.getElementById('purchasePackContent');
+    const oldUnit=document.getElementById('purchasePackUnit');
+    const oldPrice=document.getElementById('purchasePackPrice');
+    const oldCount=document.getElementById('purchasePackCount');
+    if(!modal||!oldGrid||!oldStore||!oldContent||!oldUnit||!oldPrice||!oldCount)return;
 
-    const content=document.getElementById('purchasePackContent');
-    const unit=document.getElementById('purchasePackUnit');
-    const price=document.getElementById('purchasePackPrice');
-    const count=document.getElementById('purchasePackCount');
-    if(!content||!unit||!price||!count)return;
+    let form=document.getElementById('simplePurchaseForm');
+    if(!form){
+      oldGrid.style.display='none';
+      form=document.createElement('div');
+      form.id='simplePurchaseForm';
+      form.className='simple-purchase-form';
+      form.innerHTML=`
+        <label class="full">Tienda
+          <select id="simpleStore"><option value="Walmart">Walmart</option><option value="H-E-B">H-E-B</option><option value="Sam's">Sam's</option><option value="Costco">Costco</option><option value="Otra">Otra</option></select>
+        </label>
+        <label class="full simple-store-other" id="simpleOtherStoreWrap" hidden>Otra tienda<input id="simpleOtherStore" placeholder="Nombre de la tienda"></label>
+        <label>Cantidad<input id="simpleQty" type="number" min="0.01" step="0.01"></label>
+        <label>Unidad<select id="simpleUnit"></select></label>
+        <div class="simple-package-fields" id="simplePackageFields" hidden>
+          <label>Cada paquete trae<input id="simplePackageContent" type="number" min="0.01" step="0.01"></label>
+          <label>Contenido en<select id="simplePackageUnit"></select></label>
+        </div>
+        <label class="full">Total pagado<input id="simpleTotal" type="number" min="0" step="0.01" placeholder="$0.00"></label>
+        <div class="simple-buy-note" id="simpleBuyNote"></div>`;
+      oldGrid.before(form);
 
-    const contentLabel=content.closest('label');
-    const unitLabel=unit.closest('label');
-    const priceLabel=price.closest('label');
-    const countLabel=count.closest('label');
+      const store=form.querySelector('#simpleStore');
+      const other=form.querySelector('#simpleOtherStore');
+      const qty=form.querySelector('#simpleQty');
+      const unit=form.querySelector('#simpleUnit');
+      const packContent=form.querySelector('#simplePackageContent');
+      const packUnit=form.querySelector('#simplePackageUnit');
+      const total=form.querySelector('#simpleTotal');
 
-    let mode=document.getElementById('purchaseBuyMode');
-    if(!mode){
-      const modeLabel=document.createElement('label');
-      modeLabel.className='full';
-      modeLabel.innerHTML='¿Cómo lo estás comprando?<select id="purchaseBuyMode"><option value="weight">⚖️ Por peso</option><option value="package">📦 En bolsa / paquete</option></select>';
-      grid.insertBefore(modeLabel,contentLabel);
-      const help=document.createElement('div');
-      help.id='purchaseModeHelp';
-      help.className='purchase-mode-help';
-      modeLabel.insertAdjacentElement('afterend',help);
-      mode=document.getElementById('purchaseBuyMode');
-      mode.addEventListener('change',()=>applyPurchaseMode(true));
+      const sync=()=>{
+        const title=(document.getElementById('purchaseModalTitle')?.textContent||'').replace('Editar · ','').trim();
+        const item=itemByTitle(title);
+        if(!item)return;
+        const isPackage=unit.value==='package';
+        const quantity=Math.max(0,Number(qty.value||0));
+        const paid=Math.max(0,Number(total.value||0));
+        const selectedStore=store.value==='Otra'?(other.value.trim()||'Otra'):store.value;
+        oldStore.value=selectedStore;
 
-      const forceOne=()=>{
-        if(mode.value!=='weight')return;
-        if(count.value!=='1')count.value='1';
-        count.dispatchEvent(new Event('input',{bubbles:true}));
-        setTimeout(cleanWeightCalc,0);
+        if(isPackage){
+          const packages=Math.max(1,Math.round(quantity||1));
+          const each=Math.max(0,Number(packContent.value||0));
+          oldCount.value=String(packages);
+          oldContent.value=String(each);
+          if([...oldUnit.options].some(option=>option.value===packUnit.value))oldUnit.value=packUnit.value;
+          oldPrice.value=String(packages?paid/packages:paid);
+        }else{
+          oldCount.value='1';
+          oldContent.value=String(quantity);
+          if([...oldUnit.options].some(option=>option.value===unit.value))oldUnit.value=unit.value;
+          oldPrice.value=String(paid);
+        }
+
+        [oldContent,oldUnit,oldPrice,oldCount].forEach(control=>control.dispatchEvent(new Event('input',{bubbles:true})));
+        oldUnit.dispatchEvent(new Event('change',{bubbles:true}));
+
+        const base=item.purchaseUnit||item.unit||'';
+        let amount=0;
+        if(isPackage){
+          const packages=Math.max(1,Math.round(quantity||1));
+          const each=Math.max(0,Number(packContent.value||0));
+          amount=base==='lb'&&packUnit.value==='oz'?packages*each/16:packages*each;
+        }else{
+          amount=base==='lb'&&unit.value==='oz'?quantity/16:quantity;
+        }
+        amount=Math.round((amount+Number.EPSILON)*1000)/1000;
+        const note=form.querySelector('#simpleBuyNote');
+        if(isPackage){
+          note.innerHTML=`Entrarán al inventario <b>${amount} ${niceUnit(base,false)}</b> · Total <b>$${paid.toFixed(2)}</b>`;
+        }else{
+          note.innerHTML=`Entrarán al inventario <b>${amount} ${niceUnit(base,false)}</b> · Total <b>$${paid.toFixed(2)}</b>`;
+        }
+        setTimeout(()=>{
+          const calc=document.getElementById('purchaseCalc');
+          if(calc)calc.innerHTML=note.innerHTML;
+        },0);
       };
-      content.addEventListener('input',()=>setTimeout(forceOne,0));
-      unit.addEventListener('change',()=>setTimeout(forceOne,0));
-      price.addEventListener('input',()=>setTimeout(cleanWeightCalc,0));
-      count.addEventListener('input',()=>setTimeout(cleanWeightCalc,0));
-    }
 
-    function setLabel(label,text){
-      if(!label)return;
-      const node=[...label.childNodes].find(n=>n.nodeType===Node.TEXT_NODE);
-      if(node)node.nodeValue=text;
-    }
+      const togglePackage=()=>{
+        form.querySelector('#simplePackageFields').hidden=unit.value!=='package';
+        qty.step=unit.value==='package'?'1':'0.01';
+        if(unit.value==='package'&&Number(qty.value||0)<1)qty.value='1';
+        sync();
+      };
 
-    function cleanWeightCalc(){
-      if(mode.value!=='weight')return;
-      const calc=document.getElementById('purchaseCalc');
-      if(!calc)return;
-      calc.innerHTML=calc.innerHTML.replace(/Comprarás <b>1<\/b> paquete = <b>([^<]+)<\/b><br>/,'Comprarás <b>$1</b><br>');
-    }
-
-    function applyPurchaseMode(resetCount){
-      const help=document.getElementById('purchaseModeHelp');
-      if(mode.value==='weight'){
-        setLabel(contentLabel,'Peso REAL que vas a comprar');
-        setLabel(unitLabel,'Unidad del peso');
-        setLabel(priceLabel,'Costo TOTAL de ese peso');
-        countLabel.style.display='none';
-        if(resetCount||count.value!=='1')count.value='1';
-        if(help)help.textContent='Ejemplo: cebolla a granel → pesa 0.8 lb y pagaste $0.95. Aquí pones 0.8 lb y $0.95.';
-        count.dispatchEvent(new Event('input',{bubbles:true}));
-        setTimeout(cleanWeightCalc,0);
-      }else{
-        setLabel(contentLabel,'¿Cuánto trae UNA bolsa / paquete?');
-        setLabel(unitLabel,'Ese contenido está en');
-        setLabel(priceLabel,'Precio de UNA bolsa / paquete');
-        setLabel(countLabel,'¿Cuántas bolsas / paquetes compras?');
-        countLabel.style.display='flex';
-        if(help)help.textContent='Ejemplo: camarón → cada bolsa trae 12 oz, cuesta $6.76 y compras 4 bolsas.';
-      }
+      store.addEventListener('change',()=>{form.querySelector('#simpleOtherStoreWrap').hidden=store.value!=='Otra';sync();});
+      other.addEventListener('input',sync);
+      qty.addEventListener('input',sync);
+      unit.addEventListener('change',togglePackage);
+      packContent.addEventListener('input',sync);
+      packUnit.addEventListener('change',sync);
+      total.addEventListener('input',sync);
+      form.__sync=sync;
+      form.__togglePackage=togglePackage;
     }
 
     const title=(document.getElementById('purchaseModalTitle')?.textContent||'').replace('Editar · ','').trim();
-    if(!modal.hidden&&modal.dataset.modeTitle!==title){
-      modal.dataset.modeTitle=title;
-      const loose=new Set(['Tomate','Pepino','Cebolla morada']);
-      mode.value=loose.has(title)?'weight':'package';
-      applyPurchaseMode(true);
+    if(modal.hidden||!title||title===lastPurchaseTitle)return;
+    lastPurchaseTitle=title;
+    const item=itemByTitle(title);
+    if(!item)return;
+
+    const store=form.querySelector('#simpleStore');
+    const other=form.querySelector('#simpleOtherStore');
+    const qty=form.querySelector('#simpleQty');
+    const unit=form.querySelector('#simpleUnit');
+    const packContent=form.querySelector('#simplePackageContent');
+    const packUnit=form.querySelector('#simplePackageUnit');
+    const total=form.querySelector('#simpleTotal');
+    const knownStores=['Walmart','H-E-B',"Sam's",'Costco'];
+    const currentStore=(oldStore.value||'').trim();
+    if(knownStores.includes(currentStore)){store.value=currentStore;other.value='';form.querySelector('#simpleOtherStoreWrap').hidden=true;}
+    else if(currentStore){store.value='Otra';other.value=currentStore;form.querySelector('#simpleOtherStoreWrap').hidden=false;}
+    else{store.value='Walmart';other.value='';form.querySelector('#simpleOtherStoreWrap').hidden=true;}
+
+    unit.innerHTML=directChoices(item).map(option=>`<option value="${option.v}">${option.t}</option>`).join('');
+    packUnit.innerHTML=contentChoices(item).map(option=>`<option value="${option.v}">${option.t}</option>`).join('');
+
+    const packageDefault=['mariscos','desechables','refrescos'].includes(item.group);
+    const needText=document.getElementById('purchaseModalNeed')?.textContent||'';
+    const needNumber=Number((needText.match(/[0-9]+(?:\.[0-9]+)?/)||[])[0]||0);
+    const editing=(document.getElementById('purchaseModalTitle')?.textContent||'').startsWith('Editar · ');
+
+    if(editing){
+      const count=Math.max(1,Number(oldCount.value||1));
+      const packaged=packageDefault||count>1;
+      unit.value=packaged?'package':(oldUnit.value||item.purchaseUnit||item.unit);
+      qty.value=packaged?String(count):String(oldContent.value||needNumber||1);
+      packContent.value=String(oldContent.value||1);
+      if([...packUnit.options].some(option=>option.value===oldUnit.value))packUnit.value=oldUnit.value;
+      total.value=String((Number(oldPrice.value||0)*count)||'');
     }else{
-      applyPurchaseMode(false);
+      unit.value=packageDefault?'package':(item.purchaseUnit||item.unit||'lb');
+      qty.value=packageDefault?String(Math.max(1,Number(oldCount.value||1))):String(needNumber||1);
+      packContent.value=packageDefault&&Number(oldContent.value||0)>0?String(oldContent.value):'';
+      if([...packUnit.options].some(option=>option.value===oldUnit.value))packUnit.value=oldUnit.value;
+      total.value='';
     }
+    form.__togglePackage?.();
   }
 
   function ensureOrderTools(){
