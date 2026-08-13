@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Panel El Cubano">
 <title>Panel Operativo El Cubano</title>
-<link rel="manifest" href="/admin/manifest.webmanifest?v=20260808-1">
+<link rel="manifest" href="/admin/manifest.webmanifest?v=20260813-1">
 <link rel="icon" href="/pwa-icon.svg?v=20260808-admin" type="image/svg+xml">
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff9ed;font-family:Arial,Helvetica,sans-serif}
@@ -20,11 +20,27 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff9ed;fon
 </style>
 </head>
 <body>
-<iframe id="panel" src="/control.html?admin_shell=1" title="Panel Operativo El Cubano"></iframe>
+<iframe id="panel" src="/control.html?admin_shell=1&v=20260813-1" title="Panel Operativo El Cubano"></iframe>
 <button id="installPanel" type="button">📲 INSTALAR PANEL</button>
 <script>
 let installPrompt=null;
 const installButton=document.getElementById('installPanel');
+const panel=document.getElementById('panel');
+
+function injectAdminOrders(){
+  try{
+    const frameDoc=panel.contentDocument;
+    if(!frameDoc||!frameDoc.body||frameDoc.getElementById('adminOrdersEnhancement'))return;
+    const script=frameDoc.createElement('script');
+    script.id='adminOrdersEnhancement';
+    script.src='/admin/admin-orders.js?v=20260813-1';
+    frameDoc.body.appendChild(script);
+  }catch(error){
+    console.error('No se pudo cargar el módulo de pedidos manuales:',error);
+  }
+}
+
+panel.addEventListener('load',()=>setTimeout(injectAdminOrders,80));
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
