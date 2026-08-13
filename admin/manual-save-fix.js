@@ -1,0 +1,1 @@
+(()=>{const b=document.getElementById('saveManualOrder');if(!b)return;const old=b.onclick;b.onclick=async e=>{const s=document.getElementById('moSource');if(s)s.dataset.manualSource=s.value;return old?old.call(b,e):undefined;};})();
