@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Panel El Cubano">
 <title>Panel Operativo El Cubano</title>
-<link rel="manifest" href="/admin/manifest.webmanifest?v=20260814-9">
-<link rel="icon" href="/pwa-icon.svg?v=20260814-9" type="image/svg+xml">
+<link rel="manifest" href="/admin/manifest.webmanifest?v=20260814-10">
+<link rel="icon" href="/pwa-icon.svg?v=20260814-10" type="image/svg+xml">
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff9ed;font-family:Arial,Helvetica,sans-serif}
 #panel{display:block;width:100%;height:100%;border:0;background:#fff9ed;visibility:hidden;opacity:0;transition:opacity .12s ease}
@@ -56,15 +56,22 @@ function injectAdminModules(){
     if(!frameDoc.getElementById('premiumNavEnhancement')){
       const navPolish=frameDoc.createElement('script');
       navPolish.id='premiumNavEnhancement';
-      navPolish.src='/admin/nav-polish.js?v=20260814-9';
+      navPolish.src='/admin/nav-polish.js?v=20260814-10';
       frameDoc.body.appendChild(navPolish);
     }
 
     if(!frameDoc.getElementById('panelCheerEnhancement')){
       const cheer=frameDoc.createElement('script');
       cheer.id='panelCheerEnhancement';
-      cheer.src='/admin/panel-cheer.js?v=20260814-9';
+      cheer.src='/admin/panel-cheer.js?v=20260814-10';
       frameDoc.body.appendChild(cheer);
+    }
+
+    if(!frameDoc.getElementById('purchaseFlowEnhancement')){
+      const purchaseFlow=frameDoc.createElement('script');
+      purchaseFlow.id='purchaseFlowEnhancement';
+      purchaseFlow.src='/admin/purchase-flow.js?v=20260814-10';
+      frameDoc.body.appendChild(purchaseFlow);
     }
 
     const loadPrepare=()=>{
@@ -74,7 +81,7 @@ function injectAdminModules(){
       }
       const prep=frameDoc.createElement('script');
       prep.id='prepareRecipeEnhancement';
-      prep.src='/admin/prepare-recipe.js?v=20260814-9';
+      prep.src='/admin/prepare-recipe.js?v=20260814-10';
       prep.onload=revealPanel;
       prep.onerror=revealPanel;
       frameDoc.body.appendChild(prep);
@@ -89,7 +96,7 @@ function injectAdminModules(){
       if(frameDoc.getElementById('adminOrdersEnhancement')){loadPrepare();return;}
       const script=frameDoc.createElement('script');
       script.id='adminOrdersEnhancement';
-      script.src='/admin/admin-orders.js?v=20260814-9';
+      script.src='/admin/admin-orders.js?v=20260814-10';
       script.onload=loadPrepare;
       script.onerror=loadPrepare;
       frameDoc.body.appendChild(script);
@@ -100,7 +107,7 @@ function injectAdminModules(){
     }else{
       const fix=frameDoc.createElement('script');
       fix.id='manualSaveFix';
-      fix.src='/admin/manual-save-fix.js?v=20260814-9';
+      fix.src='/admin/manual-save-fix.js?v=20260814-10';
       fix.onload=loadOrders;
       fix.onerror=loadOrders;
       frameDoc.body.appendChild(fix);
@@ -117,11 +124,11 @@ function injectAdminModules(){
 panel.addEventListener('load',injectAdminModules);
 panel.addEventListener('error',revealPanel);
 hardRevealTimer=setTimeout(revealPanel,8000);
-panel.src='/control.html?admin_shell=1&v=20260814-9';
+panel.src='/control.html?admin_shell=1&v=20260814-10';
 
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/admin/service-worker.js?v=20260814-9',{scope:'/admin/'}).catch(console.error);
+    navigator.serviceWorker.register('/admin/service-worker.js?v=20260814-10',{scope:'/admin/'}).catch(console.error);
   });
 }
 
