@@ -114,26 +114,41 @@
   `;
   document.head.appendChild(style);
 
+  let decorating=false;
   function decorate(){
-    const nav=document.querySelector('.nav');
-    if(!nav)return;
-    nav.classList.add('el-cubano-premium-nav');
-    nav.querySelectorAll('button[data-tab]').forEach(button=>{
-      const tab=button.dataset.tab;
-      const icon=ICONS[tab]||'●';
-      const label=LABELS[tab]||button.textContent.trim()||tab;
-      const currentIcon=button.querySelector('.nav-icon');
-      const currentLabel=button.querySelector('.nav-label');
-      if(currentIcon&&currentLabel){
-        currentIcon.textContent=icon;
-        currentLabel.textContent=label;
-      }else{
-        button.innerHTML=`<span class="nav-icon">${icon}</span><span class="nav-label">${label}</span>`;
-      }
-    });
+    if(decorating)return;
+    decorating=true;
+    try{
+      const nav=document.querySelector('.nav');
+      if(!nav)return;
+      nav.classList.add('el-cubano-premium-nav');
+      nav.querySelectorAll('button[data-tab]').forEach(button=>{
+        const tab=button.dataset.tab;
+        const icon=ICONS[tab]||'●';
+        const label=LABELS[tab]||button.textContent.trim()||tab;
+        const currentIcon=button.querySelector('.nav-icon');
+        const currentLabel=button.querySelector('.nav-label');
+        if(currentIcon&&currentLabel){
+          if(currentIcon.textContent!==icon)currentIcon.textContent=icon;
+          if(currentLabel.textContent!==label)currentLabel.textContent=label;
+        }else{
+          button.innerHTML=`<span class="nav-icon">${icon}</span><span class="nav-label">${label}</span>`;
+        }
+      });
+    }finally{
+      decorating=false;
+    }
   }
 
   decorate();
-  const observer=new MutationObserver(()=>decorate());
+  let scheduled=false;
+  const observer=new MutationObserver(()=>{
+    if(scheduled)return;
+    scheduled=true;
+    requestAnimationFrame(()=>{
+      scheduled=false;
+      decorate();
+    });
+  });
   observer.observe(document.body,{childList:true,subtree:true});
 })();
