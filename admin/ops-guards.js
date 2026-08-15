@@ -1,9 +1,8 @@
 (()=>{
-  if(window.__EL_CUBANO_OPS_GUARDS_V1__) return;
-  window.__EL_CUBANO_OPS_GUARDS_V1__=true;
+  if(window.__EL_CUBANO_OPS_GUARDS_V2__) return;
+  window.__EL_CUBANO_OPS_GUARDS_V2__=true;
 
   const doc=document;
-  const SLOT_MINUTES=30;
 
   function parseSlotMinutes(value){
     const s=String(value||'').toLowerCase();
@@ -50,6 +49,52 @@
     return lines;
   }
 
+  function askInventoryConfirmation(lines){
+    return new Promise(resolve=>{
+      const old=doc.getElementById('inventoryConfirmOverlay');
+      if(old)old.remove();
+      const overlay=doc.createElement('div');
+      overlay.id='inventoryConfirmOverlay';
+      overlay.innerHTML=`
+        <div class="inv-confirm-card" role="dialog" aria-modal="true">
+          <h3>⚠️ Aviso de inventario</h3>
+          <p>Puedes confirmar el pedido aunque falte producto.</p>
+          <div class="inv-confirm-list">${lines.map(x=>`<div>${x}</div>`).join('')}</div>
+          <div class="inv-confirm-actions">
+            <button type="button" class="inv-confirm-cancel">Cancelar</button>
+            <button type="button" class="inv-confirm-ok">Confirmar de todos modos</button>
+          </div>
+        </div>`;
+      const finish=value=>{overlay.remove();resolve(value);};
+      overlay.querySelector('.inv-confirm-cancel').onclick=()=>finish(false);
+      overlay.querySelector('.inv-confirm-ok').onclick=()=>finish(true);
+      overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false);});
+      doc.body.appendChild(overlay);
+    });
+  }
+
+  function setConfirmBusy(id,busy){
+    doc.querySelectorAll('button').forEach(btn=>{
+      const code=btn.getAttribute('onclick')||'';
+      if(!code.includes(id)||!code.includes('confirm'))return;
+      if(busy){
+        if(!btn.dataset.oldText)btn.dataset.oldText=btn.textContent;
+        btn.disabled=true;
+        btn.textContent='Confirmando...';
+      }else{
+        btn.disabled=false;
+        if(btn.dataset.oldText){btn.textContent=btn.dataset.oldText;delete btn.dataset.oldText;}
+      }
+    });
+  }
+
+  function withTimeout(promise,ms){
+    return Promise.race([
+      promise,
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('TIMEOUT_CONFIRM')),ms))
+    ]);
+  }
+
   const originalSetStatus=window.setStatus;
   if(typeof originalSetStatus==='function'){
     window.setStatus=async function(id,next){
@@ -57,18 +102,33 @@
       let order=null;
       try{order=orders.find(o=>o.id===id)||null;}catch(_){ }
       if(!order||['entregado','cancelado'].includes(order.status))return;
+
       const warnings=inventoryWarnings(order,id);
       if(warnings.length){
-        const ok=confirm(`Aviso de inventario:\n\n${warnings.join('\n')}\n\n¿Confirmar el pedido de todos modos?`);
+        const ok=await askInventoryConfirmation(warnings);
         if(!ok)return;
       }
+
+      setConfirmBusy(id,true);
       try{
-        await db.collection('pedidos').doc(id).update({status:'confirmado',confirmedAt:firebase.firestore.FieldValue.serverTimestamp()});
-        if(typeof toast==='function')toast(warnings.length?'Pedido confirmado con aviso de inventario':'Ingredientes apartados');
+        await withTimeout(
+          db.collection('pedidos').doc(id).update({
+            status:'confirmado',
+            confirmedAt:firebase.firestore.FieldValue.serverTimestamp(),
+            inventoryWarningAccepted:warnings.length>0
+          }),
+          8000
+        );
+        if(typeof toast==='function')toast(warnings.length?'Pedido confirmado aunque falte inventario':'Ingredientes apartados');
       }catch(e){
         console.error(e);
-        if(typeof showError==='function')showError(e);
-        alert('No se pudo confirmar el pedido.');
+        if(e?.message==='TIMEOUT_CONFIRM'){
+          alert('La confirmación tardó demasiado. Revisa la conexión e inténtalo otra vez.');
+        }else{
+          if(typeof showError==='function')showError(e);
+          alert('No se pudo confirmar el pedido.');
+        }
+        setConfirmBusy(id,false);
       }
     };
     window.confirmRouteOrder=id=>window.setStatus(id,'confirmado');
@@ -138,7 +198,15 @@
   setTimeout(refreshManualSlots,350);
 
   const style=doc.createElement('style');
-  style.textContent='.route-block.slot-conflict .route-block-title{background:#ffe2e2!important;color:#94151b!important}.slot-conflict-badge{display:inline-block;margin-left:7px;padding:3px 7px;border-radius:999px;background:#94151b;color:#fff;font-size:11px;font-weight:1000;vertical-align:middle}';
+  style.textContent=`
+    #inventoryConfirmOverlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.48);display:grid;place-items:center;padding:18px}
+    .inv-confirm-card{width:min(100%,560px);max-height:84vh;overflow:auto;background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    .inv-confirm-card h3{margin:0 0 7px;color:#9a171b;font-size:22px}.inv-confirm-card p{margin:0 0 12px;color:#536071;font-weight:800}
+    .inv-confirm-list{display:grid;gap:7px;background:#fff5d7;border:1px solid #eed49c;border-radius:13px;padding:12px;color:#704b00;font-weight:900;line-height:1.35}
+    .inv-confirm-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:14px}.inv-confirm-actions button{border:0;border-radius:12px;padding:13px;font-weight:1000}
+    .inv-confirm-cancel{background:#e9edf3;color:#06254d}.inv-confirm-ok{background:#218b39;color:#fff}
+    .route-block.slot-conflict .route-block-title{background:#ffe2e2!important;color:#94151b!important}.slot-conflict-badge{display:inline-block;margin-left:7px;padding:3px 7px;border-radius:999px;background:#94151b;color:#fff;font-size:11px;font-weight:1000;vertical-align:middle}
+  `;
   doc.head.appendChild(style);
 
   function markRouteConflicts(){
