@@ -1,10 +1,10 @@
 (()=>{
-  if(window.__EL_CUBANO_INVENTORY_OVERRIDE_V1__)return;
-  window.__EL_CUBANO_INVENTORY_OVERRIDE_V1__=true;
+  if(window.__EL_CUBANO_INVENTORY_OVERRIDE_V2__)return;
+  window.__EL_CUBANO_INVENTORY_OVERRIDE_V2__=true;
 
   const fmtMissing=list=>list.length?`\n\n${list.join('\n')}`:'';
 
-  window.setStatus=async function(id,next){
+  async function safeSetStatus(id,next){
     const local=orders.find(o=>o.id===id);
     if(!local||['entregado','cancelado'].includes(local.status))return;
 
@@ -36,7 +36,7 @@
     if(next==='entregado'){
       const miss=missing(local.recipe,local.status==='confirmado'?id:null);
       if(miss.length){
-        const ok=confirm('⚠️ El inventario registrado no alcanza:'+fmtMissing(miss)+'\n\nLa entrega ya se hizo. ¿FINALIZAR DE TODOS MODOS?');
+        const ok=confirm('⚠️ El inventario registrado no alcanza:'+fmtMissing(miss)+'\n\n¿MARCAR COMO ENTREGADO DE TODOS MODOS?');
         if(!ok)return;
       }
 
@@ -74,11 +74,28 @@
             inventoryWarning:miss.length?miss:[]
           });
         });
-        toast(miss.length?'Venta finalizada; inventario quedó con alerta':'Venta finalizada e inventario descontado');
+        toast(miss.length?'Venta finalizada con alerta de inventario':'Venta finalizada e inventario descontado');
       }catch(e){
         alert(e.message||'No se pudo finalizar.');
         showError(e);
       }
     }
-  };
+  }
+
+  // El control.html original tiene onclick="setStatus(...)". En algunos WebViews ese
+  // nombre queda ligado a la función original aunque window.setStatus se reemplace.
+  // Interceptamos el toque ANTES del onclick original para garantizar que nunca bloquee.
+  document.addEventListener('click',event=>{
+    const button=event.target.closest('button[onclick*="setStatus("]');
+    if(!button)return;
+    const code=button.getAttribute('onclick')||'';
+    const match=code.match(/setStatus\(['\"]([^'\"]+)['\"],['\"](confirmado|entregado|cancelado)['\"]\)/);
+    if(!match)return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    safeSetStatus(match[1],match[2]);
+  },true);
+
+  window.safeSetStatus=safeSetStatus;
 })();
