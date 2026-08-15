@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Panel El Cubano">
 <title>Panel Operativo El Cubano</title>
-<link rel="manifest" href="/admin/manifest.webmanifest?v=20260815-07">
-<link rel="icon" href="/pwa-icon.svg?v=20260815-07" type="image/svg+xml">
+<link rel="manifest" href="/admin/manifest.webmanifest?v=20260815-08">
+<link rel="icon" href="/pwa-icon.svg?v=20260815-08" type="image/svg+xml">
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff9ed;font-family:Arial,Helvetica,sans-serif}
 #panel{display:block;width:100%;height:100%;border:0;background:#fff9ed;visibility:hidden;opacity:0;transition:opacity .12s ease}
@@ -64,13 +64,24 @@ function installDeliveryOverride(doc){
     if(window.__DELIVERY_OVERRIDE_INLINE__)return;
     window.__DELIVERY_OVERRIDE_INLINE__=true;
 
+    const originalSetStatus=window.setStatus;
+
     async function forceDeliver(id){
       const local=orders.find(o=>o.id===id);
-      if(!local||['entregado','cancelado'].includes(local.status))return;
+      if(!local||local.status==='cancelado')return false;
+      if(local.status==='entregado'){
+        try{
+          await db.collection('pedidos').doc(id).update({deliveryStatus:'entregado',routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp()});
+          return true;
+        }catch(e){
+          console.error(e);
+          return false;
+        }
+      }
       const miss=missing(local.recipe,local.status==='confirmado'?id:null);
       if(miss.length){
         const ok=confirm('⚠️ Inventario registrado insuficiente:\\n\\n'+miss.join('\\n')+'\\n\\n¿MARCAR COMO ENTREGADO DE TODOS MODOS?');
-        if(!ok)return;
+        if(!ok)return false;
       }
       try{
         await db.runTransaction(async tx=>{
@@ -80,21 +91,30 @@ function installDeliveryOverride(doc){
           const invSnap=await tx.get(inventoryRef);
           if(!orderSnap.exists)throw new Error('El pedido ya no existe.');
           const order=orderSnap.data();
-          if(['entregado','cancelado'].includes(order.status))return;
+          if(order.status==='cancelado')return;
+          if(order.status==='entregado'){
+            tx.update(orderRef,{deliveryStatus:'entregado',routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp()});
+            return;
+          }
           const current={...EMPTY,...(invSnap.exists?(invSnap.data().items||{}):{})};
           Object.entries(order.recipe||{}).forEach(([k,v])=>{
             current[k]=round(Number(current[k]||0)-Number(v||0));
           });
           tx.set(inventoryRef,{items:current,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
-          tx.update(orderRef,{status:'entregado',deliveredAt:firebase.firestore.FieldValue.serverTimestamp(),inventoryWarningAtDelivery:miss.length?miss:firebase.firestore.FieldValue.delete()});
+          tx.update(orderRef,{status:'entregado',deliveryStatus:'entregado',deliveredAt:firebase.firestore.FieldValue.serverTimestamp(),routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp(),inventoryWarningAtDelivery:miss.length?miss:firebase.firestore.FieldValue.delete()});
           tx.set(moveRef,{type:'sale',date:firebase.firestore.FieldValue.serverTimestamp(),day:today(),name:orderTitle(order),orderId:id,total:Number(order.total||0),cost:order.cost??null,profit:order.profit??null,inventoryWarning:miss.length?miss:[]});
         });
         toast(miss.length?'Venta finalizada con alerta de inventario':'Venta finalizada e inventario descontado');
+        return true;
       }catch(e){
         alert(e.message||'No se pudo finalizar.');
         showError(e);
+        return false;
       }
     }
+
+    window.forceDeliver=forceDeliver;
+    window.setStatus=(id,next)=>next==='entregado'?forceDeliver(id):(typeof originalSetStatus==='function'?originalSetStatus(id,next):undefined);
 
     document.addEventListener('click',event=>{
       const b=event.target.closest('button[onclick*="setStatus("]');
@@ -145,9 +165,9 @@ function decorateNavOnce(doc){
 }
 
 function finishStableUi(doc){
-  addScript(doc,'capitalTrackerV2','/admin/capital-tracker-v2.js?v=20260815-07',()=>{
+  addScript(doc,'capitalTrackerV2','/admin/capital-tracker-v2.js?v=20260815-08',()=>{
     decorateNavOnce(doc);
-    addScript(doc,'reggaeTheme','/admin/reggae-theme.js?v=20260815-07',revealPanel);
+    addScript(doc,'reggaeTheme','/admin/reggae-theme.js?v=20260815-08',revealPanel);
   });
 }
 
@@ -165,9 +185,9 @@ function injectStableModules(){
       doc.head.appendChild(st);
     }
 
-    addScript(doc,'manualSaveFix','/admin/manual-save-fix.js?v=20260815-07',()=>{
-      addScript(doc,'adminOrdersEnhancement','/admin/admin-orders.js?v=20260815-07',()=>{
-        addScript(doc,'prepareRecipeEnhancement','/admin/prepare-recipe.js?v=20260815-07',()=>finishStableUi(doc));
+    addScript(doc,'manualSaveFix','/admin/manual-save-fix.js?v=20260815-08',()=>{
+      addScript(doc,'adminOrdersEnhancement','/admin/admin-orders.js?v=20260815-08',()=>{
+        addScript(doc,'prepareRecipeEnhancement','/admin/prepare-recipe.js?v=20260815-08',()=>finishStableUi(doc));
       });
     });
 
@@ -182,7 +202,7 @@ panel.addEventListener('load',injectStableModules);
 panel.addEventListener('error',revealPanel);
 
 clearOldAdminCache().finally(()=>{
-  panel.src='/control.html?admin_shell=1&safe=1&v=20260815-07';
+  panel.src='/control.html?admin_shell=1&safe=1&v=20260815-08';
 });
 setTimeout(revealPanel,8000);
 </script>
