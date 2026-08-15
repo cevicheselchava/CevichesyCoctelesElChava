@@ -1,73 +1,81 @@
 (()=>{
-  if(window.__EL_CUBANO_HISTORY_BATCH_TOTAL_V1__)return;
-  window.__EL_CUBANO_HISTORY_BATCH_TOTAL_V1__=true;
+  if(window.__EL_CUBANO_HISTORY_BATCH_TOTAL_V2__)return;
+  window.__EL_CUBANO_HISTORY_BATCH_TOTAL_V2__=true;
 
-  function safeMoney(value){
-    try{return typeof money==='function'?money(value):'$'+Number(value||0).toFixed(2);}catch{return '$'+Number(value||0).toFixed(2);}
-  }
-  function safeDate(value){
+  const style=document.createElement('style');
+  style.id='el-cubano-history-total-v2-style';
+  style.textContent=`
+    #historyPurchaseSummary{margin:0 0 14px;padding:15px 16px;border-radius:18px;border:1px solid #b9d9bf;border-left:6px solid #267642;background:linear-gradient(135deg,#eef9ef,#fffdf4);box-shadow:0 7px 18px rgba(18,52,88,.07)}
+    #historyPurchaseSummary .history-total-label{font-size:12px;font-weight:1000;letter-spacing:.05em;color:#667184}
+    #historyPurchaseSummary .history-total-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:5px}
+    #historyPurchaseSummary .history-total-title{font-size:18px;line-height:1.2;font-weight:1000;color:#123458}
+    #historyPurchaseSummary .history-total-meta{margin-top:5px;color:#687386;font-size:13px;font-weight:800;line-height:1.35}
+    #historyPurchaseSummary .history-total-money{font-size:30px;line-height:1;font-weight:1000;color:#267642;white-space:nowrap}
+    @media(max-width:430px){#historyPurchaseSummary .history-total-row{align-items:flex-start;flex-direction:column}#historyPurchaseSummary .history-total-money{font-size:32px}}
+  `;
+  document.head.appendChild(style);
+
+  function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));}
+  function fmtMoney(value){return '$'+Number(value||0).toFixed(2);}
+  function toDate(value){
     try{
-      const d=typeof timestampDate==='function'?timestampDate(value):(value?.toDate?value.toDate():new Date(value));
-      return d&&!isNaN(d)?d.toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'}):'';
-    }catch{return '';}
-  }
-  function escapeHtml(value){
-    return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+      if(!value)return null;
+      if(typeof value.toDate==='function')return value.toDate();
+      const d=new Date(value);
+      return isNaN(d)?null:d;
+    }catch{return null;}
   }
 
-  function groupedHistory(){
+  function getLatestBatch(){
+    try{
+      if(typeof movements==='undefined'||!Array.isArray(movements))return null;
+      const purchases=movements.filter(m=>m&&m.type==='purchase'&&m.batchId);
+      if(!purchases.length)return null;
+      const latestId=purchases[0].batchId;
+      const lines=purchases.filter(m=>m.batchId===latestId);
+      if(!lines.length)return null;
+      const total=lines.reduce((sum,line)=>sum+Number(line.cost||0),0);
+      const stores=[...new Set(lines.map(line=>String(line.store||'Sin tienda').trim()).filter(Boolean))];
+      const date=toDate(lines[0]?.date);
+      return {id:latestId,lines,total,store:stores.length===1?stores[0]:stores.join(' + '),date};
+    }catch(error){
+      console.error('No se pudo calcular el total de la compra:',error);
+      return null;
+    }
+  }
+
+  function ensureSummary(){
+    const history=document.getElementById('history');
     const list=document.getElementById('historyList');
-    if(!list)return;
-    if(typeof movements==='undefined'||!Array.isArray(movements)||!movements.length){
-      list.innerHTML='<div class="empty">Todavía no hay movimientos.</div>';
-      return;
+    const card=list?.closest('.card');
+    if(!history||!list||!card)return;
+
+    let box=document.getElementById('historyPurchaseSummary');
+    if(!box){
+      box=document.createElement('div');
+      box.id='historyPurchaseSummary';
+      card.insertBefore(box,list);
     }
 
-    const purchaseBatches=new Map();
-    movements.forEach((m,index)=>{
-      if(m?.type!=='purchase'||!m.batchId)return;
-      if(!purchaseBatches.has(m.batchId))purchaseBatches.set(m.batchId,{firstIndex:index,lines:[]});
-      purchaseBatches.get(m.batchId).lines.push(m);
-    });
-
-    const renderedBatches=new Set();
-    const html=[];
-    movements.forEach((m,index)=>{
-      if(m?.type==='purchase'&&m.batchId){
-        if(renderedBatches.has(m.batchId))return;
-        renderedBatches.add(m.batchId);
-        const batch=purchaseBatches.get(m.batchId);
-        const lines=batch?.lines||[m];
-        const total=lines.reduce((sum,line)=>sum+Number(line.cost||0),0);
-        const stores=[...new Set(lines.map(line=>String(line.store||'Sin tienda').trim()).filter(Boolean))];
-        const store=stores.length===1?stores[0]:stores.join(' + ');
-        const label=safeDate(lines[0]?.date);
-        const details=lines.map(line=>{
-          const qty=line.qty!==undefined&&line.qty!==null?`${line.qty} ${line.unit||''}`.trim():'';
-          return `${escapeHtml(line.name||'Producto')}${qty?` · ${escapeHtml(qty)}`:''} · ${safeMoney(line.cost)}`;
-        }).join('<br>');
-        html.push(`<div class="movement purchase-batch-total"><div><strong>🧾 Compra completa · ${escapeHtml(store||'Sin tienda')}</strong><small>${lines.length} producto${lines.length===1?'':'s'} · ${escapeHtml(label)}<br>${details}</small></div><div class="money">-${safeMoney(total)}</div></div>`);
-        return;
-      }
-
-      const label=safeDate(m?.date);
-      if(m?.type==='sale'){
-        html.push(`<div class="movement"><div><strong>Venta entregada · ${escapeHtml(m.name||'Pedido')}</strong><small>${escapeHtml(label)}<br>Costo ${safeMoney(m.cost)} · Utilidad ${safeMoney(m.profit)}</small></div><div class="money">${safeMoney(m.total)}</div></div>`);
-      }else{
-        html.push(`<div class="movement"><div><strong>Compra · ${escapeHtml(m?.name||'Producto')}</strong><small>${escapeHtml(m?.qty??'')} ${escapeHtml(m?.unit||'')} · ${escapeHtml(m?.store||'Sin tienda')} · ${escapeHtml(label)}</small></div><div class="money">-${safeMoney(m?.cost)}</div></div>`);
-      }
-    });
-    list.innerHTML=html.join('');
+    const batch=getLatestBatch();
+    if(!batch){box.hidden=true;return;}
+    box.hidden=false;
+    const label=batch.date?batch.date.toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'}):'';
+    const next=`<div class="history-total-label">🧾 TOTAL DE LA ÚLTIMA COMPRA</div><div class="history-total-row"><div><div class="history-total-title">${esc(batch.store||'Sin tienda')}</div><div class="history-total-meta">${batch.lines.length} producto${batch.lines.length===1?'':'s'}${label?` · ${esc(label)}`:''}<br>Este es el total calculado por el panel.</div></div><div class="history-total-money">${fmtMoney(batch.total)}</div></div>`;
+    if(box.innerHTML!==next)box.innerHTML=next;
   }
 
-  function install(){
-    try{
-      if(typeof renderHistory==='function')renderHistory=groupedHistory;
-      groupedHistory();
-    }catch(error){console.error('No se pudo agrupar el historial de compras:',error);}
+  let queued=false;
+  function schedule(){
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(()=>{queued=false;ensureSummary();});
   }
 
-  install();
-  setTimeout(install,500);
-  setTimeout(install,1500);
+  schedule();
+  setTimeout(schedule,400);
+  setTimeout(schedule,1200);
+  setInterval(schedule,2000);
+  const observer=new MutationObserver(schedule);
+  observer.observe(document.body,{childList:true,subtree:true});
 })();
