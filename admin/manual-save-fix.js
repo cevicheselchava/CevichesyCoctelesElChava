@@ -48,4 +48,11 @@
     history.src='/admin/history-batch-total.js?v=20260814-2';
     document.body.appendChild(history);
   }
+
+  if(!document.getElementById('directSaleV15Enhancement')){
+    const direct=document.createElement('script');
+    direct.id='directSaleV15Enhancement';
+    direct.src='/admin/direct-sale-v15.js?v=20260815-1';
+    document.body.appendChild(direct);
+  }
 })();
