@@ -45,7 +45,7 @@
   if(!document.getElementById('historyBatchTotalEnhancement')){
     const history=document.createElement('script');
     history.id='historyBatchTotalEnhancement';
-    history.src='/admin/history-batch-total.js?v=20260814-1';
+    history.src='/admin/history-batch-total.js?v=20260814-2';
     document.body.appendChild(history);
   }
 })();
