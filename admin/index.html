@@ -9,158 +9,85 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Panel El Cubano">
 <title>Panel Operativo El Cubano</title>
-<link rel="manifest" href="/admin/manifest.webmanifest?v=20260814-16">
-<link rel="icon" href="/pwa-icon.svg?v=20260814-16" type="image/svg+xml">
+<link rel="manifest" href="/admin/manifest.webmanifest?v=20260814-17">
+<link rel="icon" href="/pwa-icon.svg?v=20260814-17" type="image/svg+xml">
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff9ed;font-family:Arial,Helvetica,sans-serif}
 #panel{display:block;width:100%;height:100%;border:0;background:#fff9ed;visibility:hidden;opacity:0;transition:opacity .12s ease}
 #panel.ready{visibility:visible;opacity:1}
 #panelLoader{position:fixed;inset:0;display:grid;place-items:center;background:#fff9ed;color:#1f6f3b;font-weight:900;font-size:18px;z-index:20}
 #panelLoader[hidden]{display:none}
-#installPanel{position:fixed;right:14px;bottom:18px;z-index:99999;border:0;border-radius:15px;padding:14px 17px;background:#1f6f3b;color:#fff;font-weight:900;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.26);display:none}
-#installPanel.show{display:block}
-@media(display-mode:standalone){#installPanel{display:none!important}}
 </style>
 </head>
 <body>
 <div id="panelLoader">Cargando panel...</div>
 <iframe id="panel" title="Panel Operativo El Cubano"></iframe>
-<button id="installPanel" type="button">📲 INSTALAR PANEL</button>
 <script>
-let installPrompt=null;
-const installButton=document.getElementById('installPanel');
 const panel=document.getElementById('panel');
 const panelLoader=document.getElementById('panelLoader');
 let revealTimer=null;
-let hardRevealTimer=null;
 
 function revealPanel(){
   if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
-  if(hardRevealTimer){clearTimeout(hardRevealTimer);hardRevealTimer=null;}
   panel.classList.add('ready');
   panelLoader.hidden=true;
 }
 
-function injectAdminModules(){
+async function clearOldAdminCache(){
   try{
-    const frameDoc=panel.contentDocument;
-    if(!frameDoc||!frameDoc.body){revealPanel();return;}
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.filter(r=>String(r.scope||'').includes('/admin/')).map(r=>r.unregister()));
+    }
+    if('caches' in window){
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(k=>k.startsWith('el-cubano-admin-')).map(k=>caches.delete(k)));
+    }
+  }catch(e){console.warn('No se pudo limpiar cache anterior:',e);}
+}
 
-    if(!frameDoc.getElementById('adminHideFooter')){
-      const footerStyle=frameDoc.createElement('style');
-      footerStyle.id='adminHideFooter';
-      footerStyle.textContent='.footer{display:none!important}body{padding-bottom:0!important}#purchaseCalc{display:none!important}';
-      frameDoc.head.appendChild(footerStyle);
+function addScript(doc,id,src,onload){
+  if(doc.getElementById(id)){if(onload)onload();return;}
+  const s=doc.createElement('script');
+  s.id=id;
+  s.src=src;
+  s.onload=()=>{if(onload)onload();};
+  s.onerror=()=>{console.error('No cargó',src);if(onload)onload();};
+  doc.body.appendChild(s);
+}
+
+function injectStableModules(){
+  try{
+    const doc=panel.contentDocument;
+    if(!doc||!doc.body){revealPanel();return;}
+
+    if(!doc.getElementById('adminHideFooter')){
+      const st=doc.createElement('style');
+      st.id='adminHideFooter';
+      st.textContent='.footer{display:none!important}body{padding-bottom:0!important}#purchaseCalc{display:none!important}';
+      doc.head.appendChild(st);
     }
 
-    if(!frameDoc.getElementById('premiumNavEnhancement')){
-      const navPolish=frameDoc.createElement('script');
-      navPolish.id='premiumNavEnhancement';
-      navPolish.src='/admin/nav-polish.js?v=20260814-16';
-      frameDoc.body.appendChild(navPolish);
-    }
+    addScript(doc,'manualSaveFix','/admin/manual-save-fix.js?v=20260814-17',()=>{
+      addScript(doc,'adminOrdersEnhancement','/admin/admin-orders.js?v=20260814-17',()=>{
+        addScript(doc,'prepareRecipeEnhancement','/admin/prepare-recipe.js?v=20260814-17',revealPanel);
+      });
+    });
 
-    if(!frameDoc.getElementById('panelCheerEnhancement')){
-      const cheer=frameDoc.createElement('script');
-      cheer.id='panelCheerEnhancement';
-      cheer.src='/admin/panel-cheer.js?v=20260814-16';
-      frameDoc.body.appendChild(cheer);
-    }
-
-    if(!frameDoc.getElementById('purchaseFlowEnhancement')){
-      const purchaseFlow=frameDoc.createElement('script');
-      purchaseFlow.id='purchaseFlowEnhancement';
-      purchaseFlow.src='/admin/purchase-flow.js?v=20260814-16';
-      frameDoc.body.appendChild(purchaseFlow);
-    }
-
-    const loadOpsGuards=()=>{
-      if(frameDoc.getElementById('opsGuardsEnhancement'))return;
-      const guard=frameDoc.createElement('script');
-      guard.id='opsGuardsEnhancement';
-      guard.src='/admin/ops-guards-lite.js?v=20260814-16';
-      frameDoc.body.appendChild(guard);
-    };
-
-    const loadPrepare=()=>{
-      if(frameDoc.getElementById('prepareRecipeEnhancement')||frameDoc.querySelector('.nav button[data-tab="prepare"]')){
-        revealPanel();
-        return;
-      }
-      const prep=frameDoc.createElement('script');
-      prep.id='prepareRecipeEnhancement';
-      prep.src='/admin/prepare-recipe.js?v=20260814-16';
-      prep.onload=revealPanel;
-      prep.onerror=revealPanel;
-      frameDoc.body.appendChild(prep);
-    };
-
-    if(frameDoc.getElementById('adminOrdersEnhancement')){
-      loadOpsGuards();
-      loadPrepare();
-      return;
-    }
-
-    const loadOrders=()=>{
-      if(frameDoc.getElementById('adminOrdersEnhancement')){loadOpsGuards();loadPrepare();return;}
-      const script=frameDoc.createElement('script');
-      script.id='adminOrdersEnhancement';
-      script.src='/admin/admin-orders.js?v=20260814-16';
-      script.onload=()=>{loadOpsGuards();loadPrepare();};
-      script.onerror=loadPrepare;
-      frameDoc.body.appendChild(script);
-    };
-
-    if(frameDoc.getElementById('manualSaveFix')){
-      loadOrders();
-    }else{
-      const fix=frameDoc.createElement('script');
-      fix.id='manualSaveFix';
-      fix.src='/admin/manual-save-fix.js?v=20260814-16';
-      fix.onload=loadOrders;
-      fix.onerror=loadOrders;
-      frameDoc.body.appendChild(fix);
-    }
-
-    setTimeout(()=>{loadOpsGuards();loadPrepare();},1800);
     revealTimer=setTimeout(revealPanel,5000);
-  }catch(error){
-    console.error('No se pudieron cargar los módulos del panel administrador:',error);
+  }catch(e){
+    console.error('Error cargando panel estable:',e);
     revealPanel();
   }
 }
 
-panel.addEventListener('load',injectAdminModules);
+panel.addEventListener('load',injectStableModules);
 panel.addEventListener('error',revealPanel);
-hardRevealTimer=setTimeout(revealPanel,8000);
-panel.src='/control.html?admin_shell=1&v=20260814-16';
 
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/admin/service-worker.js?v=20260814-16',{scope:'/admin/'}).catch(console.error);
-  });
-}
-
-window.addEventListener('beforeinstallprompt',event=>{
-  event.preventDefault();
-  installPrompt=event;
-  installButton.classList.add('show');
+clearOldAdminCache().finally(()=>{
+  panel.src='/control.html?admin_shell=1&safe=1&v=20260814-17';
 });
-
-installButton.addEventListener('click',async()=>{
-  if(!installPrompt)return;
-  installButton.disabled=true;
-  await installPrompt.prompt();
-  await installPrompt.userChoice;
-  installPrompt=null;
-  installButton.classList.remove('show');
-  installButton.disabled=false;
-});
-
-window.addEventListener('appinstalled',()=>{
-  installPrompt=null;
-  installButton.classList.remove('show');
-});
+setTimeout(revealPanel,8000);
 </script>
 </body>
 </html>
