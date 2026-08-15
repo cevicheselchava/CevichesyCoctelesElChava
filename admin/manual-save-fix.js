@@ -34,4 +34,11 @@
   }else{
     loadPriceFix();
   }
+
+  if(!document.getElementById('avocadoFixEnhancement')){
+    const avocado=document.createElement('script');
+    avocado.id='avocadoFixEnhancement';
+    avocado.src='/admin/avocado-fix.js?v=20260814-1';
+    document.body.appendChild(avocado);
+  }
 })();
