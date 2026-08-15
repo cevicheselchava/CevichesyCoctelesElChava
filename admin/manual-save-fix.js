@@ -1,4 +1,6 @@
 (()=>{
+  const round3=n=>Math.round((Number(n)+Number.EPSILON)*1000)/1000;
+
   if(typeof db!=='undefined'){
     const sample=db.collection('pedidos').doc();
     const proto=Object.getPrototypeOf(sample);
@@ -7,13 +9,26 @@
       if(typeof originalSet==='function'){
         proto.__elCubanoManualSavePatched=true;
         proto.set=function(data,...args){
-          if(data&&data.manualOrder&&String(data.source||'').startsWith('manual-')){
-            data={...data,manualSource:String(data.source).replace(/^manual-/,''),source:'app-clientes'};
+          if(data&&data.manualOrder){
+            const pounds=Number(data.pounds||0);
+            if(pounds>0&&data.recipe){
+              data={...data,recipe:{...data.recipe,cucumber:round3(pounds/6)},cucumberUnitVersion:'piece-v15'};
+            }
+            if(String(data.source||'').startsWith('manual-')){
+              data={...data,manualSource:String(data.source).replace(/^manual-/,''),source:'app-clientes'};
+            }
           }
           return originalSet.call(this,data,...args);
         };
       }
     }
+  }
+
+  if(!document.getElementById('cucumberPieceV15Enhancement')){
+    const cucumber=document.createElement('script');
+    cucumber.id='cucumberPieceV15Enhancement';
+    cucumber.src='/admin/cucumber-piece-v15.js?v=20260815-1';
+    document.body.appendChild(cucumber);
   }
 
   const loadPriceFix=()=>{
@@ -52,7 +67,7 @@
   if(!document.getElementById('directSaleV15Enhancement')){
     const direct=document.createElement('script');
     direct.id='directSaleV15Enhancement';
-    direct.src='/admin/direct-sale-v15.js?v=20260815-1';
+    direct.src='/admin/direct-sale-v15.js?v=20260815-2';
     document.body.appendChild(direct);
   }
 })();
