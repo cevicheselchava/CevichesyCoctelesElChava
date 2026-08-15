@@ -8,7 +8,7 @@
         proto.__elCubanoManualSavePatched=true;
         proto.set=function(data,...args){
           if(data&&data.manualOrder&&String(data.source||'').startsWith('manual-')){
-            data={...data,manualSource:String(data.source).replace(/^manual-/,'') ,source:'app-clientes'};
+            data={...data,manualSource:String(data.source).replace(/^manual-/,''),source:'app-clientes'};
           }
           return originalSet.call(this,data,...args);
         };
@@ -16,22 +16,12 @@
     }
   }
 
-  const loadMultiSoda=()=>{
-    if(document.getElementById('sodaMultiEnhancement'))return;
-    const multi=document.createElement('script');
-    multi.id='sodaMultiEnhancement';
-    multi.src='/admin/soda-multi.js?v=20260814-3';
-    document.body.appendChild(multi);
-  };
-
   const loadPriceFix=()=>{
-    if(!document.getElementById('purchasePriceFixEnhancement')){
-      const priceFix=document.createElement('script');
-      priceFix.id='purchasePriceFixEnhancement';
-      priceFix.src='/admin/purchase-price-fix.js?v=20260814-3';
-      document.body.appendChild(priceFix);
-    }
-    loadMultiSoda();
+    if(document.getElementById('purchasePriceFixEnhancement'))return;
+    const priceFix=document.createElement('script');
+    priceFix.id='purchasePriceFixEnhancement';
+    priceFix.src='/admin/purchase-price-fix.js?v=20260814-2';
+    document.body.appendChild(priceFix);
   };
 
   if(!document.getElementById('sodaOptionsEnhancement')){
@@ -48,7 +38,14 @@
   if(!document.getElementById('avocadoFixEnhancement')){
     const avocado=document.createElement('script');
     avocado.id='avocadoFixEnhancement';
-    avocado.src='/admin/avocado-fix.js?v=20260814-3';
+    avocado.src='/admin/avocado-fix.js?v=20260814-2';
     document.body.appendChild(avocado);
+  }
+
+  if(!document.getElementById('historyBatchTotalEnhancement')){
+    const history=document.createElement('script');
+    history.id='historyBatchTotalEnhancement';
+    history.src='/admin/history-batch-total.js?v=20260814-1';
+    document.body.appendChild(history);
   }
 })();
