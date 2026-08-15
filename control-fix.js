@@ -1,7 +1,7 @@
 (()=>{
   const PROJECT_ID='ceviches-y-cocteles-el-chava';
   const API_KEY='AIzaSyBbOIXTr2Tvz1FvoTk5GZgP2jx24jpjlL4';
-  const RECIPES_VERSION=9;
+  const RECIPES_VERSION=10;
   const PURCHASE_DRAFT_KEY='elCubanoPurchaseDraftV1';
   const PACK_PREFS_KEY='elCubanoPackPrefsV1';
   const STORE_KEY='elCubanoLastPurchaseStore';
@@ -40,9 +40,9 @@
   window.__EL_CHAVA_RECIPES_VERSION__=RECIPES_VERSION;
   if(footer)footer.textContent=`Control administrativo · Inventario agrupado v${RECIPES_VERSION}`;
 
-  if('caches' in window&&localStorage.getItem('elChavaAdminCacheV9')!=='1'){
+  if('caches' in window&&localStorage.getItem('elChavaAdminCacheV10')!=='1'){
     caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('el-chava-pwa-')).map(key=>caches.delete(key))))
-      .finally(()=>localStorage.setItem('elChavaAdminCacheV9','1'));
+      .finally(()=>localStorage.setItem('elChavaAdminCacheV10','1'));
   }
 
   function decodeValue(value){
@@ -199,7 +199,7 @@
     renderRecipe();
   }
 
-  const COMMON_RECIPE_PER_LB={tomato:1.6,cucumber:1.6,onion:.8,cilantro:.2,lemonJuice:2.4,clamato:1.4};
+  const COMMON_RECIPE_PER_LB={tomato:1.6,cucumber:1/6,onion:.8,cilantro:.2,lemonJuice:2.4,clamato:1.4};
 
   const RECIPE_TYPES={
     mixed:{name:'Ceviche mixto · pescado y camarón',proteins:{fish:.25,shrimp:.25}},
@@ -234,15 +234,17 @@
     const planned=plannedInternal(key);
     const shortage=Math.max(0,round3(required-have-planned));
     const name=RECIPE_LABELS[key]||item.name;
+    const buyAmount=key==='cucumber'?Math.ceil(shortage):shortage;
+    const requiredText=key==='cucumber'?`${formatAmount(key,required)} (≈ ${Math.max(1,Math.ceil(required))} pepino${Math.ceil(required)===1?'':'s'})`:formatAmount(key,required);
     let action='';
     if(shortage>0){
-      action=`<button type="button" class="recipe-buy-button" data-key="${key}" data-required="${required}" data-shortage="${shortage}">Comprar<br>${formatAmount(key,shortage)}</button>`;
+      action=`<button type="button" class="recipe-buy-button" data-key="${key}" data-required="${required}" data-shortage="${shortage}">Comprar<br>${formatAmount(key,buyAmount)}</button>`;
     }else if(have>=required){
       action='<div class="recipe-buy enough">Ya tienes</div>';
     }else{
       action='<div class="recipe-buy enough">En compra ✓</div>';
     }
-    return `<div class="recipe-row"><div><strong>${name}</strong><small>Necesitas: ${formatAmount(key,required)}<br>Disponible: ${formatAmount(key,have)}${planned>0?`<br><span class="recipe-planned">En compra: ${formatAmount(key,planned)}</span>`:''}</small></div>${action}</div>`;
+    return `<div class="recipe-row"><div><strong>${name}</strong><small>Necesitas: ${requiredText}<br>Disponible: ${formatAmount(key,have)}${planned>0?`<br><span class="recipe-planned">En compra: ${formatAmount(key,planned)}</span>`:''}</small></div>${action}</div>`;
   }
 
   function renderRecipe(){
@@ -336,7 +338,7 @@
     const pref=getPackPrefs()[key]||{};
     const defaultUnit=pref.unit||(item.purchaseUnit==='lb'?'lb':item.purchaseUnit||item.unit);
     document.getElementById('purchaseModalTitle').textContent=item.name;
-    document.getElementById('purchaseModalNeed').textContent=`Te faltan ${formatAmount(key,shortage)} para esta receta`;
+    document.getElementById('purchaseModalNeed').textContent=`Te faltan ${key==='cucumber'?formatAmount(key,Math.ceil(shortage)):formatAmount(key,shortage)} para esta receta`;
     document.getElementById('purchaseModalStore').value=localStorage.getItem(STORE_KEY)||'';
     document.getElementById('purchasePackContent').value=pref.content||1;
     document.getElementById('purchasePackUnit').innerHTML=unitOptions(item,defaultUnit);
