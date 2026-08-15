@@ -1,6 +1,6 @@
 (()=>{
-  if(window.__EL_CUBANO_OPS_GUARDS_V2__) return;
-  window.__EL_CUBANO_OPS_GUARDS_V2__=true;
+  if(window.__EL_CUBANO_OPS_GUARDS_V3__) return;
+  window.__EL_CUBANO_OPS_GUARDS_V3__=true;
 
   const doc=document;
 
@@ -216,21 +216,37 @@
       const cards=block.querySelectorAll('.route-card');
       const title=block.querySelector('.route-block-title');
       if(!title)return;
-      title.querySelector('.slot-conflict-badge')?.remove();
       const conflict=cards.length>1;
+      const wantedText=`⚠️ ${cards.length} ENTREGAS`;
+      let badge=title.querySelector('.slot-conflict-badge');
       block.classList.toggle('slot-conflict',conflict);
       if(conflict){
-        const badge=doc.createElement('span');
-        badge.className='slot-conflict-badge';
-        badge.textContent=`⚠️ ${cards.length} ENTREGAS`;
-        title.appendChild(badge);
+        if(!badge){
+          badge=doc.createElement('span');
+          badge.className='slot-conflict-badge';
+          badge.textContent=wantedText;
+          title.appendChild(badge);
+        }else if(badge.textContent!==wantedText){
+          badge.textContent=wantedText;
+        }
+      }else if(badge){
+        badge.remove();
       }
     });
   }
 
   const routeList=doc.getElementById('routeList');
   if(routeList){
-    new MutationObserver(markRouteConflicts).observe(routeList,{childList:true,subtree:true});
+    let conflictScanScheduled=false;
+    const scheduleConflictScan=()=>{
+      if(conflictScanScheduled)return;
+      conflictScanScheduled=true;
+      requestAnimationFrame(()=>{
+        conflictScanScheduled=false;
+        markRouteConflicts();
+      });
+    };
+    new MutationObserver(scheduleConflictScan).observe(routeList,{childList:true,subtree:true});
     setTimeout(markRouteConflicts,400);
   }
 })();
