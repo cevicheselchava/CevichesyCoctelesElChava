@@ -153,4 +153,11 @@
     });
   }
   setTimeout(markExistingConflictsOnce,900);
+
+  if(!doc.getElementById('cancelledHistoryEnhancement')){
+    const cancelledHistory=doc.createElement('script');
+    cancelledHistory.id='cancelledHistoryEnhancement';
+    cancelledHistory.src='/admin/cancelled-history.js?v=20260814-17';
+    doc.body.appendChild(cancelledHistory);
+  }
 })();
