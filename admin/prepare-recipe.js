@@ -8,7 +8,7 @@
   if(!nav||!main)return;
 
   const STORAGE_KEY='elCubanoPreparationV1';
-  const COMMON_PER_LB={tomato:1.6,cucumber:1.6,onion:.8,cilantro:.2,lemonJuice:2.4,clamato:1.4};
+  const COMMON_PER_LB={tomato:1.6,cucumber:1/6,onion:.8,cilantro:.2,lemonJuice:2.4,clamato:1.4};
   const TYPES={
     mixed:{name:'Ceviche mixto · pescado y camarón',proteins:{fish:.25,shrimp:.25}},
     fish:{name:'Ceviche de pescado',proteins:{fish:.5}},
@@ -18,7 +18,7 @@
   };
   const ICONS={fish:'🐟',shrimp:'🍤',octopus:'🐙',tomato:'🍅',cucumber:'🥒',onion:'🧅',cilantro:'🌿',lemonJuice:'🍋',clamato:'🥤'};
   const FALLBACK_NAMES={fish:'Filete de pescado',shrimp:'Camarón',octopus:'Tentáculo de pulpo',tomato:'Tomate',cucumber:'Pepino',onion:'Cebolla morada',cilantro:'Cilantro',lemonJuice:'Jugo de limón',clamato:'Clamato'};
-  const FALLBACK_UNITS={fish:'lb',shrimp:'lb',octopus:'lb',tomato:'oz',cucumber:'oz',onion:'oz',cilantro:'oz',lemonJuice:'fl oz',clamato:'fl oz'};
+  const FALLBACK_UNITS={fish:'lb',shrimp:'lb',octopus:'lb',tomato:'oz',cucumber:'pzas',onion:'oz',cilantro:'oz',lemonJuice:'fl oz',clamato:'fl oz'};
 
   const round3=value=>Math.round((Number(value)+Number.EPSILON)*1000)/1000;
   const itemName=key=>(typeof ITEMS!=='undefined'&&ITEMS[key]?.name)||FALLBACK_NAMES[key]||key;
@@ -28,7 +28,15 @@
   function loadSession(){
     try{
       const value=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-      return value&&Array.isArray(value.steps)?value:null;
+      if(value&&Array.isArray(value.steps)){
+        const cucumber=value.steps.find(step=>step.key==='cucumber');
+        if(cucumber&&value.pounds>0&&cucumber.qty>1){
+          cucumber.qty=round3(Number(value.pounds)/6);
+          saveSession(value);
+        }
+        return value;
+      }
+      return null;
     }catch{return null;}
   }
   function saveSession(value){
