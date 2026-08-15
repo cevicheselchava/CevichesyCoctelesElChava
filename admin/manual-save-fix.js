@@ -20,14 +20,14 @@
     if(document.getElementById('purchasePriceFixEnhancement'))return;
     const priceFix=document.createElement('script');
     priceFix.id='purchasePriceFixEnhancement';
-    priceFix.src='/admin/purchase-price-fix.js?v=20260814-1';
+    priceFix.src='/admin/purchase-price-fix.js?v=20260814-2';
     document.body.appendChild(priceFix);
   };
 
   if(!document.getElementById('sodaOptionsEnhancement')){
     const script=document.createElement('script');
     script.id='sodaOptionsEnhancement';
-    script.src='/admin/soda-options.js?v=20260814-1';
+    script.src='/admin/soda-options.js?v=20260814-2';
     script.onload=loadPriceFix;
     script.onerror=loadPriceFix;
     document.body.appendChild(script);
@@ -38,7 +38,7 @@
   if(!document.getElementById('avocadoFixEnhancement')){
     const avocado=document.createElement('script');
     avocado.id='avocadoFixEnhancement';
-    avocado.src='/admin/avocado-fix.js?v=20260814-1';
+    avocado.src='/admin/avocado-fix.js?v=20260814-2';
     document.body.appendChild(avocado);
   }
 })();
