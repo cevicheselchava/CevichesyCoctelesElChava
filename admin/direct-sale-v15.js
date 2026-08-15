@@ -77,7 +77,7 @@
     function localDay(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
     function buildRecipe(pounds,sodas,pack12){
       const protein=125/453.59237;
-      const common={tomato:1.6,cucumber:1.6,onion:.8,cilantro:.2,lemonJuice:2.4,clamato:1.4,avocado:.25};
+      const common={tomato:1.6,cucumber:1/6,onion:.8,cilantro:.2,lemonJuice:2.4,clamato:1.4,avocado:.25};
       const r={fish:protein*pounds,shrimp:protein*pounds};
       Object.entries(common).forEach(([k,v])=>r[k]=v*pounds);
       if(pack12){r.container12=2*pounds;r.lid12=2*pounds;r.spoon=1*pounds;r.napkins=2*pounds;}
@@ -118,7 +118,7 @@
             customer,phone:'',address:'',zip:'',deliveryDate:localDay(),time:'Venta directa',payment,
             notes:$('moNotes')?.value.trim()||'Sin notas',source:'app-clientes',manualSource,
             items:[{productId:'mixed_lb_direct',name:'Ceviche mixto',detail:`Pescado y camarón · ${pounds} libra${pounds===1?'':'s'} · Venta directa`,qty:pounds,unitPrice,lineTotal:total}],
-            recipe,total,cost,profit,costComplete:true,manualOrder:true,directSale:true,pounds,unitPrice,costPerLb,promoSodas:sodas,packaging12:pack12,
+            recipe,total,cost,profit,costComplete:true,manualOrder:true,directSale:true,pounds,unitPrice,costPerLb,promoSodas:sodas,packaging12:pack12,cucumberUnitVersion:'piece-v15',
             inventoryWarning:warnings,createdAt:stamp,deliveredAt:stamp,routeDeliveredAt:stamp,createdAtClient:new Date().toISOString()
           };
           tx.set(inventoryRef,{items:current,updatedAt:stamp},{merge:true});
