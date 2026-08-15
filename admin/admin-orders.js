@@ -206,10 +206,14 @@
   async function updateDelivery(id,next){
     const o=(typeof orders!=='undefined'?orders:[]).find(x=>x.id===id);if(!o)return;
     if(next==='entregado'){
-      const miss=typeof missing==='function'?missing(o.recipe,o.status==='confirmado'?id:null):[];
-      if(miss.length)return alert('No alcanza el inventario para finalizar:\n\n'+miss.join('\n'));
-      try{if(typeof setStatus==='function'&&o.status!=='entregado')await setStatus(id,'entregado');await db.collection('pedidos').doc(id).update({deliveryStatus:'entregado',routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp()});}
-      catch(e){console.error(e);alert('No se pudo finalizar la entrega.');}
+      try{
+        if(typeof setStatus==='function'&&o.status!=='entregado'){
+          await setStatus(id,'entregado');
+          const latest=(typeof orders!=='undefined'?orders:[]).find(x=>x.id===id);
+          if(latest&&latest.status!=='entregado')return;
+        }
+        await db.collection('pedidos').doc(id).update({deliveryStatus:'entregado',routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp()});
+      }catch(e){console.error(e);alert('No se pudo finalizar la entrega.');}
       return;
     }
     try{await db.collection('pedidos').doc(id).update({deliveryStatus:next,routeUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()});if(typeof toast==='function')toast(next==='listo'?'Pedido listo':next==='en_ruta'?'Pedido en ruta':'Estado actualizado');}
