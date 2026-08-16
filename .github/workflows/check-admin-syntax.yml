@@ -26,4 +26,4 @@ jobs:
           PY
       - name: Check JavaScript syntax
         run: node --check /tmp/admin.js
-# verification run
+# Keeps future panel edits from publishing with broken JavaScript.
