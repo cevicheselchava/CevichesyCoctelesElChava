@@ -1,0 +1,39 @@
+name: Adjust mixed ceviche recipe once
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/adjust-mixed-recipe-once.yml'
+permissions:
+  contents: write
+jobs:
+  adjust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Adjust shrimp proportion and verify syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('admin/index.html')
+          s=p.read_text(encoding='utf-8')
+          old="mixed:{name:'Ceviche mixto · pescado y camarón',proteins:{fish:.25,shrimp:.25}}"
+          new="mixed:{name:'Ceviche mixto · pescado y camarón',proteins:{fish:.25,shrimp:.1875}}"
+          if old not in s:
+              raise SystemExit('Expected mixed recipe was not found; nothing changed')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          scripts=re.findall(r'<script(?:\\s[^>]*)?>(.*?)</script>',s,re.S)
+          inline=[x for x in scripts if x.strip()]
+          Path('/tmp/admin.js').write_text(inline[-1],encoding='utf-8')
+          PY
+          node --check /tmp/admin.js
+      - name: Commit only the recipe change and remove this helper
+        run: |
+          rm .github/workflows/adjust-mixed-recipe-once.yml
+          git config user.name "cevicheselchava"
+          git config user.email "aguachileselchava@gmail.com"
+          git add admin/index.html .github/workflows/adjust-mixed-recipe-once.yml
+          git commit -m "Set mixed ceviche to 3 oz shrimp per lb"
+          git push
