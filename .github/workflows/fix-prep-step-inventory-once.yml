@@ -1,0 +1,83 @@
+name: Fix prep step inventory once
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/fix-prep-step-inventory-once.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply preparation flow
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('admin/index.html')
+          s=p.read_text()
+
+          old="function localDay(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}function formatOrderDate(v){const m=String(v||'').match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);if(!m)return v||'SIN FECHA';return new Date(Number(m[1]),Number(m[2])-1,Number(m[3])).toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}).replace(/\\./g,'').toUpperCase()}function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.classList.remove('show'),2300)}function timestampDate(v){if(!v)return null;if(v.toDate)return v.toDate();const d=new Date(v);return isNaN(d)?null:d}function reserved(except=null){const out={...EMPTY};orders.filter(o=>!o.deleted&&o.id!==except&&o.status==='confirmado').forEach(o=>Object.entries(o.recipe||{}).forEach(([k,v])=>out[k]=round3((out[k]||0)+Number(v||0))));return out}const ORDER_NEED_SKIP=new Set(['container12','lid12','spoon','napkins']);function pendingProductionOrders(){return orders.filter(o=>!o.deleted&&!o.directSale&&!['entregado','cancelado'].includes(String(o.status||'nuevo'))&&!['listo','en_ruta'].includes(String(o.deliveryStatus||'por_preparar'))&&!o.inventoryConsumedAt)}function pendingNeeds(){const out={...EMPTY};pendingProductionOrders().forEach(o=>Object.entries(o.recipe||{}).forEach(([k,v])=>{if(!ORDER_NEED_SKIP.has(k)&&ITEMS[k])out[k]=round3(Number(out[k]||0)+Number(v||0))}));return out}"
+          new="function localDay(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}function formatOrderDate(v){const m=String(v||'').match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);if(!m)return v||'SIN FECHA';return new Date(Number(m[1]),Number(m[2])-1,Number(m[3])).toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}).replace(/\\./g,'').toUpperCase()}function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.classList.remove('show'),2300)}function timestampDate(v){if(!v)return null;if(v.toDate)return v.toDate();const d=new Date(v);return isNaN(d)?null:d}const ORDER_NEED_SKIP=new Set(['container12','lid12','spoon','napkins']);function recipeRemaining(o){const used=o.prepConsumed||{},out={};Object.entries(o.recipe||{}).forEach(([k,v])=>{if(ORDER_NEED_SKIP.has(k)||!ITEMS[k])return;const left=Math.max(0,round3(Number(v||0)-Number(used[k]||0)));if(left>0)out[k]=left});return out}function reserved(except=null){const out={...EMPTY};orders.filter(o=>!o.deleted&&o.id!==except&&o.status==='confirmado'&&!['listo','en_ruta'].includes(String(o.deliveryStatus||'por_preparar'))).forEach(o=>Object.entries(recipeRemaining(o)).forEach(([k,v])=>out[k]=round3((out[k]||0)+Number(v||0))));return out}function pendingProductionOrders(){return orders.filter(o=>!o.deleted&&!o.directSale&&!['entregado','cancelado'].includes(String(o.status||'nuevo'))&&!['listo','en_ruta'].includes(String(o.deliveryStatus||'por_preparar'))&&!o.inventoryConsumedAt)}function pendingNeeds(){const out={...EMPTY};pendingProductionOrders().forEach(o=>Object.entries(recipeRemaining(o)).forEach(([k,v])=>out[k]=round3(Number(out[k]||0)+Number(v||0))));return out}"
+          if old not in s: raise SystemExit('reservation/pending block not found')
+          s=s.replace(old,new,1)
+
+          old="if(stage==='por_preparar')acts+=`<button class=\"success\" data-action=\"ready\" data-id=\"${o.id}\">✅ Listo para entregar</button><button class=\"danger\" data-action=\"cancel\" data-id=\"${o.id}\">Cancelar y liberar</button>`;"
+          new="if(stage==='por_preparar')acts+=`<button class=\"success\" data-action=\"prepare\" data-id=\"${o.id}\">🥣 Preparar pedido</button><button class=\"danger\" data-action=\"cancel\" data-id=\"${o.id}\">Cancelar y liberar</button>`;"
+          if old not in s: raise SystemExit('order prepare action block not found')
+          s=s.replace(old,new,1)
+
+          old="if(a==='confirm')setStatus(id,'confirmado');if(a==='ready')markPrepared(id);if(a==='cancel')setStatus(id,'cancelado');"
+          new="if(a==='confirm')setStatus(id,'confirmado');if(a==='prepare')prepareOrder(id);if(a==='cancel')setStatus(id,'cancelado');"
+          if old not in s: raise SystemExit('order action handler not found')
+          s=s.replace(old,new,1)
+
+          start=s.index("const PREP_NAMES=")
+          end=s.index("\n\nfunction quickSet",start)
+          replacement=r'''const PREP_NAMES={fish:'Pescado',shrimp:'Camarón',octopus:'Pulpo',tomato:'Tomate',cucumber:'Pepino',onion:'Cebolla morada',cilantro:'Cilantro',lemonJuice:'Jugo de limón',clamato:'Clamato',avocado:'Aguacate',container12:'Contenedores 12 oz',lid12:'Tapas 12 oz',spoon:'Cucharas',napkins:'Servilletas',coca:'Refrescos'};function prepStorage(){try{return JSON.parse(localStorage.getItem('elCubanoPrepCleanV3')||'null')}catch{return null}}function prepSave(){if(prepSession)localStorage.setItem('elCubanoPrepCleanV3',JSON.stringify(prepSession));else localStorage.removeItem('elCubanoPrepCleanV3')}function prepSessionId(prefix='manual'){return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`}function startPrep(){const pounds=Math.round((Math.max(.25,Number($('prepPounds').value)||.25))*4)/4,type=$('prepType').value,recipe=consumableRecipe(buildRecipe(pounds,0,true,type)),steps=Object.entries(recipe).map(([k,v])=>({k,qty:v,done:false}));prepSession={sessionId:prepSessionId(),orderId:'',type,pounds,label:TYPES[type]?.name||'Receta',steps,startedAt:new Date().toISOString()};prepSave();renderPrepare()}$('prepStart').onclick=startPrep;function prepareOrder(id){const o=orders.find(x=>x.id===id);if(!o||o.deleted||o.status!=='confirmado'||['listo','en_ruta','entregado'].includes(String(o.deliveryStatus||'')))return;const remaining=recipeRemaining(o),steps=Object.entries(remaining).map(([k,v])=>({k,qty:v,done:false}));if(!steps.length){db.collection('pedidos').doc(id).update({deliveryStatus:'listo',preparedAt:firebase.firestore.FieldValue.serverTimestamp(),inventoryConsumedAt:firebase.firestore.FieldValue.serverTimestamp(),routeUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()});toast('Pedido listo para entregar');return}prepSession={sessionId:`order-${id}`,orderId:id,type:'mixed',pounds:poundsFromOrder(o),label:orderTitle(o),steps,startedAt:new Date().toISOString()};prepSave();activateTab('prepare');renderPrepare()}async function consumePrepStep(idx){if(!prepSession||!prepSession.steps[idx]||prepSession.steps[idx].done)return;const step=prepSession.steps[idx],x=ITEMS[step.k],have=Number(inventory[step.k]||0),lack=Math.max(0,round3(Number(step.qty||0)-have));if(lack>0&&!confirm(`⚠️ El inventario registrado dice que faltan ${displayQty(step.k,lack)} de ${x?.name||step.k}.\n\nSi físicamente ya lo agregaste, toca ACEPTAR y después ajusta el inventario real.`))return;const sid=String(prepSession.sessionId||prepSessionId()).replace(/[^a-zA-Z0-9_-]/g,'_'),mr=db.collection('movimientos').doc(`prep_${sid}_${step.k}`),stamp=firebase.firestore.FieldValue.serverTimestamp(),isLast=prepSession.steps.every((s,i)=>i===idx||s.done),orderId=prepSession.orderId||'';await db.runTransaction(async tx=>{const ms=await tx.get(mr),snap=await tx.get(inventoryRef);if(!ms.exists){const cur={...EMPTY,...(snap.exists?(snap.data().items||{}):{})};cur[step.k]=Math.max(0,round3(Number(cur[step.k]||0)-Number(step.qty||0)));tx.set(inventoryRef,{items:cur,tracked:firebase.firestore.FieldValue.arrayUnion(step.k),updatedAt:stamp},{merge:true});tx.set(mr,{type:'prep',date:stamp,day:localDay(),name:x?.name||step.k,itemKey:step.k,qty:Number(step.qty||0),unit:x?.unit||'',prepSessionId:sid,orderId:orderId||null,shortage:lack||0})}if(orderId){const or=db.collection('pedidos').doc(orderId),os=await tx.get(or);if(os.exists){const upd={[`prepConsumed.${step.k}`]:Number(step.qty||0),prepStartedAt:os.data().prepStartedAt||stamp};if(isLast){upd.deliveryStatus='listo';upd.preparedAt=stamp;upd.inventoryConsumedAt=stamp;upd.routeUpdatedAt=stamp}tx.update(or,upd)}}});prepSession.steps[idx].done=true;prepSave();if(isLast&&orderId)toast('✅ Pedido terminado · ya pasó a Entregas');else toast(`${x?.name||step.k} descontado del inventario`);renderPrepare()}function renderPrepare(){if(!prepSession)prepSession=prepStorage();if(!prepSession){$('prepWorkspace').innerHTML='<div class="empty">Elige la receta y las libras, luego toca “Iniciar preparación”.</div>';return}const done=prepSession.steps.filter(x=>x.done).length,total=prepSession.steps.length,idx=prepSession.steps.findIndex(x=>!x.done),current=idx>=0?prepSession.steps[idx]:null,pct=total?Math.round(done/total*100):100;$('prepWorkspace').innerHTML=`<div class="prep-progress">${prepSession.label||TYPES[prepSession.type]?.name||'Receta'} · <b>${prepSession.pounds} lb</b>${prepSession.orderId?'<br>🧾 Preparando pedido':''}<br>${done} de ${total} pasos<div class="prep-progress-bar"><span style="width:${pct}%"></span></div></div>${current?`<div class="prep-current"><h3>Paso ${done+1}: ${PREP_NAMES[current.k]||ITEMS[current.k]?.name}</h3><div class="big">Usa ${displayQty(current.k,current.qty)}</div><div class="actions"><button class="success" id="prepDone">✓ Ya lo agregué</button><button class="danger" id="prepReset">Salir de preparación</button></div></div>`:`<div class="prep-current"><h3>✅ Preparación terminada</h3><div class="big">${prepSession.orderId?'El pedido ya cambió automáticamente a LISTO PARA ENTREGAR.':`${prepSession.pounds} lb completadas`}</div><button class="primary" id="prepFinish" style="width:100%;border:0;border-radius:12px;padding:13px;font-weight:1000">Cerrar preparación</button></div>`}<div class="prep-list">${prepSession.steps.map((s,i)=>`<div class="prep-row ${s.done?'done':''}"><b>${i+1}</b><div><strong>${PREP_NAMES[s.k]||ITEMS[s.k]?.name}</strong><small>${displayQty(s.k,s.qty)}</small></div><span class="prep-status">${s.done?'HECHO':i===idx?'AHORA':'PENDIENTE'}</span></div>`).join('')}</div>`;const doneBtn=$('prepDone'),reset=$('prepReset'),finish=$('prepFinish');if(doneBtn)doneBtn.onclick=()=>consumePrepStep(idx);if(reset)reset.onclick=()=>{prepSession=null;prepSave();renderPrepare()};if(finish)finish.onclick=()=>{prepSession=null;prepSave();renderPrepare()}}'''
+          s=s[:start]+replacement+s[end:]
+
+          old="async function markPrepared(id){const o=orders.find(x=>x.id===id);if(!o||o.deleted||['entregado','cancelado'].includes(o.status))return;const miss=o.inventoryConsumedAt?[]:missingPhysical(o.recipe);if(miss.length&&!confirm('⚠️ El inventario registrado no cuadra con esta preparación:\\n\\n'+miss.join('\\n')+'\\n\\nSi ya está preparado, toca ACEPTAR. Después puedes corregir con AJUSTAR INVENTARIO REAL.'))return;await db.runTransaction(async tx=>{const or=db.collection('pedidos').doc(id),os=await tx.get(or),is=await tx.get(inventoryRef);if(!os.exists)throw new Error('El pedido ya no existe.');const data=os.data();if(['entregado','cancelado'].includes(data.status))return;const stamp=firebase.firestore.FieldValue.serverTimestamp();if(!data.inventoryConsumedAt){const cur={...EMPTY,...(is.exists?(is.data().items||{}):{})};Object.entries(consumableRecipe(data.recipe)).forEach(([k,v])=>cur[k]=Math.max(0,round3(Number(cur[k]||0)-Number(v||0))));tx.set(inventoryRef,{items:cur,updatedAt:stamp},{merge:true});tx.update(or,{deliveryStatus:'listo',preparedAt:stamp,inventoryConsumedAt:stamp,inventoryWarningAtPrepare:miss.length?miss:firebase.firestore.FieldValue.delete(),routeUpdatedAt:stamp})}else tx.update(or,{deliveryStatus:'listo',preparedAt:data.preparedAt||stamp,routeUpdatedAt:stamp})});toast('Pedido listo · inventario actualizado')}"
+          new="async function markPrepared(id){const o=orders.find(x=>x.id===id);if(!o||o.deleted||['entregado','cancelado'].includes(o.status))return;await db.collection('pedidos').doc(id).update({deliveryStatus:'listo',preparedAt:firebase.firestore.FieldValue.serverTimestamp(),routeUpdatedAt:firebase.firestore.FieldValue.serverTimestamp()});toast('Pedido listo para entregar')}"
+          if old not in s: raise SystemExit('markPrepared block not found')
+          s=s.replace(old,new,1)
+
+          old="else if(next==='entregado'){const fallback=o.inventoryConsumedAt?{}:consumableRecipe(o.recipe),miss=o.inventoryConsumedAt?[]:missing(fallback,o.status==='confirmado'?id:null);if(miss.length&&!confirm('⚠️ Inventario insuficiente:\\n\\n'+miss.join('\\n')+'\\n\\n¿MARCAR COMO ENTREGADO DE TODOS MODOS?'))return;await db.runTransaction(async tx=>{const or=db.collection('pedidos').doc(id),mr=db.collection('movimientos').doc(),os=await tx.get(or),is=await tx.get(inventoryRef);if(!os.exists)throw new Error('El pedido ya no existe.');const data=os.data();if(['entregado','cancelado'].includes(data.status))return;const stamp=firebase.firestore.FieldValue.serverTimestamp(),cur={...EMPTY,...(is.exists?(is.data().items||{}):{})};if(!data.inventoryConsumedAt){Object.entries(consumableRecipe(data.recipe)).forEach(([k,v])=>cur[k]=Math.max(0,round3(Number(cur[k]||0)-Number(v||0))));tx.set(inventoryRef,{items:cur,updatedAt:stamp},{merge:true})}const update={status:'entregado',deliveryStatus:'entregado',deliveredAt:stamp,routeDeliveredAt:stamp,inventoryWarningAtDelivery:miss.length?miss:firebase.firestore.FieldValue.delete()};if(!data.inventoryConsumedAt)update.inventoryConsumedAt=stamp;tx.update(or,update);tx.set(mr,{type:'sale',date:stamp,day:localDay(),name:orderTitle(data),orderId:id,total:Number(data.total||0),cost:data.cost??null,profit:data.profit??null,inventoryWarning:miss})});toast('Venta finalizada')}"
+          new="else if(next==='entregado'){await db.runTransaction(async tx=>{const or=db.collection('pedidos').doc(id),mr=db.collection('movimientos').doc(),os=await tx.get(or);if(!os.exists)throw new Error('El pedido ya no existe.');const data=os.data();if(['entregado','cancelado'].includes(data.status))return;const stamp=firebase.firestore.FieldValue.serverTimestamp();tx.update(or,{status:'entregado',deliveryStatus:'entregado',deliveredAt:stamp,routeDeliveredAt:stamp});tx.set(mr,{type:'sale',date:stamp,day:localDay(),name:orderTitle(data),orderId:id,total:Number(data.total||0),cost:data.cost??null,profit:data.profit??null})});toast('Venta finalizada')}"
+          if old not in s: raise SystemExit('delivery inventory block not found')
+          s=s.replace(old,new,1)
+
+          p.write_text(s)
+          PY
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('admin/index.html').read_text()
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,flags=re.S|re.I)
+          Path('/tmp/admin-inline.js').write_text('\n'.join(x for x in scripts if x.strip()))
+          PY
+          node --check /tmp/admin-inline.js
+      - name: Verify preparation behavior
+        shell: bash
+        run: |
+          grep -q 'data-action="prepare"' admin/index.html
+          grep -q "if(a==='prepare')prepareOrder(id)" admin/index.html
+          grep -q 'consumePrepStep' admin/index.html
+          grep -q 'prepConsumed' admin/index.html
+          grep -q "deliveryStatus='listo'" admin/index.html
+          ! grep -q 'data-action="ready"' admin/index.html
+      - name: Commit result
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/fix-prep-step-inventory-once.yml
+          git add admin/index.html
+          git commit -m 'Deduct inventory step by step during preparation'
+          git push origin HEAD:main
