@@ -12,13 +12,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Panel El Cubano">
 <title>Panel Operativo El Cubano</title>
-<link rel="manifest" href="/admin/manifest.webmanifest?v=20260815-10">
-<link rel="icon" href="/pwa-icon.svg?v=20260815-10" type="image/svg+xml">
+<link rel="manifest" href="/admin/manifest.webmanifest?v=20260815-18">
+<link rel="icon" href="/pwa-icon.svg?v=20260815-18" type="image/svg+xml">
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff9ed;font-family:Arial,Helvetica,sans-serif}
-#panel{display:block;width:100%;height:100%;border:0;background:#fff9ed;visibility:hidden;opacity:0;transition:opacity .12s ease}
+#panel{display:block;width:100%;height:100%;border:0;background:#fff9ed;visibility:hidden;opacity:0}
 #panel.ready{visibility:visible;opacity:1}
-#panelLoader{position:fixed;inset:0;display:grid;place-items:center;background:#fff9ed;color:#1f6f3b;font-weight:900;font-size:18px;z-index:20}
+#panelLoader{position:fixed;inset:0;display:grid;place-items:center;background:#fff9ed;color:#1f6f3b;font-weight:900;font-size:18px;z-index:20;text-align:center;padding:24px}
 #panelLoader[hidden]{display:none}
 </style>
 </head>
@@ -26,12 +26,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff9ed;fon
 <div id="panelLoader">Cargando panel...</div>
 <iframe id="panel" title="Panel Operativo El Cubano"></iframe>
 <script>
+const VERSION='20260815-18';
 const panel=document.getElementById('panel');
 const panelLoader=document.getElementById('panelLoader');
-let revealTimer=null;
+let booting=false;
 
 function revealPanel(){
-  if(revealTimer){clearTimeout(revealTimer);revealTimer=null;}
   panel.classList.add('ready');
   panelLoader.hidden=true;
 }
@@ -49,37 +49,42 @@ async function clearOldAdminCache(){
   }catch(e){console.warn('No se pudo limpiar cache anterior:',e);}
 }
 
-function addScript(doc,id,src,onload){
-  if(doc.getElementById(id)){if(onload)onload();return;}
-  const s=doc.createElement('script');
-  s.id=id;
-  s.src=src;
-  s.onload=()=>{if(onload)onload();};
-  s.onerror=()=>{console.error('No cargó',src);if(onload)onload();};
-  doc.body.appendChild(s);
+function loadScript(doc,id,path){
+  return new Promise(resolve=>{
+    const old=doc.getElementById(id);
+    if(old)old.remove();
+    const s=doc.createElement('script');
+    s.id=id;
+    s.src=`${path}?v=${VERSION}`;
+    s.onload=()=>resolve({ok:true,path});
+    s.onerror=()=>{console.error('No cargó',path);resolve({ok:false,path});};
+    doc.body.appendChild(s);
+  });
+}
+
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+async function waitUntil(test,timeout=2500){
+  const start=Date.now();
+  while(Date.now()-start<timeout){
+    try{if(test())return true;}catch(_){ }
+    await wait(60);
+  }
+  return false;
 }
 
 function installDeliveryOverride(doc){
-  if(doc.getElementById('deliveryOverrideInline'))return;
+  if(doc.getElementById('deliveryOverrideInlineV18'))return;
   const s=doc.createElement('script');
-  s.id='deliveryOverrideInline';
+  s.id='deliveryOverrideInlineV18';
   s.textContent=`(()=>{
-    if(window.__DELIVERY_OVERRIDE_INLINE__)return;
-    window.__DELIVERY_OVERRIDE_INLINE__=true;
-
+    if(window.__DELIVERY_OVERRIDE_V18__)return;
+    window.__DELIVERY_OVERRIDE_V18__=true;
     const originalSetStatus=window.setStatus;
-
     async function forceDeliver(id){
       const local=orders.find(o=>o.id===id);
       if(!local||local.status==='cancelado')return false;
       if(local.status==='entregado'){
-        try{
-          await db.collection('pedidos').doc(id).update({deliveryStatus:'entregado',routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp()});
-          return true;
-        }catch(e){
-          console.error(e);
-          return false;
-        }
+        try{await db.collection('pedidos').doc(id).update({deliveryStatus:'entregado',routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp()});return true;}catch(e){console.error(e);return false;}
       }
       const miss=missing(local.recipe,local.status==='confirmado'?id:null);
       if(miss.length){
@@ -100,25 +105,17 @@ function installDeliveryOverride(doc){
             return;
           }
           const current={...EMPTY,...(invSnap.exists?(invSnap.data().items||{}):{})};
-          Object.entries(order.recipe||{}).forEach(([k,v])=>{
-            current[k]=round(Number(current[k]||0)-Number(v||0));
-          });
+          Object.entries(order.recipe||{}).forEach(([k,v])=>{current[k]=round(Number(current[k]||0)-Number(v||0));});
           tx.set(inventoryRef,{items:current,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
           tx.update(orderRef,{status:'entregado',deliveryStatus:'entregado',deliveredAt:firebase.firestore.FieldValue.serverTimestamp(),routeDeliveredAt:firebase.firestore.FieldValue.serverTimestamp(),inventoryWarningAtDelivery:miss.length?miss:firebase.firestore.FieldValue.delete()});
           tx.set(moveRef,{type:'sale',date:firebase.firestore.FieldValue.serverTimestamp(),day:today(),name:orderTitle(order),orderId:id,total:Number(order.total||0),cost:order.cost??null,profit:order.profit??null,inventoryWarning:miss.length?miss:[]});
         });
         toast(miss.length?'Venta finalizada con alerta de inventario':'Venta finalizada e inventario descontado');
         return true;
-      }catch(e){
-        alert(e.message||'No se pudo finalizar.');
-        showError(e);
-        return false;
-      }
+      }catch(e){alert(e.message||'No se pudo finalizar.');showError(e);return false;}
     }
-
     window.forceDeliver=forceDeliver;
     window.setStatus=(id,next)=>next==='entregado'?forceDeliver(id):(typeof originalSetStatus==='function'?originalSetStatus(id,next):undefined);
-
     document.addEventListener('click',event=>{
       const b=event.target.closest('button[onclick]');
       if(!b)return;
@@ -127,10 +124,7 @@ function installDeliveryOverride(doc){
       const route=code.match(/updateDelivery\\(['\"]([^'\"]+)['\"],['\"]entregado['\"]\\)/);
       const id=(direct||route)?.[1];
       if(!id)return;
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      forceDeliver(id);
+      event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();forceDeliver(id);
     },true);
   })();`;
   doc.body.appendChild(s);
@@ -139,10 +133,9 @@ function installDeliveryOverride(doc){
 function decorateNavOnce(doc){
   const nav=doc.querySelector('.nav');
   if(!nav)return;
-
-  if(!doc.getElementById('stableBigNavStyle')){
+  if(!doc.getElementById('stableBigNavStyleV18')){
     const st=doc.createElement('style');
-    st.id='stableBigNavStyle';
+    st.id='stableBigNavStyleV18';
     st.textContent=`
       .nav.stable-big-nav{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;padding:10px!important;border-radius:23px!important;background:rgba(255,255,255,.96)!important;border:1px solid #e5dece!important;box-shadow:0 10px 26px rgba(18,52,88,.10)!important}
       .nav.stable-big-nav button[data-tab]{position:relative!important;overflow:hidden!important;min-width:0!important;min-height:82px!important;padding:10px 5px 12px!important;border:1px solid #e5e1d9!important;border-radius:18px!important;background:linear-gradient(145deg,#ffffff,#f4f7f4)!important;color:#123458!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:6px!important;font-weight:1000!important;box-shadow:0 5px 14px rgba(22,50,72,.07)!important}
@@ -152,64 +145,71 @@ function decorateNavOnce(doc){
       .nav.stable-big-nav .nav-label{display:block!important;width:100%!important;max-width:100%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:12px!important;line-height:1.05!important;font-weight:1000!important}
       .nav.stable-big-nav button[data-tab].active{color:#fff!important;border-color:transparent!important;background:linear-gradient(135deg,#267642,#319552)!important;box-shadow:0 9px 19px rgba(38,118,66,.28)!important;transform:translateY(-2px)!important}
       .nav.stable-big-nav button[data-tab].active::after{background:#f2b632!important;height:6px!important;left:10%;right:10%}
-      @media(min-width:760px){.nav.stable-big-nav{grid-template-columns:repeat(7,minmax(0,1fr))!important}.nav.stable-big-nav button[data-tab]{min-height:88px!important}.nav.stable-big-nav .nav-label{font-size:12px!important}}
+      @media(min-width:760px){.nav.stable-big-nav{grid-template-columns:repeat(7,minmax(0,1fr))!important}.nav.stable-big-nav button[data-tab]{min-height:88px!important}}
       @media(max-width:390px){.nav.stable-big-nav{gap:7px!important;padding:8px!important}.nav.stable-big-nav button[data-tab]{min-height:78px!important}.nav.stable-big-nav .nav-icon{width:36px!important;height:36px!important;font-size:21px!important}.nav.stable-big-nav .nav-label{font-size:11px!important}}
     `;
     doc.head.appendChild(st);
   }
-
   const icons={orders:'🧾',inventory:'📦',history:'🕒',recipes:'👨‍🍳',prepare:'🥣',deliveries:'🛵',purchases:'🛒',money:'💵'};
   const labels={orders:'Pedidos',inventory:'Inventario',history:'Historial',recipes:'Recetas',prepare:'Preparar',deliveries:'Entregas',purchases:'Compras',money:'Mi dinero'};
   nav.classList.add('stable-big-nav');
   nav.querySelectorAll('button[data-tab]').forEach(button=>{
     const tab=button.dataset.tab||'';
-    const label=labels[tab]||button.textContent.trim()||tab;
-    const icon=icons[tab]||'●';
-    button.innerHTML=`<span class="nav-icon">${icon}</span><span class="nav-label">${label}</span>`;
+    button.innerHTML=`<span class="nav-icon">${icons[tab]||'●'}</span><span class="nav-label">${labels[tab]||button.textContent.trim()||tab}</span>`;
   });
 }
 
-function finishStableUi(doc){
-  addScript(doc,'capitalTrackerV2','/admin/capital-tracker-v2.js?v=20260815-10',()=>{
-    decorateNavOnce(doc);
-    addScript(doc,'reggaeTheme','/admin/reggae-theme.js?v=20260815-10',revealPanel);
-  });
-}
+async function bootstrapPanel(){
+  if(booting)return;
+  booting=true;
+  const doc=panel.contentDocument;
+  if(!doc||!doc.body){booting=false;return;}
 
-function injectStableModules(){
-  try{
-    const doc=panel.contentDocument;
-    if(!doc||!doc.body){revealPanel();return;}
+  panelLoader.hidden=false;
+  panel.classList.remove('ready');
+  doc.documentElement.style.visibility='hidden';
 
-    installDeliveryOverride(doc);
-
-    if(!doc.getElementById('adminHideFooter')){
-      const st=doc.createElement('style');
-      st.id='adminHideFooter';
-      st.textContent='.footer{display:none!important}body{padding-bottom:0!important}#purchaseCalc{display:none!important}';
-      doc.head.appendChild(st);
-    }
-
-    addScript(doc,'manualSaveFix','/admin/manual-save-fix.js?v=20260815-10',()=>{
-      addScript(doc,'adminOrdersEnhancement','/admin/admin-orders.js?v=20260815-10',()=>{
-        addScript(doc,'prepareRecipeEnhancement','/admin/prepare-recipe.js?v=20260815-10',()=>finishStableUi(doc));
-      });
-    });
-
-    revealTimer=setTimeout(()=>finishStableUi(doc),5000);
-  }catch(e){
-    console.error('Error cargando panel estable:',e);
-    revealPanel();
+  installDeliveryOverride(doc);
+  if(!doc.getElementById('adminBaseCleanupV18')){
+    const st=doc.createElement('style');
+    st.id='adminBaseCleanupV18';
+    st.textContent='.footer{display:none!important}body{padding-bottom:0!important}#purchaseCalc{display:none!important}';
+    doc.head.appendChild(st);
   }
+
+  const modules=[
+    ['manualDataPatchV18','/admin/manual-save-fix.js'],
+    ['adminOrdersV18','/admin/admin-orders.js'],
+    ['cucumberV18','/admin/cucumber-piece-v15.js'],
+    ['sodaOptionsV18','/admin/soda-options.js'],
+    ['purchasePriceV18','/admin/purchase-price-fix.js'],
+    ['avocadoV18','/admin/avocado-fix.js'],
+    ['historyBatchV18','/admin/history-batch-total.js'],
+    ['directSaleV18','/admin/direct-sale-v15.js'],
+    ['orderInventoryToolsV18','/admin/order-inventory-tools-v16.js'],
+    ['prepareRecipeV18','/admin/prepare-recipe.js'],
+    ['capitalTrackerV18','/admin/capital-tracker-v2.js']
+  ];
+
+  for(const [id,path] of modules)await loadScript(doc,id,path);
+
+  await waitUntil(()=>doc.getElementById('manualOrderModal')&&doc.getElementById('orderInventoryToolsV16Style')&&doc.getElementById('moOrderKind'),3000);
+  await wait(180);
+  decorateNavOnce(doc);
+  await loadScript(doc,'reggaeThemeV18','/admin/reggae-theme.js');
+  await wait(80);
+
+  doc.documentElement.style.visibility='visible';
+  requestAnimationFrame(()=>requestAnimationFrame(revealPanel));
+  booting=false;
 }
 
-panel.addEventListener('load',injectStableModules);
-panel.addEventListener('error',revealPanel);
+panel.addEventListener('load',bootstrapPanel);
+panel.addEventListener('error',()=>{panelLoader.textContent='No se pudo cargar el panel.';});
 
 clearOldAdminCache().finally(()=>{
-  panel.src='/control.html?admin_shell=1&safe=1&v=20260815-10';
+  panel.src=`/control.html?admin_shell=1&safe=1&v=${VERSION}`;
 });
-setTimeout(revealPanel,8000);
 </script>
 </body>
 </html>
