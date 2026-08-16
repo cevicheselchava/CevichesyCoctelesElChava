@@ -70,4 +70,11 @@
     direct.src='/admin/direct-sale-v15.js?v=20260815-2';
     document.body.appendChild(direct);
   }
+
+  if(!document.getElementById('orderInventoryToolsV16Enhancement')){
+    const tools=document.createElement('script');
+    tools.id='orderInventoryToolsV16Enhancement';
+    tools.src='/admin/order-inventory-tools-v16.js?v=20260815-1';
+    document.body.appendChild(tools);
+  }
 })();
