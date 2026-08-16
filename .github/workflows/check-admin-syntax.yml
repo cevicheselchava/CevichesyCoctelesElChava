@@ -1,0 +1,28 @@
+name: Check admin syntax
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'admin/index.html'
+      - '.github/workflows/check-admin-syntax.yml'
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract admin JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('admin/index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.S)
+          inline=[s for s in scripts if s.strip()]
+          if not inline:
+              raise SystemExit('No inline script found')
+          Path('/tmp/admin.js').write_text(inline[-1],encoding='utf-8')
+          print('Extracted',len(inline[-1]),'bytes')
+          PY
+      - name: Check JavaScript syntax
+        run: node --check /tmp/admin.js
