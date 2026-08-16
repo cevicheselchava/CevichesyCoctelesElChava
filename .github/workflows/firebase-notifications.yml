@@ -1,0 +1,35 @@
+name: Deploy Firebase order notifications
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/**'
+      - 'firestore.rules'
+      - 'firebase-notifications.json'
+      - '.github/workflows/firebase-notifications.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy_notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Firebase credentials
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CEVICHES_Y_COCTELES_EL_CHAVA }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
+
+      - name: Install function dependencies
+        run: npm --prefix functions install --omit=dev
+
+      - name: Deploy Firestore rules and notification function
+        run: npx --yes firebase-tools@latest deploy --config firebase-notifications.json --only firestore:rules,functions:notifyNewOnlineOrder --project ceviches-y-cocteles-el-chava --non-interactive
