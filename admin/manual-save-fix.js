@@ -71,10 +71,10 @@
     document.body.appendChild(direct);
   }
 
-  if(!document.getElementById('orderInventoryToolsV16Enhancement')){
+  if(!document.getElementById('orderInventoryToolsV17Enhancement')){
     const tools=document.createElement('script');
-    tools.id='orderInventoryToolsV16Enhancement';
-    tools.src='/admin/order-inventory-tools-v16.js?v=20260815-1';
+    tools.id='orderInventoryToolsV17Enhancement';
+    tools.src='/admin/order-inventory-tools-v16.js?v=20260815-2';
     document.body.appendChild(tools);
   }
 })();
