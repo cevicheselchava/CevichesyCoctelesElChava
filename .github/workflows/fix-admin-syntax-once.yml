@@ -1,0 +1,41 @@
+name: Repair admin syntax once
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-admin-syntax-once.yml'
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Repair missing parenthesis
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          old="function available(k,except=null){return round3(Number(inventory[k]||0)-Number(reserved(except)[k]||0)}"
+          new="function available(k,except=null){return round3(Number(inventory[k]||0)-Number(reserved(except)[k]||0))}"
+          changed=[]
+          for name in ['admin/index.html','panel/index.html']:
+              p=Path(name)
+              if not p.exists():
+                  continue
+              s=p.read_text(encoding='utf-8')
+              if old in s:
+                  p.write_text(s.replace(old,new,1),encoding='utf-8')
+                  changed.append(name)
+          if not changed:
+              raise SystemExit('Expected broken expression was not found')
+          print('Fixed:', ', '.join(changed))
+          PY
+      - name: Commit repair
+        run: |
+          git config user.name "cevicheselchava"
+          git config user.email "aguachileselchava@gmail.com"
+          git add admin/index.html panel/index.html
+          git commit -m "Fix admin JavaScript syntax"
+          git push origin HEAD:main
