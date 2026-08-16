@@ -50,12 +50,17 @@ async function registerPhone(){
   await navigator.serviceWorker.ready;
   const token=await messaging.getToken({serviceWorkerRegistration:registration});
   if(!token)throw new Error('Firebase no pudo registrar este teléfono.');
-  await db.collection('adminPushTokens').doc(deviceId()).set({
-    token,
-    enabled:true,
-    platform:navigator.platform||'',
-    userAgent:navigator.userAgent||'',
-    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  const id=deviceId();
+  await db.collection('inventario').doc('principal').set({
+    pushTokens:{
+      [id]:{
+        token,
+        enabled:true,
+        platform:navigator.platform||'',
+        userAgent:navigator.userAgent||'',
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      }
+    }
   },{merge:true});
   localStorage.setItem('elCubanoPushEnabled','1');
   return token;

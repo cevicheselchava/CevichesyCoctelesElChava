@@ -16,12 +16,5 @@ service cloud.firestore {
     match /movimientos/{movimientoId} {
       allow read, write: if true;
     }
-
-    // El panel puede registrar el token del teléfono, pero los clientes no pueden leerlo.
-    match /adminPushTokens/{deviceId} {
-      allow create, update: if request.resource.data.token is string
-                            && request.resource.data.enabled is bool;
-      allow read, delete: if false;
-    }
   }
 }

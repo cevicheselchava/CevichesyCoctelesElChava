@@ -27,9 +27,13 @@ exports.notifyNewOnlineOrder = onDocumentCreated(
     if (order.source !== 'app-clientes' || order.manualOrder === true) return;
 
     const db = getFirestore();
-    const tokenSnap = await db.collection('adminPushTokens').where('enabled', '==', true).get();
-    const docs = tokenSnap.docs.filter((doc) => typeof doc.data()?.token === 'string' && doc.data().token.trim());
-    if (!docs.length) {
+    const settingsSnap = await db.collection('inventario').doc('principal').get();
+    const tokenMap = settingsSnap.data()?.pushTokens || {};
+    const devices = Object.entries(tokenMap)
+      .filter(([, data]) => data?.enabled === true && typeof data?.token === 'string' && data.token.trim())
+      .slice(0, 500)
+      .map(([deviceId, data]) => ({ deviceId, token: data.token }));
+    if (!devices.length) {
       console.log('No hay teléfonos registrados para notificaciones.');
       return;
     }
@@ -43,7 +47,7 @@ exports.notifyNewOnlineOrder = onDocumentCreated(
       : 'Revisa Pedidos > En línea.';
 
     const message = {
-      tokens: docs.map((doc) => doc.data().token),
+      tokens: devices.map((device) => device.token),
       notification: {
         title: '🔔 Nuevo pedido en línea',
         body
@@ -70,14 +74,14 @@ exports.notifyNewOnlineOrder = onDocumentCreated(
         code === 'messaging/registration-token-not-registered' ||
         code === 'messaging/invalid-registration-token'
       ) {
-        invalidDocs.push(docs[index].ref);
+        invalidDocs.push(devices[index].deviceId);
       }
     });
 
     if (invalidDocs.length) {
-      const batch = db.batch();
-      invalidDocs.forEach((ref) => batch.update(ref, { enabled: false }));
-      await batch.commit();
+      const update = {};
+      invalidDocs.forEach((deviceId) => { update[`pushTokens.${deviceId}.enabled`] = false; });
+      await db.collection('inventario').doc('principal').update(update);
     }
 
     console.log(`Notificación enviada: ${response.successCount} ok, ${response.failureCount} error(es).`);
