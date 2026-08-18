@@ -14,7 +14,7 @@
   function purchaseText(k){
     const x=ITEMS[k];
     return String(x?.purchaseUnit||x?.unit||'unidad')
-      .replace(/^pzas$/i,'piezas')
+      .replace(/^pzas$/i,'pieza')
       .replace(/^manojo$/i,'manojo');
   }
 
@@ -35,18 +35,18 @@
     <p id="stockCurrent"></p>
     <div class="grid">
       <label class="full">Producto<select id="stockItem"></select></label>
-      <label class="full" id="stockQtyLabel"><span>¿Cuánto compraste?</span>
+      <label class="full" id="stockQtyLabel"><span>¿Cuánto vas a comprar?</span>
         <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
           <input id="stockQty" type="number" min="0.01" step="0.01" value="1">
           <strong id="stockPurchaseUnitText" style="padding:12px 14px;border-radius:13px;background:#eef3f8;color:#123458;white-space:nowrap">lb</strong>
         </div>
       </label>
-      <label class="full">¿Cuánto pagaste por este producto?<input id="stockCost" type="number" min="0" step="0.01" placeholder="$0.00"></label>
+      <label class="full"><span id="stockPriceLabel">Precio / valor por lb</span><input id="stockUnitPrice" type="number" min="0" step="0.01" placeholder="$0.00"></label>
       <div class="summary-box full" id="stockLinePreview">Se agregará al inventario automáticamente.</div>
       <label class="full">Tienda <input id="stockStore" placeholder="H-E-B, Walmart, Sam's…"></label>
     </div>
     <button class="secondary" id="stockAddLine" style="width:100%;border-radius:12px;padding:13px;font-weight:1000;margin-top:10px">➕ AGREGAR OTRO PRODUCTO</button>
-    <div class="summary-box" id="stockCart">Si compraste una sola cosa, llena los datos y toca Guardar compra.</div>
+    <div class="summary-box" id="stockCart">Si vas a comprar una sola cosa, llena los datos y toca Guardar compra.</div>
     <div class="modal-actions"><button class="secondary" id="stockCancel">Cancelar</button><button class="primary" id="stockSave">Guardar compra</button></div>
   </section>`;
 
@@ -54,23 +54,23 @@
     return Object.entries(ITEMS).map(([k,x])=>`<option value="${k}">${x.name}</option>`).join('');
   }
 
-  function currentLine(requireCost=true){
+  function currentLine(requirePrice=true){
     purchaseKey=$('stockItem').value||purchaseKey;
-    const x=ITEMS[purchaseKey],qty=Number($('stockQty').value||0),rawCost=String($('stockCost').value||'').trim();
-    if(!(qty>0))return {error:'Escribe cuánto compraste.'};
-    if(requireCost&&rawCost==='')return {error:'Escribe cuánto pagaste.'};
-    if(rawCost==='')return null;
-    const cost=Number(rawCost);
-    if(!Number.isFinite(cost)||cost<0)return {error:'Escribe cuánto pagaste.'};
-    const factor=purchaseFactor(purchaseKey),internalQty=round3(qty*factor);
+    const x=ITEMS[purchaseKey],qty=Number($('stockQty').value||0),rawPrice=String($('stockUnitPrice').value||'').trim();
+    if(!(qty>0))return {error:'Escribe cuánto vas a comprar.'};
+    if(requirePrice&&rawPrice==='')return {error:'Escribe el precio o valor.'};
+    if(rawPrice==='')return null;
+    const unitPrice=Number(rawPrice);
+    if(!Number.isFinite(unitPrice)||unitPrice<0)return {error:'Escribe un precio o valor válido.'};
+    const factor=purchaseFactor(purchaseKey),internalQty=round3(qty*factor),cost=Number((qty*unitPrice).toFixed(2));
     return {
       k:purchaseKey,
       qty,
       unit:purchaseText(purchaseKey),
-      unitPrice:qty>0?Number((cost/qty).toFixed(4)):0,
+      unitPrice:Number(unitPrice.toFixed(4)),
       contentPerUnit:factor,
       internalQty,
-      cost:Number(cost.toFixed(2)),
+      cost,
       name:x?.name||purchaseKey
     };
   }
@@ -83,12 +83,14 @@
 
   function updatePreview(){
     purchaseKey=$('stockItem').value||purchaseKey;
-    const x=ITEMS[purchaseKey],qty=Math.max(0,Number($('stockQty').value||0)),factor=purchaseFactor(purchaseKey),internalQty=round3(qty*factor),rawCost=String($('stockCost').value||'').trim();
-    $('stockPurchaseUnitText').textContent=purchaseText(purchaseKey);
+    const qty=Math.max(0,Number($('stockQty').value||0)),factor=purchaseFactor(purchaseKey),internalQty=round3(qty*factor),rawPrice=String($('stockUnitPrice').value||'').trim(),unit=purchaseText(purchaseKey);
+    $('stockPurchaseUnitText').textContent=unit;
+    $('stockPriceLabel').textContent=`Precio / valor por ${unit}`;
     $('stockQty').step=isDiscrete(purchaseKey)?'1':'0.01';
     $('stockQty').min=isDiscrete(purchaseKey)?'1':'0.01';
     $('stockCurrent').innerHTML=`Inventario actual: <b>${internalText(purchaseKey,inventory[purchaseKey]||0)}</b>.`;
-    $('stockLinePreview').innerHTML=`Se agregarán <b>${internalText(purchaseKey,internalQty)}</b> al inventario.${rawCost!==''?`<br>Pagaste: <b>${money(Number(rawCost||0))}</b>`:''}`;
+    const unitPrice=Number(rawPrice||0),lineTotal=Number.isFinite(unitPrice)?qty*unitPrice:0;
+    $('stockLinePreview').innerHTML=`Se agregarán <b>${internalText(purchaseKey,internalQty)}</b> al inventario.${rawPrice!==''?`<br>Total de este producto: <b>${money(lineTotal)}</b>`:''}`;
     const total=totalWithCurrent();
     $('stockSave').textContent=total>0?`Guardar compra · ${money(total)}`:'Guardar compra';
   }
@@ -96,8 +98,8 @@
   function renderCart(){
     const total=cart.reduce((a,l)=>a+Number(l.cost||0),0);
     $('stockCart').innerHTML=cart.length
-      ? `<div style="font-weight:1000;margin-bottom:8px">YA AGREGADO</div>${cart.map((l,i)=>`<div class="movement"><div><strong>${l.name}</strong><small>${Number(l.qty.toFixed(3))} ${l.unit} · ${money(l.cost)}<br>Al inventario: +${internalText(l.k,l.internalQty)}</small></div><button type="button" data-remove-purchase="${i}" class="danger" style="border:0;border-radius:10px;padding:8px 10px;font-weight:1000">✕</button></div>`).join('')}<div style="margin-top:10px"><b>Subtotal agregado: ${money(total)}</b></div>`
-      : 'Si compraste una sola cosa, llena los datos y toca Guardar compra.';
+      ? `<div style="font-weight:1000;margin-bottom:8px">YA AGREGADO</div>${cart.map((l,i)=>`<div class="movement"><div><strong>${l.name}</strong><small>${Number(l.qty.toFixed(3))} ${l.unit} × ${money(l.unitPrice)} = ${money(l.cost)}<br>Al inventario: +${internalText(l.k,l.internalQty)}</small></div><button type="button" data-remove-purchase="${i}" class="danger" style="border:0;border-radius:10px;padding:8px 10px;font-weight:1000">✕</button></div>`).join('')}<div style="margin-top:10px"><b>Subtotal: ${money(total)}</b></div>`
+      : 'Si vas a comprar una sola cosa, llena los datos y toca Guardar compra.';
     updatePreview();
   }
 
@@ -105,7 +107,7 @@
     if(!keepProduct)$('stockItem').selectedIndex=0;
     purchaseKey=$('stockItem').value||Object.keys(ITEMS)[0];
     $('stockQty').value=1;
-    $('stockCost').value='';
+    $('stockUnitPrice').value='';
     updatePreview();
   }
 
@@ -115,7 +117,7 @@
     $('stockItem').value=purchaseKey;
     cart=[];
     $('stockStore').value='';
-    $('stockCost').value='';
+    $('stockUnitPrice').value='';
     const f=purchaseFactor(purchaseKey);
     $('stockQty').value=need!==null&&f>0?Math.max(isDiscrete(purchaseKey)?1:.01,round3(Number(need||0)/f)):1;
     renderCart();
@@ -124,7 +126,7 @@
 
   $('stockItem').onchange=()=>{purchaseKey=$('stockItem').value;resetCurrent(true)};
   $('stockQty').oninput=updatePreview;
-  $('stockCost').oninput=updatePreview;
+  $('stockUnitPrice').oninput=updatePreview;
   $('stockCart').onclick=e=>{
     const b=e.target.closest('[data-remove-purchase]');
     if(!b)return;
@@ -137,7 +139,7 @@
     if(!line||line.error)return alert(line?.error||'Completa la compra.');
     cart.push(line);
     renderCart();
-    $('stockCost').value='';
+    $('stockUnitPrice').value='';
     $('stockQty').value=1;
     updatePreview();
     toast('Producto agregado. Elige el siguiente.');
@@ -147,8 +149,8 @@
 
   $('stockSave').onclick=async()=>{
     let lines=cart.map(x=>({...x}));
-    const rawCost=String($('stockCost').value||'').trim();
-    if(rawCost!==''||!lines.length){
+    const rawPrice=String($('stockUnitPrice').value||'').trim();
+    if(rawPrice!==''||!lines.length){
       const line=currentLine(true);
       if(!line||line.error)return alert(line?.error||'Completa la compra.');
       lines.push(line);
