@@ -29,6 +29,9 @@
   }
 
   if (typeof products !== 'undefined' && Array.isArray(products)) {
+    // Precio ajustado: media libra de ceviche de camarón.
+    setProduct('fc5', { price: 12 });
+
     // Un solo tamaño de cóctel: 12 oz.
     for (let i = products.length - 1; i >= 0; i -= 1) {
       if (products[i].id === 'cc16' || products[i].id === 'cm16') {
