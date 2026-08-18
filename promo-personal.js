@@ -1,24 +1,116 @@
 (() => {
-  const promoId = 'promo_personal_16';
+  const COCKTAIL_12_COST = 2.65;
+  const cocktail12Recipe = {
+    shrimp: 0.1875,
+    onion: 0.5,
+    cilantro: 0.1,
+    avocado: 0.25,
+    tomatoSauce: 2.173,
+    tomatoPuree: 1.087,
+    clamato: 0.652,
+    lemonJuice: 0.065,
+    english: 0.011,
+    maggi: 0.011,
+    container12: 1,
+    lid12: 1,
+    spoon: 1,
+    napkins: 1
+  };
 
-  if (typeof products !== 'undefined' && Array.isArray(products) && !products.some(product => product.id === promoId)) {
-    const recipe = typeof halfRecipe === 'function' && typeof fish1 !== 'undefined'
-      ? halfRecipe(fish1)
-      : {};
+  function copyRecipe(recipe) {
+    return Object.fromEntries(Object.entries(recipe || {}).map(([key, value]) => [key, Number(value)]));
+  }
 
-    products.unshift({
-      id: promoId,
-      group: 'promotions',
-      name: '🔥 Promo Personal',
-      detail: '½ libra de ceviche de pescado + 1 cóctel chico + 1 refresco · Elige tu refresco en notas',
-      price: 16,
-      cost: null,
-      recipe,
-      promo: 'Ahorras $4.50',
-      inventoryNote: 'El cóctel y el refresco quedan pendientes de receta y selección'
+  function setProduct(id, changes) {
+    if (typeof products === 'undefined' || !Array.isArray(products)) return null;
+    const product = products.find(item => item.id === id);
+    if (product) Object.assign(product, changes);
+    return product;
+  }
+
+  if (typeof products !== 'undefined' && Array.isArray(products)) {
+    // Un solo tamaño de cóctel: 12 oz.
+    for (let i = products.length - 1; i >= 0; i -= 1) {
+      if (products[i].id === 'cc16' || products[i].id === 'cm16') {
+        if (typeof state === 'object' && state) delete state[products[i].id];
+        products.splice(i, 1);
+      }
+    }
+
+    setProduct('cc12', {
+      name: 'Cóctel de camarón',
+      detail: '12 oz · único tamaño',
+      price: 10,
+      cost: COCKTAIL_12_COST,
+      recipe: copyRecipe(cocktail12Recipe),
+      pre: false
     });
 
-    if (typeof state === 'object' && state) state[promoId] = 0;
+    setProduct('cm12', {
+      name: 'Cóctel mixto',
+      detail: 'Camarón y pulpo · 12 oz · único tamaño',
+      price: null,
+      pre: true
+    });
+
+    const constructor = setProduct('promo_constructor', {
+      detail: '1 libra de ceviche de pescado + 1 cóctel de camarón 12 oz',
+      price: 22,
+      cost: 6.46,
+      promo: 'Ahorras $3',
+      inventoryNote: ''
+    });
+    if (constructor && typeof addRecipes === 'function' && typeof fish1 !== 'undefined') {
+      constructor.recipe = addRecipes(fish1, cocktail12Recipe);
+    }
+
+    const hambre = setProduct('promo_hambre', {
+      detail: '1 libra de ceviche de camarón + 1 cóctel de camarón 12 oz',
+      price: 27,
+      cost: 8.66,
+      promo: 'Ahorras $3',
+      inventoryNote: ''
+    });
+    if (hambre && typeof addRecipes === 'function' && typeof shrimp1 !== 'undefined') {
+      hambre.recipe = addRecipes(shrimp1, cocktail12Recipe);
+    }
+
+    const camaradas = setProduct('promo_camaradas', {
+      detail: '1 libra de pescado + 1 libra de camarón + 2 cócteles de camarón 12 oz',
+      price: 49,
+      cost: 15.12,
+      promo: 'Ahorras $6',
+      inventoryNote: ''
+    });
+    if (camaradas && typeof addRecipes === 'function' && typeof fish1 !== 'undefined' && typeof shrimp1 !== 'undefined') {
+      camaradas.recipe = addRecipes(fish1, shrimp1, cocktail12Recipe, cocktail12Recipe);
+    }
+
+    const promoId = 'promo_personal_16';
+    let personal = products.find(product => product.id === promoId);
+    if (!personal) {
+      personal = { id: promoId, group: 'promotions' };
+      products.unshift(personal);
+      if (typeof state === 'object' && state) state[promoId] = 0;
+    }
+
+    const halfFish = typeof halfRecipe === 'function' && typeof fish1 !== 'undefined'
+      ? halfRecipe(fish1)
+      : {};
+    const personalRecipe = typeof addRecipes === 'function'
+      ? addRecipes(halfFish, cocktail12Recipe)
+      : { ...halfFish, ...cocktail12Recipe };
+
+    Object.assign(personal, {
+      name: '🔥 Promo Personal',
+      detail: '½ libra de ceviche de pescado + 1 cóctel de camarón 12 oz + 1 refresco · Elige tu refresco en notas',
+      price: 16,
+      cost: null,
+      recipe: personalRecipe,
+      promo: 'Ahorras $4.50',
+      inventoryNote: 'El refresco queda pendiente de selección'
+    });
+
     if (typeof render === 'function') render();
   }
 
@@ -49,4 +141,8 @@
 
     sections[sections.length - 1].insertAdjacentElement('afterend', info);
   }
+
+  const cocktailSection = document.querySelector('.section[data-group="cocktails"]');
+  const cocktailSubtitle = cocktailSection?.querySelector('.section-right small');
+  if (cocktailSubtitle) cocktailSubtitle.textContent = '12 oz · único tamaño';
 })();
