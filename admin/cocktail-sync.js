@@ -36,5 +36,21 @@
     PREP_NAMES.maggi='Maggi';
   }
 
+  // El pedido manual de ceviche mixto abre con los mismos valores vigentes de la app.
+  // Los campos siguen siendo editables si se hace una promoción o precio especial.
+  if(typeof openOrderModal==='function'){
+    const baseOpenOrderModal=openOrderModal;
+    openOrderModal=function(id=''){
+      baseOpenOrderModal(id);
+      if(!id){
+        const price=$('moPrice'),cost=$('moCost');
+        if(price)price.value='25';
+        if(cost)cost.value='4.91';
+        if(typeof updateOrderSummary==='function')updateOrderSummary();
+        if(typeof syncOrderQuickButtons==='function')syncOrderQuickButtons();
+      }
+    };
+  }
+
   if(typeof renderAll==='function')renderAll();
 })();
