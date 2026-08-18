@@ -13,18 +13,28 @@
 
   function purchaseText(k){
     const x=ITEMS[k];
-    return String(x?.purchaseUnit||x?.unit||'unidad')
+    return String(x?.purchaseEntryUnit||x?.purchaseUnit||x?.unit||'unidad')
       .replace(/^pzas$/i,'pieza')
       .replace(/^manojo$/i,'manojo');
   }
 
+  function variableContentUnit(k){
+    return String(ITEMS[k]?.variableContentUnit||'').trim();
+  }
+
   function purchaseFactor(k){
+    const variable=variableContentUnit(k);
+    if(variable){
+      const input=document.getElementById('stockContent');
+      const n=Number(input?.value||0);
+      return n>0?n:0;
+    }
     return Math.max(0.001,Number(ITEMS[k]?.factor||1));
   }
 
   function isDiscrete(k){
-    const u=String(ITEMS[k]?.purchaseUnit||'').toLowerCase();
-    return /pzas|pieza|paquete|botella|caja|manojo/.test(u);
+    const u=purchaseText(k).toLowerCase();
+    return /pzas|pieza|paquete|botella|caja|manojo|envase/.test(u);
   }
 
   displayQty=function(k,value){return internalText(k,value)};
@@ -39,6 +49,12 @@
         <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
           <input id="stockQty" type="number" min="0.01" step="0.01" value="1">
           <strong id="stockPurchaseUnitText" style="padding:12px 14px;border-radius:13px;background:#eef3f8;color:#123458;white-space:nowrap">lb</strong>
+        </div>
+      </label>
+      <label class="full" id="stockContentLabel" hidden><span id="stockContentLabelText">¿Cuánto trae cada unidad?</span>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+          <input id="stockContent" type="number" min="0.01" step="0.01" placeholder="Cantidad que trae">
+          <strong id="stockContentUnitText" style="padding:12px 14px;border-radius:13px;background:#fff7cf;color:#7d5300;white-space:nowrap">oz</strong>
         </div>
       </label>
       <label class="full"><span id="stockPriceLabel">Precio / valor por lb</span><input id="stockUnitPrice" type="number" min="0" step="0.01" placeholder="$0.00"></label>
@@ -56,19 +72,24 @@
 
   function currentLine(requirePrice=true){
     purchaseKey=$('stockItem').value||purchaseKey;
-    const x=ITEMS[purchaseKey],qty=Number($('stockQty').value||0),rawPrice=String($('stockUnitPrice').value||'').trim();
+    const x=ITEMS[purchaseKey],qty=Number($('stockQty').value||0),rawPrice=String($('stockUnitPrice').value||'').trim(),variable=variableContentUnit(purchaseKey),factor=purchaseFactor(purchaseKey);
     if(!(qty>0))return {error:'Escribe cuánto vas a comprar.'};
+    if(variable&&!(factor>0)){
+      if(!requirePrice&&rawPrice==='')return null;
+      return {error:`Escribe cuánto trae cada ${purchaseText(purchaseKey)}.`};
+    }
     if(requirePrice&&rawPrice==='')return {error:'Escribe el precio o valor.'};
     if(rawPrice==='')return null;
     const unitPrice=Number(rawPrice);
     if(!Number.isFinite(unitPrice)||unitPrice<0)return {error:'Escribe un precio o valor válido.'};
-    const factor=purchaseFactor(purchaseKey),internalQty=round3(qty*factor),cost=Number((qty*unitPrice).toFixed(2));
+    const internalQty=round3(qty*factor),cost=Number((qty*unitPrice).toFixed(2));
     return {
       k:purchaseKey,
       qty,
       unit:purchaseText(purchaseKey),
       unitPrice:Number(unitPrice.toFixed(4)),
       contentPerUnit:factor,
+      contentUnit:variable||ITEMS[purchaseKey]?.unit||'',
       internalQty,
       cost,
       name:x?.name||purchaseKey
@@ -83,14 +104,26 @@
 
   function updatePreview(){
     purchaseKey=$('stockItem').value||purchaseKey;
-    const qty=Math.max(0,Number($('stockQty').value||0)),factor=purchaseFactor(purchaseKey),internalQty=round3(qty*factor),rawPrice=String($('stockUnitPrice').value||'').trim(),unit=purchaseText(purchaseKey);
+    const qty=Math.max(0,Number($('stockQty').value||0)),rawPrice=String($('stockUnitPrice').value||'').trim(),unit=purchaseText(purchaseKey),variable=variableContentUnit(purchaseKey),factor=purchaseFactor(purchaseKey),internalQty=round3(qty*factor);
     $('stockPurchaseUnitText').textContent=unit;
     $('stockPriceLabel').textContent=`Precio / valor por ${unit}`;
     $('stockQty').step=isDiscrete(purchaseKey)?'1':'0.01';
     $('stockQty').min=isDiscrete(purchaseKey)?'1':'0.01';
     $('stockCurrent').innerHTML=`Inventario actual: <b>${internalText(purchaseKey,inventory[purchaseKey]||0)}</b>.`;
+
+    const contentLabel=$('stockContentLabel');
+    if(variable){
+      contentLabel.hidden=false;
+      $('stockContentUnitText').textContent=variable;
+      $('stockContentLabelText').textContent=`¿Cuánto trae cada ${unit}?`;
+    }else{
+      contentLabel.hidden=true;
+    }
+
     const unitPrice=Number(rawPrice||0),lineTotal=Number.isFinite(unitPrice)?qty*unitPrice:0;
-    $('stockLinePreview').innerHTML=`Se agregarán <b>${internalText(purchaseKey,internalQty)}</b> al inventario.${rawPrice!==''?`<br>Total de este producto: <b>${money(lineTotal)}</b>`:''}`;
+    $('stockLinePreview').innerHTML=variable&&!(factor>0)
+      ? `Escribe cuánto trae cada <b>${unit}</b> para calcular lo que entrará al inventario.`
+      : `Se agregarán <b>${internalText(purchaseKey,internalQty)}</b> al inventario.${rawPrice!==''?`<br>Total de este producto: <b>${money(lineTotal)}</b>`:''}`;
     const total=totalWithCurrent();
     $('stockSave').textContent=total>0?`Guardar compra · ${money(total)}`:'Guardar compra';
   }
@@ -98,7 +131,7 @@
   function renderCart(){
     const total=cart.reduce((a,l)=>a+Number(l.cost||0),0);
     $('stockCart').innerHTML=cart.length
-      ? `<div style="font-weight:1000;margin-bottom:8px">YA AGREGADO</div>${cart.map((l,i)=>`<div class="movement"><div><strong>${l.name}</strong><small>${Number(l.qty.toFixed(3))} ${l.unit} × ${money(l.unitPrice)} = ${money(l.cost)}<br>Al inventario: +${internalText(l.k,l.internalQty)}</small></div><button type="button" data-remove-purchase="${i}" class="danger" style="border:0;border-radius:10px;padding:8px 10px;font-weight:1000">✕</button></div>`).join('')}<div style="margin-top:10px"><b>Subtotal: ${money(total)}</b></div>`
+      ? `<div style="font-weight:1000;margin-bottom:8px">YA AGREGADO</div>${cart.map((l,i)=>`<div class="movement"><div><strong>${l.name}</strong><small>${Number(l.qty.toFixed(3))} ${l.unit} × ${money(l.unitPrice)} = ${money(l.cost)}${l.contentPerUnit?`<br>Cada ${l.unit}: ${Number(l.contentPerUnit.toFixed(3))} ${l.contentUnit||''}`:''}<br>Al inventario: +${internalText(l.k,l.internalQty)}</small></div><button type="button" data-remove-purchase="${i}" class="danger" style="border:0;border-radius:10px;padding:8px 10px;font-weight:1000">✕</button></div>`).join('')}<div style="margin-top:10px"><b>Subtotal: ${money(total)}</b></div>`
       : 'Si vas a comprar una sola cosa, llena los datos y toca Guardar compra.';
     updatePreview();
   }
@@ -108,6 +141,7 @@
     purchaseKey=$('stockItem').value||Object.keys(ITEMS)[0];
     $('stockQty').value=1;
     $('stockUnitPrice').value='';
+    $('stockContent').value='';
     updatePreview();
   }
 
@@ -118,7 +152,8 @@
     cart=[];
     $('stockStore').value='';
     $('stockUnitPrice').value='';
-    const f=purchaseFactor(purchaseKey);
+    $('stockContent').value='';
+    const variable=variableContentUnit(purchaseKey),f=variable?0:purchaseFactor(purchaseKey);
     $('stockQty').value=need!==null&&f>0?Math.max(isDiscrete(purchaseKey)?1:.01,round3(Number(need||0)/f)):1;
     renderCart();
     modal.hidden=false;
@@ -126,6 +161,7 @@
 
   $('stockItem').onchange=()=>{purchaseKey=$('stockItem').value;resetCurrent(true)};
   $('stockQty').oninput=updatePreview;
+  $('stockContent').oninput=updatePreview;
   $('stockUnitPrice').oninput=updatePreview;
   $('stockCart').onclick=e=>{
     const b=e.target.closest('[data-remove-purchase]');
@@ -141,6 +177,7 @@
     renderCart();
     $('stockUnitPrice').value='';
     $('stockQty').value=1;
+    $('stockContent').value='';
     updatePreview();
     toast('Producto agregado. Elige el siguiente.');
   };
@@ -171,8 +208,8 @@
         tx.set(inventoryRef,{items:cur,tracked:firebase.firestore.FieldValue.arrayUnion(...keys),updatedAt:stamp},{merge:true});
         lines.forEach((l,i)=>tx.set(refs[i],{
           type:'purchase',date:stamp,day:localDay(),name:l.name,itemKey:l.k,
-          qty:l.qty,unit:l.unit,contentPerUnit:l.contentPerUnit,internalQty:l.internalQty,
-          internalUnit:ITEMS[l.k]?.unit||'',unitPrice:l.unitPrice,cost:l.cost,store,purchaseId
+          qty:l.qty,unit:l.unit,contentPerUnit:l.contentPerUnit,contentUnit:l.contentUnit,
+          internalQty:l.internalQty,internalUnit:ITEMS[l.k]?.unit||'',unitPrice:l.unitPrice,cost:l.cost,store,purchaseId
         }));
       });
       cart=[];
