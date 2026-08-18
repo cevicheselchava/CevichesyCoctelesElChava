@@ -2,31 +2,55 @@
   if(window.__EL_CUBANO_COCKTAIL_ADMIN_SYNC__)return;
   window.__EL_CUBANO_COCKTAIL_ADMIN_SYNC__=true;
 
-  // Ingredientes del jugo del cóctel que ya llegan en la receta de los pedidos.
-  // Se manejan en fl oz para no amarrar el panel a un tamaño específico de lata/envase.
-  ITEMS.tomatoSauce={
+  function addItem(key,data){
+    ITEMS[key]={...(ITEMS[key]||{}),...data};
+    if(typeof EMPTY==='object'&&EMPTY&&!Object.prototype.hasOwnProperty.call(EMPTY,key))EMPTY[key]=0;
+    if(typeof inventory==='object'&&inventory&&!Object.prototype.hasOwnProperty.call(inventory,key))inventory[key]=0;
+  }
+
+  // Ingredientes del jugo del cóctel. El inventario se guarda en fl oz,
+  // pero al registrar una compra se captura el envase real y su contenido.
+  addItem('tomatoSauce',{
     name:'Salsa de tomate para aderezar',
     group:'salsas',
     unit:'fl oz',
     purchaseUnit:'fl oz',
     factor:1,
+    purchaseEntryUnit:'envase',
+    variableContentUnit:'fl oz',
     low:0
-  };
-  ITEMS.tomatoPuree={
+  });
+  addItem('tomatoPuree',{
     name:'Puré de tomate',
     group:'salsas',
     unit:'fl oz',
     purchaseUnit:'fl oz',
     factor:1,
+    purchaseEntryUnit:'envase',
+    variableContentUnit:'fl oz',
     low:0
-  };
+  });
 
-  // Asegura que el inventario local pueda mostrar los nuevos ingredientes aun antes
-  // de que exista una compra registrada para ellos en Firebase.
-  if(typeof inventory==='object'&&inventory){
-    if(!Object.prototype.hasOwnProperty.call(inventory,'tomatoSauce'))inventory.tomatoSauce=0;
-    if(!Object.prototype.hasOwnProperty.call(inventory,'tomatoPuree'))inventory.tomatoPuree=0;
-  }
+  // Refrescos que aparecen en la app de clientes. Internamente se cuentan por pieza;
+  // al comprar se puede registrar cuántos paquetes y cuántas latas trae cada paquete.
+  const sodas={
+    coca:'Coca-Cola',
+    cokezero:'Coke Zero',
+    sprite:'Sprite',
+    drpepper:'Dr Pepper',
+    bigred:'Big Red',
+    fanta:'Fanta'
+  };
+  Object.entries(sodas).forEach(([key,name])=>addItem(key,{
+    name,
+    group:'refrescos',
+    unit:'pzas',
+    purchaseUnit:'pzas',
+    factor:1,
+    purchaseEntryUnit:'paquete',
+    variableContentUnit:'pzas',
+    low:4
+  }));
 
   // Nombres claros dentro del flujo de preparación de pedidos.
   if(typeof PREP_NAMES==='object'&&PREP_NAMES){
@@ -34,6 +58,7 @@
     PREP_NAMES.tomatoPuree='Puré de tomate';
     PREP_NAMES.english='Salsa inglesa';
     PREP_NAMES.maggi='Maggi';
+    Object.entries(sodas).forEach(([key,name])=>PREP_NAMES[key]=name);
   }
 
   // El pedido manual de ceviche mixto abre con los mismos valores vigentes de la app.
