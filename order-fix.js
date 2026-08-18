@@ -58,6 +58,78 @@
     if(button.textContent.trim()==='-')button.textContent='−';
   });
 
+  // Pedidos únicamente de un día para otro.
+  function localDateString(date){
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  }
+
+  function firstAvailableDate(){
+    const tomorrow=new Date();
+    tomorrow.setHours(12,0,0,0);
+    tomorrow.setDate(tomorrow.getDate()+1);
+    return localDateString(tomorrow);
+  }
+
+  function dayAheadMessage(){
+    return document.documentElement.lang==='en'
+      ? 'To maintain the quality and freshness of our products, we only accept orders at least one day in advance. Thank you for understanding.'
+      : 'Para mantener la calidad y frescura de nuestros productos, solo recibimos pedidos de un día para otro. Gracias por tu comprensión.';
+  }
+
+  function setupDayAheadOrdering(){
+    document.querySelector('.instant-order-wrap')?.remove();
+    document.getElementById('instant-order-button')?.remove();
+
+    const navButton=document.querySelector('#customer-category-nav button[data-group="immediate"]');
+    const navLabel=navButton?.querySelector('.cat-label');
+    if(navLabel)navLabel.textContent='Ceviches';
+
+    const immediateSection=document.querySelector('.section[data-group="immediate"]');
+    const heading=immediateSection?.querySelector('.section-heading');
+    const small=immediateSection?.querySelector('.section-right small');
+    if(heading)heading.textContent='🥣 CEVICHES';
+    if(small)small.textContent=document.documentElement.lang==='en'?'Order ahead':'Pedido anticipado';
+
+    const note=document.querySelector('.availability-note');
+    if(note){
+      note.innerHTML=document.documentElement.lang==='en'
+        ? '📅 <b>Order ahead.</b> To maintain the quality and freshness of our products, we only accept orders at least one day in advance. Thank you for understanding.'
+        : '📅 <b>Pedido con anticipación.</b> Para mantener la calidad y frescura de nuestros productos, solo recibimos pedidos de un día para otro. Gracias por tu comprensión.';
+    }
+
+    const dateInput=document.getElementById('date');
+    if(dateInput){
+      const minimum=firstAvailableDate();
+      dateInput.min=minimum;
+      if(dateInput.value&&dateInput.value<minimum)dateInput.value='';
+    }
+  }
+
+  function validDayAheadDate(){
+    const dateInput=document.getElementById('date');
+    return !!dateInput?.value&&dateInput.value>=firstAvailableDate();
+  }
+
+  document.addEventListener('change',event=>{
+    const dateInput=event.target.closest?.('#date');
+    if(!dateInput)return;
+    const minimum=firstAvailableDate();
+    dateInput.min=minimum;
+    if(dateInput.value&&dateInput.value<minimum){
+      event.preventDefault();
+      dateInput.value='';
+      alert(dayAheadMessage());
+    }
+  },true);
+
+  document.addEventListener('click',event=>{
+    if(!event.target.closest?.('#language-switch button[data-lang]'))return;
+    setTimeout(setupDayAheadOrdering,0);
+  },true);
+
+  setTimeout(setupDayAheadOrdering,0);
+  setTimeout(setupDayAheadOrdering,350);
+
   const sendButton=document.getElementById('continueOrder');
   const modal=document.getElementById('cartModal');
   const closeButton=document.getElementById('closeCart');
@@ -125,6 +197,13 @@
   }
 
   sendButton.onclick=async()=>{
+    if(!validDayAheadDate()){
+      hideCart();
+      setupDayAheadOrdering();
+      document.getElementById('checkout')?.scrollIntoView({behavior:'smooth',block:'start'});
+      alert(dayAheadMessage());
+      return;
+    }
     if(!validateOrder())return;
     sendButton.disabled=true;
     sendButton.textContent='Enviando pedido...';
