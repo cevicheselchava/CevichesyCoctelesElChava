@@ -1,6 +1,6 @@
 (()=>{
-  if(window.__EL_CUBANO_INVENTORY_CARD_ACTIONS__)return;
-  window.__EL_CUBANO_INVENTORY_CARD_ACTIONS__=true;
+  if(window.__EL_CUBANO_INVENTORY_CARD_ACTIONS_V2__)return;
+  window.__EL_CUBANO_INVENTORY_CARD_ACTIONS_V2__=true;
 
   const style=document.createElement('style');
   style.textContent=`
@@ -23,8 +23,13 @@
       card.dataset.inventoryKey=key;
       card.setAttribute('role','button');
       card.setAttribute('tabindex','0');
-      card.setAttribute('aria-label',`Registrar compra de ${name}`);
+      card.setAttribute('aria-label',`Ajustar inventario real de ${name}`);
     });
+  }
+
+  function openCard(key){
+    if(typeof window.openAdjustInventoryForKey==='function')return window.openAdjustInventoryForKey(key);
+    if(typeof openAdjustInventory==='function')return openAdjustInventory();
   }
 
   const root=document.getElementById('inventoryList');
@@ -32,14 +37,14 @@
     root.addEventListener('click',e=>{
       const card=e.target.closest('.inv[data-inventory-key]');
       if(!card)return;
-      if(typeof openStock==='function')openStock(card.dataset.inventoryKey,null);
+      openCard(card.dataset.inventoryKey);
     });
     root.addEventListener('keydown',e=>{
       if(e.key!=='Enter'&&e.key!==' ')return;
       const card=e.target.closest('.inv[data-inventory-key]');
       if(!card)return;
       e.preventDefault();
-      if(typeof openStock==='function')openStock(card.dataset.inventoryKey,null);
+      openCard(card.dataset.inventoryKey);
     });
     new MutationObserver(decorateInventory).observe(root,{childList:true,subtree:true});
   }
