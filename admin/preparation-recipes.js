@@ -13,6 +13,7 @@
 
   const style=document.createElement('style');
   style.textContent=`
+    #mainNav [data-tab="recipes"] .nav-label{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.12;text-align:center}
     .prep-recipes-menu{display:grid;gap:10px}
     .prep-recipes-choice{width:100%;border:1px solid #ded7c8;border-radius:17px;background:#fff;padding:15px;text-align:left;display:grid;grid-template-columns:48px 1fr;gap:11px;align-items:center;box-shadow:0 5px 14px rgba(22,50,72,.07)}
     .prep-recipes-choice .ico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#eef8ef;font-size:27px}
