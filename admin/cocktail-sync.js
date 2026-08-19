@@ -8,26 +8,13 @@
     if(typeof inventory==='object'&&inventory&&!Object.prototype.hasOwnProperty.call(inventory,key))inventory[key]=0;
   }
 
-  // El camarón que se compra normalmente viene en bolsa fija de 12 oz.
-  // El inventario sigue guardándose en lb: 12 oz = 0.75 lb.
-  addItem('shrimp',{
-    purchaseEntryUnit:'bolsa',
-    fixedContentPerUnit:12,
-    fixedContentUnit:'oz',
-    fixedContentToInternalFactor:1/16,
-    purchaseQuestion:'¿Cuántas bolsas vas a comprar?'
-  });
-
-  // Ingredientes del jugo del cóctel. El inventario se guarda en fl oz,
-  // pero al registrar una compra se captura el envase real y su contenido.
+  // Ingredientes del jugo del cóctel. El inventario se guarda en fl oz.
   addItem('tomatoSauce',{
     name:'Salsa de tomate para aderezar',
     group:'salsas',
     unit:'fl oz',
     purchaseUnit:'fl oz',
     factor:1,
-    purchaseEntryUnit:'envase',
-    variableContentUnit:'fl oz',
     low:0
   });
   addItem('tomatoPuree',{
@@ -36,13 +23,10 @@
     unit:'fl oz',
     purchaseUnit:'fl oz',
     factor:1,
-    purchaseEntryUnit:'envase',
-    variableContentUnit:'fl oz',
     low:0
   });
 
-  // Refrescos que aparecen en la app de clientes. Internamente se cuentan por pieza;
-  // al comprar se puede registrar cuántos paquetes y cuántas latas trae cada paquete.
+  // Refrescos de la app de clientes. Internamente se cuentan por pieza.
   const sodas={
     coca:'Coca-Cola',
     cokezero:'Coke Zero',
@@ -57,12 +41,9 @@
     unit:'pzas',
     purchaseUnit:'pzas',
     factor:1,
-    purchaseEntryUnit:'paquete',
-    variableContentUnit:'pzas',
     low:4
   }));
 
-  // Nombres claros dentro del flujo de preparación de pedidos.
   if(typeof PREP_NAMES==='object'&&PREP_NAMES){
     PREP_NAMES.tomatoSauce='Salsa de tomate para aderezar';
     PREP_NAMES.tomatoPuree='Puré de tomate';
@@ -71,8 +52,6 @@
     Object.entries(sodas).forEach(([key,name])=>PREP_NAMES[key]=name);
   }
 
-  // El pedido manual de ceviche mixto abre con los mismos valores vigentes de la app.
-  // Los campos siguen siendo editables si se hace una promoción o precio especial.
   if(typeof openOrderModal==='function'){
     const baseOpenOrderModal=openOrderModal;
     openOrderModal=function(id=''){
