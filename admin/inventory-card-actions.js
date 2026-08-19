@@ -6,7 +6,6 @@
   style.textContent=`
     #inventoryList .inv{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
     #inventoryList .inv:active{transform:scale(.99)}
-    #inventoryList .inv .inventory-card-buy{margin-top:8px;border:0;border-radius:10px;padding:8px 10px;background:#e8f5eb;color:#176b2c;font-weight:1000;font-size:13px}
   `;
   document.head.appendChild(style);
 
@@ -17,6 +16,7 @@
   function decorateInventory(){
     const map=nameToKey();
     document.querySelectorAll('#inventoryList .inv').forEach(card=>{
+      card.querySelectorAll('.inventory-card-buy').forEach(btn=>btn.remove());
       const name=card.querySelector('strong')?.textContent?.trim();
       const key=map.get(name);
       if(!key)return;
@@ -24,28 +24,12 @@
       card.setAttribute('role','button');
       card.setAttribute('tabindex','0');
       card.setAttribute('aria-label',`Registrar compra de ${name}`);
-
-      if(!card.querySelector('.inventory-card-buy')){
-        const left=card.firstElementChild;
-        if(left){
-          const btn=document.createElement('button');
-          btn.type='button';
-          btn.className='inventory-card-buy';
-          btn.textContent='➕ Comprar más / sumar';
-          btn.addEventListener('click',e=>{
-            e.stopPropagation();
-            if(typeof openStock==='function')openStock(key,null);
-          });
-          left.appendChild(btn);
-        }
-      }
     });
   }
 
   const root=document.getElementById('inventoryList');
   if(root){
     root.addEventListener('click',e=>{
-      if(e.target.closest('button'))return;
       const card=e.target.closest('.inv[data-inventory-key]');
       if(!card)return;
       if(typeof openStock==='function')openStock(card.dataset.inventoryKey,null);
