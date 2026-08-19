@@ -8,6 +8,16 @@
     if(typeof inventory==='object'&&inventory&&!Object.prototype.hasOwnProperty.call(inventory,key))inventory[key]=0;
   }
 
+  // El camarón que se compra normalmente viene en bolsa fija de 12 oz.
+  // El inventario sigue guardándose en lb: 12 oz = 0.75 lb.
+  addItem('shrimp',{
+    purchaseEntryUnit:'bolsa',
+    fixedContentPerUnit:12,
+    fixedContentUnit:'oz',
+    fixedContentToInternalFactor:1/16,
+    purchaseQuestion:'¿Cuántas bolsas vas a comprar?'
+  });
+
   // Ingredientes del jugo del cóctel. El inventario se guarda en fl oz,
   // pero al registrar una compra se captura el envase real y su contenido.
   addItem('tomatoSauce',{
