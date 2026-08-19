@@ -12,10 +12,10 @@
 <script>
 (async()=>{
   try{
-    const r=await fetch('/admin/panel-base.html?v=20260819-5',{cache:'no-store'});
+    const r=await fetch('/admin/panel-base.html?v=20260819-6',{cache:'no-store'});
     if(!r.ok)throw new Error('No se pudo cargar el panel');
     let html=await r.text();
-    html=html.replace('</body>','<script src="/admin/cocktail-sync.js?v=20260819-5"><\/script><script src="/admin/purchase-entry-v2.js?v=20260819-5"><\/script><script src="/admin/inventory-card-actions.js?v=20260819-5"><\/script><script src="/admin/history-actions.js?v=20260819-5"><\/script><script src="/admin/recipe-units.js?v=20260819-5"><\/script></body>');
+    html=html.replace('</body>','<script src="/admin/cocktail-sync.js?v=20260819-6"><\/script><script src="/admin/purchase-entry-v2.js?v=20260819-6"><\/script><script src="/admin/inventory-card-actions.js?v=20260819-6"><\/script><script src="/admin/history-actions.js?v=20260819-6"><\/script><script src="/admin/recipe-units.js?v=20260819-6"><\/script></body>');
     document.open();document.write(html);document.close();
   }catch(e){
     document.getElementById('loading').textContent='No se pudo cargar el panel. Recarga la página.';
