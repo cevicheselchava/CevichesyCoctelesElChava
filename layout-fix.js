@@ -37,31 +37,63 @@
         line-height:1.38!important;
         background:rgba(255,255,255,.90)!important;
       }
-      .credit{padding-top:24px!important;padding-bottom:96px!important;line-height:1.28!important}
+      .credit{padding-top:24px!important;padding-bottom:92px!important;line-height:1.28!important}
 
-      /* Botón fijo perfectamente centrado */
+      /* Carrito flotante compacto, como la app anterior */
       .sticky{
+        left:auto!important;
+        right:16px!important;
+        bottom:14px!important;
+        width:auto!important;
+        max-width:calc(100vw - 28px)!important;
+        min-height:58px!important;
+        padding:6px 8px!important;
+        border-radius:999px!important;
         display:flex!important;
         align-items:center!important;
         justify-content:center!important;
+        background:linear-gradient(95deg,#0aa84b,#22cf67)!important;
+        box-shadow:0 9px 22px rgba(5,92,42,.24)!important;
+        border:0!important;
       }
       .sticky .summary{
-        width:100%!important;
-        flex:1 1 auto!important;
+        width:auto!important;
+        flex:0 0 auto!important;
         display:flex!important;
         align-items:center!important;
         justify-content:center!important;
         text-align:center!important;
         min-width:0!important;
+        padding:0!important;
       }
       .summary b{
         display:flex!important;
         align-items:center!important;
         justify-content:center!important;
-        gap:12px!important;
-        width:100%!important;
+        gap:9px!important;
+        width:auto!important;
+        white-space:nowrap!important;
       }
-      .summary b span{margin-left:0!important}
+      .summary b::before{
+        font-size:19px!important;
+        line-height:1!important;
+      }
+      .summary b span{
+        margin-left:0!important;
+        min-width:76px!important;
+        padding:8px 11px!important;
+        font-size:18px!important;
+        line-height:1!important;
+      }
+      .send{
+        position:absolute!important;
+        inset:0!important;
+        width:100%!important;
+        height:100%!important;
+        opacity:0!important;
+        z-index:3!important;
+        border-radius:999px!important;
+      }
 
       @media(max-width:700px){
         /* Categorías legibles sin abrir ninguna por defecto */
@@ -125,9 +157,7 @@
           line-height:1!important;
           white-space:nowrap!important;
         }
-        .price small{
-          display:none!important;
-        }
+        .price small{display:none!important}
         .qty{
           width:100%!important;
           display:grid!important;
@@ -183,8 +213,9 @@
         .qty button{width:42px!important;height:42px!important}
         .qty .plus{height:42px!important}
         .qty .plus::after{font-size:17px!important}
-        .summary b::before{font-size:22px!important}
-        .summary b span{font-size:20px!important;min-width:96px!important}
+        .sticky{right:12px!important;bottom:12px!important;min-height:56px!important;padding:6px 7px!important}
+        .summary b::before{font-size:18px!important}
+        .summary b span{font-size:17px!important;min-width:70px!important;padding:8px 10px!important}
       }
     `;
     document.head.appendChild(style);
@@ -206,7 +237,6 @@
     if (!nav || nav.dataset.cleanToggle === '1') return;
     nav.dataset.cleanToggle = '1';
 
-    /* La lógica principal ya maneja abrir/cerrar. Esto solo mantiene aria-pressed. */
     nav.addEventListener('click', event => {
       const button = event.target.closest('button[data-group]');
       if (!button) return;
@@ -230,7 +260,6 @@
     startAtTop();
   }
 
-  /* Corre después de las capas visuales existentes para que estos ajustes ganen. */
   window.addEventListener('load', () => setTimeout(applyFixes, 900), { once:true });
   setTimeout(applyFixes, 1500);
 })();
