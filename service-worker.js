@@ -1,7 +1,5 @@
-const CACHE_NAME = 'el-cubano-pwa-v2';
-const APP_SHELL = [
-  '/',
-  '/index.html',
+const CACHE_NAME = 'el-cubano-pwa-v3';
+const STATIC_SHELL = [
   '/manifest.webmanifest',
   '/pwa-icon.svg'
 ];
@@ -9,7 +7,7 @@ const APP_SHELL = [
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await Promise.allSettled(APP_SHELL.map(url => cache.add(new Request(url, { cache: 'reload' }))));
+    await Promise.allSettled(STATIC_SHELL.map(url => cache.add(new Request(url, { cache: 'reload' }))));
     await self.skipWaiting();
   })());
 });
@@ -22,10 +20,14 @@ self.addEventListener('activate', event => {
   })());
 });
 
+async function freshNetwork(request) {
+  return fetch(new Request(request, { cache: 'no-store' }));
+}
+
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   try {
-    const response = await fetch(new Request(request, { cache: 'no-store' }));
+    const response = await freshNetwork(request);
     if (response && response.ok) await cache.put(request, response.clone());
     return response;
   } catch (error) {
@@ -51,16 +53,16 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  const isAdmin = ['/control.html','/control-fix.js','/control-theme.js'].includes(url.pathname);
+  if (url.origin !== self.location.origin) return;
 
-  if (isAdmin || request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+  // La página principal NUNCA sale de caché: evita enseñar primero una versión anterior.
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(freshNetwork(request));
     return;
   }
 
-  if (url.origin !== self.location.origin) return;
-
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+  const isAdmin = ['/control.html','/control-fix.js','/control-theme.js'].includes(url.pathname);
+  if (isAdmin || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     event.respondWith(networkFirst(request));
     return;
   }
