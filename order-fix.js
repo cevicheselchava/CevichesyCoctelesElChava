@@ -5,7 +5,8 @@
   const style=document.createElement('style');
   style.id='customer-light-ui-v9';
   style.textContent=`
-    .wrap{isolation:isolate!important}
+    html,body{width:100%!important;max-width:100%!important;overflow-x:hidden!important}
+    .wrap{width:100%!important;max-width:980px!important;margin-left:auto!important;margin-right:auto!important;isolation:isolate!important}
     .wrap::before{
       content:""!important;
       position:fixed!important;
