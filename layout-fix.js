@@ -119,10 +119,60 @@
       }
 
       @media(max-width:700px){
-        #customer-category-nav{margin-top:14px!important;margin-bottom:18px!important}
-        #customer-category-nav button{min-height:76px!important;padding:8px 3px 11px!important}
-        #customer-category-nav .cat-icon{font-size:25px!important}
-        #customer-category-nav .cat-label{font-size:11px!important;line-height:1.05!important}
+        /* Jerarquía correcta: categorías dominan; tarjetas informativas acompañan */
+        .benefits{
+          grid-template-columns:1fr 1fr!important;
+          gap:7px!important;
+          margin:9px 0 8px!important;
+        }
+        .benefit{
+          min-height:68px!important;
+          padding:8px 7px 9px!important;
+          text-align:center!important;
+          font-size:13px!important;
+          line-height:1.12!important;
+          border-radius:15px!important;
+          box-shadow:0 3px 8px rgba(28,52,67,.045)!important;
+        }
+        .benefit b{
+          font-size:15px!important;
+          line-height:1.1!important;
+          margin-bottom:2px!important;
+        }
+
+        #customer-category-nav{
+          margin-top:14px!important;
+          margin-bottom:18px!important;
+          gap:7px!important;
+          padding:7px!important;
+        }
+        #customer-category-nav button{
+          min-width:0!important;
+          min-height:100px!important;
+          padding:10px 4px 12px!important;
+          display:flex!important;
+          flex-direction:column!important;
+          align-items:center!important;
+          justify-content:center!important;
+          gap:5px!important;
+        }
+        #customer-category-nav .cat-icon{
+          font-size:27px!important;
+          line-height:1!important;
+        }
+        #customer-category-nav .cat-label{
+          display:block!important;
+          width:100%!important;
+          font-size:15px!important;
+          line-height:1.08!important;
+          font-weight:1000!important;
+          white-space:normal!important;
+          overflow:visible!important;
+          text-overflow:clip!important;
+          overflow-wrap:normal!important;
+          word-break:normal!important;
+          text-align:center!important;
+        }
 
         .product{
           grid-template-columns:108px minmax(0,1fr)!important;
@@ -207,17 +257,6 @@
         }
         .qty .plus::after{font-size:18px!important}
 
-        .benefits{grid-template-columns:1fr 1fr!important;gap:9px!important}
-        .benefit{
-          min-height:92px!important;
-          padding:12px 9px 15px!important;
-          text-align:center!important;
-          font-size:16px!important;
-          line-height:1.18!important;
-          box-shadow:0 4px 10px rgba(28,52,67,.05)!important;
-        }
-        .benefit b{font-size:18px!important;line-height:1.15!important}
-
         #customer-info-after-menu .notice,
         #customer-info-after-menu .availability-note{
           font-size:17px!important;
@@ -226,6 +265,20 @@
       }
 
       @media(max-width:430px){
+        .benefit{
+          min-height:64px!important;
+          padding:7px 6px 8px!important;
+          font-size:12.5px!important;
+        }
+        .benefit b{font-size:14px!important}
+
+        #customer-category-nav button{
+          min-height:96px!important;
+          padding:9px 3px 11px!important;
+        }
+        #customer-category-nav .cat-icon{font-size:26px!important}
+        #customer-category-nav .cat-label{font-size:14px!important;line-height:1.08!important}
+
         .product{grid-template-columns:98px minmax(0,1fr)!important;column-gap:10px!important}
         .approved-product-image{width:98px!important;height:98px!important}
         .product h3{font-size:19px!important}
@@ -282,8 +335,6 @@
     startAtTop();
   }
 
-  /* Se aplica en cuanto llega este archivo. Si approved-ui se inyecta después,
-     movemos esta hoja al final inmediatamente, sin esperar 900/1500 ms. */
   applyFixes();
 
   const headObserver = new MutationObserver(mutations => {
