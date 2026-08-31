@@ -145,3 +145,20 @@
   const cocktailSubtitle = cocktailSection?.querySelector('.section-right small');
   if (cocktailSubtitle) cocktailSubtitle.textContent = '12 oz · único tamaño';
 })();
+
+/* Ajustes finales de layout: se cargan después de la interfaz visual para evitar conflictos. */
+(() => {
+  function loadLayoutFix() {
+    if (document.getElementById('layout-fix-script')) return;
+    const script = document.createElement('script');
+    script.id = 'layout-fix-script';
+    script.src = '/layout-fix.js?v=20260831-2';
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(loadLayoutFix, 250), { once:true });
+  } else {
+    setTimeout(loadLayoutFix, 250);
+  }
+})();
