@@ -150,50 +150,112 @@
   }
 })();
 
-/* Una sola corrección visual pequeña: navegación y carrito. */
+/* Navegación principal: grande y legible. */
 (() => {
-  const id = 'customer-priority-ui-20260831';
+  const id = 'customer-category-size-20260831';
   document.getElementById(id)?.remove();
   const style = document.createElement('style');
   style.id = id;
   style.textContent = `
     .hero .benefit{min-height:72px!important;padding:8px 5px 10px!important;font-size:13px!important;line-height:1.1!important}
     .hero .benefit b{font-size:15px!important;line-height:1.08!important;margin-bottom:2px!important}
-
     #customer-category-nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:9px!important;padding:9px!important;margin:14px 0 18px!important}
     #customer-category-nav button[data-group]{grid-column:span 2!important;min-height:104px!important;padding:10px 7px 12px!important;border-radius:18px!important;gap:7px!important;font-size:16px!important;line-height:1.08!important;overflow:visible!important}
     #customer-category-nav button[data-group]:nth-child(4),#customer-category-nav button[data-group]:nth-child(5){grid-column:span 3!important}
     #customer-category-nav .cat-icon{font-size:32px!important;line-height:1!important}
     #customer-category-nav .cat-label{display:block!important;max-width:100%!important;font-size:16px!important;line-height:1.08!important;font-weight:1000!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:center!important}
-
-    body .sticky{position:fixed!important;left:auto!important;right:14px!important;bottom:calc(16px + env(safe-area-inset-bottom))!important;width:224px!important;max-width:calc(100vw - 28px)!important;min-height:52px!important;padding:5px 6px!important;border-radius:999px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:0!important;background:linear-gradient(95deg,#0aa84b,#22cf67)!important;box-shadow:0 6px 14px rgba(5,92,42,.18)!important;border:0!important;overflow:hidden!important}
-    body .sticky::before{display:none!important}
-    body .sticky .summary{width:100%!important;flex:1 1 auto!important;min-width:0!important;padding:0!important;text-align:center!important}
-    body .sticky .summary b{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:6px!important;width:100%!important;white-space:nowrap!important;font-size:0!important}
-    body .sticky .summary b::before{content:'🛒 Ver pedido'!important;font-size:16px!important;font-weight:1000!important;line-height:1!important;flex:1 1 auto!important;text-align:center!important}
-    body .sticky .summary b span{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;min-width:58px!important;margin:0!important;padding:8px 7px!important;border-radius:999px!important;background:rgba(255,255,255,.20)!important;color:#fff!important;font-size:15px!important;line-height:1!important}
-    body .sticky .summary small{display:none!important}
-    body .sticky .send{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;padding:0!important;opacity:0!important;z-index:3!important;border-radius:999px!important}
-
     @media(min-width:701px){#customer-category-nav{grid-template-columns:repeat(5,minmax(0,1fr))!important}#customer-category-nav button[data-group],#customer-category-nav button[data-group]:nth-child(4),#customer-category-nav button[data-group]:nth-child(5){grid-column:auto!important;min-height:96px!important}}
-    @media(max-width:430px){#customer-category-nav{gap:8px!important;padding:8px!important}#customer-category-nav button[data-group]{min-height:100px!important;padding:9px 6px 11px!important}#customer-category-nav .cat-icon{font-size:30px!important}#customer-category-nav .cat-label{font-size:15px!important}body .sticky{right:12px!important;width:218px!important;max-width:calc(100vw - 24px)!important}}
+    @media(max-width:430px){#customer-category-nav{gap:8px!important;padding:8px!important}#customer-category-nav button[data-group]{min-height:100px!important;padding:9px 6px 11px!important}#customer-category-nav .cat-icon{font-size:30px!important}#customer-category-nav .cat-label{font-size:15px!important}}
   `;
   document.head.appendChild(style);
 
-  function closeAllCategories() {
-    document.querySelectorAll('.section[data-group]').forEach(section => {
-      section.classList.remove('open');
-      section.querySelector('.section-title')?.setAttribute('aria-expanded', 'false');
-    });
-    document.querySelectorAll('#customer-category-nav button[data-group]').forEach(button => {
-      button.classList.remove('active');
-      button.setAttribute('aria-pressed', 'false');
-    });
-  }
+  document.querySelectorAll('.section[data-group]').forEach(section => {
+    section.classList.remove('open');
+    section.querySelector('.section-title')?.setAttribute('aria-expanded', 'false');
+  });
+  document.querySelectorAll('#customer-category-nav button[data-group]').forEach(button => {
+    button.classList.remove('active');
+    button.setAttribute('aria-pressed', 'false');
+  });
+})();
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', closeAllCategories, { once: true });
-  } else {
-    closeAllCategories();
+/* El carrito se posiciona DIRECTAMENTE sobre el elemento para que ninguna hoja lo vuelva a mover. */
+(() => {
+  const sticky = document.querySelector('.sticky');
+  const summary = sticky?.querySelector('.summary');
+  const label = summary?.querySelector('b');
+  const total = label?.querySelector('span');
+  const send = sticky?.querySelector('.send');
+  if (!sticky || !summary || !label || !total || !send) return;
+
+  const set = (el, prop, value) => el.style.setProperty(prop, value, 'important');
+  set(sticky, 'position', 'fixed');
+  set(sticky, 'left', 'auto');
+  set(sticky, 'right', '30px');
+  set(sticky, 'bottom', 'calc(20px + env(safe-area-inset-bottom))');
+  set(sticky, 'width', '205px');
+  set(sticky, 'max-width', 'calc(100vw - 60px)');
+  set(sticky, 'min-height', '52px');
+  set(sticky, 'padding', '5px 6px');
+  set(sticky, 'border-radius', '999px');
+  set(sticky, 'display', 'flex');
+  set(sticky, 'align-items', 'center');
+  set(sticky, 'justify-content', 'center');
+  set(sticky, 'gap', '0');
+  set(sticky, 'background', 'linear-gradient(95deg,#0aa84b,#22cf67)');
+  set(sticky, 'box-shadow', '0 6px 14px rgba(5,92,42,.18)');
+  set(sticky, 'border', '0');
+  set(sticky, 'overflow', 'hidden');
+  set(sticky, 'transform', 'none');
+  set(sticky, 'box-sizing', 'border-box');
+
+  set(summary, 'width', '100%');
+  set(summary, 'flex', '1 1 auto');
+  set(summary, 'min-width', '0');
+  set(summary, 'padding', '0');
+  summary.querySelector('small')?.style.setProperty('display', 'none', 'important');
+
+  set(label, 'display', 'flex');
+  set(label, 'align-items', 'center');
+  set(label, 'justify-content', 'space-between');
+  set(label, 'gap', '5px');
+  set(label, 'width', '100%');
+  set(label, 'white-space', 'nowrap');
+  set(label, 'font-size', '0');
+
+  if (!label.querySelector('.fixed-cart-label')) {
+    const text = document.createElement('span');
+    text.className = 'fixed-cart-label';
+    text.textContent = '🛒 Ver pedido';
+    label.insertBefore(text, total);
   }
+  const text = label.querySelector('.fixed-cart-label');
+  set(text, 'display', 'inline-flex');
+  set(text, 'align-items', 'center');
+  set(text, 'justify-content', 'center');
+  set(text, 'flex', '1 1 auto');
+  set(text, 'font-size', '15px');
+  set(text, 'font-weight', '1000');
+  set(text, 'line-height', '1');
+
+  set(total, 'display', 'inline-flex');
+  set(total, 'align-items', 'center');
+  set(total, 'justify-content', 'center');
+  set(total, 'flex', '0 0 auto');
+  set(total, 'min-width', '56px');
+  set(total, 'margin', '0');
+  set(total, 'padding', '8px 7px');
+  set(total, 'border-radius', '999px');
+  set(total, 'background', 'rgba(255,255,255,.20)');
+  set(total, 'color', '#fff');
+  set(total, 'font-size', '14px');
+  set(total, 'line-height', '1');
+
+  set(send, 'position', 'absolute');
+  set(send, 'inset', '0');
+  set(send, 'width', '100%');
+  set(send, 'height', '100%');
+  set(send, 'padding', '0');
+  set(send, 'opacity', '0');
+  set(send, 'z-index', '3');
 })();
