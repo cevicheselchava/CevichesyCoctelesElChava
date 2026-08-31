@@ -1,0 +1,236 @@
+(() => {
+  'use strict';
+
+  const STYLE_ID = 'el-cubano-layout-fix-20260831';
+
+  function injectStyles() {
+    document.getElementById(STYLE_ID)?.remove();
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      /* Fondo más limpio: conserva la marca de agua sin competir con el texto */
+      body::before{opacity:.09!important}
+
+      /* Todas las categorías parten cerradas; solo abre la que toque el cliente */
+      .section[data-group]:not(.open)>.products{
+        max-height:0!important;
+        opacity:0!important;
+        overflow:hidden!important;
+        margin-top:0!important;
+        pointer-events:none!important;
+      }
+      .section[data-group].open>.products{
+        max-height:6000px!important;
+        opacity:1!important;
+        overflow:visible!important;
+        margin-top:10px!important;
+        pointer-events:auto!important;
+      }
+
+      /* Avisos inferiores con más aire */
+      #customer-info-after-menu{margin-top:18px!important}
+      #customer-info-after-menu .notice,
+      #customer-info-after-menu .availability-note{
+        margin:13px 0!important;
+        padding:16px 17px!important;
+        font-size:18px!important;
+        line-height:1.38!important;
+        background:rgba(255,255,255,.90)!important;
+      }
+      .credit{padding-top:24px!important;padding-bottom:96px!important;line-height:1.28!important}
+
+      /* Botón fijo perfectamente centrado */
+      .sticky{
+        display:flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+      }
+      .sticky .summary{
+        width:100%!important;
+        flex:1 1 auto!important;
+        display:flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+        text-align:center!important;
+        min-width:0!important;
+      }
+      .summary b{
+        display:flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+        gap:12px!important;
+        width:100%!important;
+      }
+      .summary b span{margin-left:0!important}
+
+      @media(max-width:700px){
+        /* Categorías legibles sin abrir ninguna por defecto */
+        #customer-category-nav{margin-top:14px!important;margin-bottom:18px!important}
+        #customer-category-nav button{min-height:76px!important;padding:8px 3px 11px!important}
+        #customer-category-nav .cat-icon{font-size:25px!important}
+        #customer-category-nav .cat-label{font-size:11px!important;line-height:1.05!important}
+
+        /* Tarjeta: foto izquierda, texto arriba, precio y controles abajo sin encimarse */
+        .product{
+          grid-template-columns:108px minmax(0,1fr)!important;
+          grid-template-rows:auto auto!important;
+          column-gap:12px!important;
+          row-gap:10px!important;
+          align-items:start!important;
+          padding:12px!important;
+          border-radius:22px!important;
+        }
+        .approved-product-image{
+          grid-column:1!important;
+          grid-row:1/3!important;
+          width:108px!important;
+          height:108px!important;
+          align-self:center!important;
+          border-radius:17px!important;
+        }
+        .product>.approved-copy{
+          grid-column:2!important;
+          grid-row:1!important;
+          min-width:0!important;
+        }
+        .product h3{
+          font-size:21px!important;
+          line-height:1.08!important;
+          overflow-wrap:anywhere!important;
+        }
+        .meta{
+          font-size:17px!important;
+          line-height:1.25!important;
+          margin-top:5px!important;
+        }
+        .tag,.promo-save{font-size:13px!important;padding:5px 8px!important}
+
+        .product>.bottom{
+          grid-column:2!important;
+          grid-row:2!important;
+          display:flex!important;
+          flex-direction:column!important;
+          align-items:stretch!important;
+          gap:8px!important;
+          width:100%!important;
+          min-width:0!important;
+          margin:0!important;
+        }
+        .price{
+          width:100%!important;
+          max-width:none!important;
+          min-width:0!important;
+          padding:9px 12px!important;
+          font-size:27px!important;
+          line-height:1!important;
+          white-space:nowrap!important;
+        }
+        .price small{
+          display:none!important;
+        }
+        .qty{
+          width:100%!important;
+          display:grid!important;
+          grid-template-columns:44px 38px minmax(0,1fr)!important;
+          align-items:center!important;
+          gap:7px!important;
+          justify-content:stretch!important;
+          font-size:20px!important;
+        }
+        .qty button{
+          width:44px!important;
+          height:44px!important;
+          flex:none!important;
+        }
+        .qty span{
+          display:block!important;
+          text-align:center!important;
+          min-width:0!important;
+        }
+        .qty .plus{
+          width:100%!important;
+          min-width:0!important;
+          height:44px!important;
+          padding:0 12px!important;
+        }
+        .qty .plus::after{font-size:18px!important}
+
+        /* Beneficios 2x2 con el texto centrado */
+        .benefits{grid-template-columns:1fr 1fr!important;gap:9px!important}
+        .benefit{
+          min-height:92px!important;
+          padding:12px 9px 15px!important;
+          text-align:center!important;
+          font-size:16px!important;
+          line-height:1.18!important;
+        }
+        .benefit b{font-size:18px!important;line-height:1.15!important}
+
+        #customer-info-after-menu .notice,
+        #customer-info-after-menu .availability-note{
+          font-size:17px!important;
+          padding:15px 16px!important;
+        }
+      }
+
+      @media(max-width:430px){
+        .product{grid-template-columns:98px minmax(0,1fr)!important;column-gap:10px!important}
+        .approved-product-image{width:98px!important;height:98px!important}
+        .product h3{font-size:19px!important}
+        .meta{font-size:16px!important}
+        .price{font-size:25px!important}
+        .qty{grid-template-columns:42px 34px minmax(0,1fr)!important;gap:6px!important}
+        .qty button{width:42px!important;height:42px!important}
+        .qty .plus{height:42px!important}
+        .qty .plus::after{font-size:17px!important}
+        .summary b::before{font-size:22px!important}
+        .summary b span{font-size:20px!important;min-width:96px!important}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function closeAllCategories() {
+    document.querySelectorAll('.section[data-group]').forEach(section => {
+      section.classList.remove('open');
+      section.querySelector('.section-title')?.setAttribute('aria-expanded', 'false');
+    });
+    document.querySelectorAll('#customer-category-nav button[data-group]').forEach(button => {
+      button.classList.remove('active');
+      button.setAttribute('aria-pressed', 'false');
+    });
+  }
+
+  function setupCategoryState() {
+    const nav = document.getElementById('customer-category-nav');
+    if (!nav || nav.dataset.cleanToggle === '1') return;
+    nav.dataset.cleanToggle = '1';
+
+    /* La lógica principal ya maneja abrir/cerrar. Esto solo mantiene aria-pressed. */
+    nav.addEventListener('click', event => {
+      const button = event.target.closest('button[data-group]');
+      if (!button) return;
+      setTimeout(() => {
+        nav.querySelectorAll('button[data-group]').forEach(item => {
+          item.setAttribute('aria-pressed', item.classList.contains('active') ? 'true' : 'false');
+        });
+      }, 0);
+    });
+  }
+
+  function startAtTop() {
+    try { history.scrollRestoration = 'manual'; } catch (_) {}
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }
+
+  function applyFixes() {
+    injectStyles();
+    closeAllCategories();
+    setupCategoryState();
+    startAtTop();
+  }
+
+  /* Corre después de las capas visuales existentes para que estos ajustes ganen. */
+  window.addEventListener('load', () => setTimeout(applyFixes, 900), { once:true });
+  setTimeout(applyFixes, 1500);
+})();
