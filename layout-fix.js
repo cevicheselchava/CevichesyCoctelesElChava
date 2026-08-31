@@ -8,8 +8,31 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* Fondo más limpio: conserva la marca de agua sin competir con el texto */
-      body::before{opacity:.09!important}
+      /* Rendimiento móvil: misma apariencia, menos capas pesadas al hacer scroll */
+      html{scroll-behavior:auto!important}
+      body{
+        background:
+          linear-gradient(rgba(255,248,232,.91),rgba(255,248,232,.95)),
+          url('/el-cubano-logo-transparent.png') center 680px/360px auto no-repeat!important;
+        background-attachment:scroll!important;
+      }
+      body::before{
+        position:absolute!important;
+        opacity:.055!important;
+        background-attachment:scroll!important;
+        filter:none!important;
+      }
+      body::after{display:none!important}
+      .hero,#customer-category-nav,.cart-backdrop{
+        backdrop-filter:none!important;
+        -webkit-backdrop-filter:none!important;
+      }
+      .section[data-group]>.products,
+      .product,.benefit,.notice,.availability-note,
+      #customer-category-nav button,.sticky{
+        transition:none!important;
+        animation:none!important;
+      }
 
       /* Todas las categorías parten cerradas; solo abre la que toque el cliente */
       .section[data-group]:not(.open)>.products{
@@ -20,7 +43,7 @@
         pointer-events:none!important;
       }
       .section[data-group].open>.products{
-        max-height:6000px!important;
+        max-height:none!important;
         opacity:1!important;
         overflow:visible!important;
         margin-top:10px!important;
@@ -53,7 +76,7 @@
         align-items:center!important;
         justify-content:center!important;
         background:linear-gradient(95deg,#0aa84b,#22cf67)!important;
-        box-shadow:0 9px 22px rgba(5,92,42,.24)!important;
+        box-shadow:0 7px 16px rgba(5,92,42,.20)!important;
         border:0!important;
       }
       .sticky .summary{
@@ -96,13 +119,11 @@
       }
 
       @media(max-width:700px){
-        /* Categorías legibles sin abrir ninguna por defecto */
         #customer-category-nav{margin-top:14px!important;margin-bottom:18px!important}
         #customer-category-nav button{min-height:76px!important;padding:8px 3px 11px!important}
         #customer-category-nav .cat-icon{font-size:25px!important}
         #customer-category-nav .cat-label{font-size:11px!important;line-height:1.05!important}
 
-        /* Tarjeta: foto izquierda, texto arriba, precio y controles abajo sin encimarse */
         .product{
           grid-template-columns:108px minmax(0,1fr)!important;
           grid-template-rows:auto auto!important;
@@ -111,6 +132,7 @@
           align-items:start!important;
           padding:12px!important;
           border-radius:22px!important;
+          box-shadow:0 4px 11px rgba(23,49,68,.055)!important;
         }
         .approved-product-image{
           grid-column:1!important;
@@ -185,7 +207,6 @@
         }
         .qty .plus::after{font-size:18px!important}
 
-        /* Beneficios 2x2 con el texto centrado */
         .benefits{grid-template-columns:1fr 1fr!important;gap:9px!important}
         .benefit{
           min-height:92px!important;
@@ -193,6 +214,7 @@
           text-align:center!important;
           font-size:16px!important;
           line-height:1.18!important;
+          box-shadow:0 4px 10px rgba(28,52,67,.05)!important;
         }
         .benefit b{font-size:18px!important;line-height:1.15!important}
 
@@ -240,17 +262,17 @@
     nav.addEventListener('click', event => {
       const button = event.target.closest('button[data-group]');
       if (!button) return;
-      setTimeout(() => {
+      queueMicrotask(() => {
         nav.querySelectorAll('button[data-group]').forEach(item => {
           item.setAttribute('aria-pressed', item.classList.contains('active') ? 'true' : 'false');
         });
-      }, 0);
+      });
     });
   }
 
   function startAtTop() {
     try { history.scrollRestoration = 'manual'; } catch (_) {}
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    window.scrollTo(0, 0);
   }
 
   function applyFixes() {
@@ -260,6 +282,25 @@
     startAtTop();
   }
 
-  window.addEventListener('load', () => setTimeout(applyFixes, 900), { once:true });
-  setTimeout(applyFixes, 1500);
+  /* Se aplica en cuanto llega este archivo. Si approved-ui se inyecta después,
+     movemos esta hoja al final inmediatamente, sin esperar 900/1500 ms. */
+  applyFixes();
+
+  const headObserver = new MutationObserver(mutations => {
+    const approvedAdded = mutations.some(mutation =>
+      [...mutation.addedNodes].some(node => node?.id === 'el-cubano-approved-ui')
+    );
+    if (!approvedAdded) return;
+    injectStyles();
+    closeAllCategories();
+    headObserver.disconnect();
+  });
+  headObserver.observe(document.head, { childList:true });
+
+  window.addEventListener('load', () => {
+    requestAnimationFrame(() => {
+      injectStyles();
+      closeAllCategories();
+    });
+  }, { once:true });
 })();
