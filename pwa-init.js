@@ -356,3 +356,20 @@
     init();
   }
 })();
+
+// Interfaz aprobada por Chava: se carga después de las capas funcionales.
+(() => {
+  function loadApprovedUI() {
+    if (document.getElementById('approved-ui-script')) return;
+    const script = document.createElement('script');
+    script.id = 'approved-ui-script';
+    script.src = '/approved-ui.js?v=20260831-1';
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadApprovedUI, { once:true });
+  } else {
+    loadApprovedUI();
+  }
+})();
