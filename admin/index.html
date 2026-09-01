@@ -28,12 +28,13 @@ html,body{margin:0;min-height:100%;background:#fff9ed;font-family:Arial,Helvetic
     '/admin/order-notifications.js',
     '/admin/delete-cancelled-orders.js',
     '/admin/order-totals.js',
-    '/admin/manual-order-products.js'
+    '/admin/manual-order-products.js',
+    '/admin/manual-order-product-position.js'
   ];
   try{
     const responses=await Promise.all([
-      fetch('/admin/panel-base.html?v=20260901-08',{cache:'no-store'}),
-      ...files.map(url=>fetch(url+'?v=20260901-08',{cache:'no-store'}))
+      fetch('/admin/panel-base.html?v=20260901-09',{cache:'no-store'}),
+      ...files.map(url=>fetch(url+'?v=20260901-09',{cache:'no-store'}))
     ]);
     if(responses.some(r=>!r.ok))throw new Error('No se pudieron cargar todos los archivos del panel');
 
