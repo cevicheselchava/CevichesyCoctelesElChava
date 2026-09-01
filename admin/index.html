@@ -5,22 +5,74 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1f6f3b">
 <title>Panel Operativo El Cubano</title>
-<style>html,body{margin:0;min-height:100%;background:#fff9ed;font-family:Arial,Helvetica,sans-serif}#loading{min-height:100vh;display:grid;place-items:center;color:#174f2b;font-weight:900}</style>
+<style>
+html,body{margin:0;min-height:100%;background:#fff9ed;font-family:Arial,Helvetica,sans-serif}
+#loading{min-height:100vh;display:grid;place-items:center;color:#174f2b;font-weight:900;font-size:18px;text-align:center;padding:24px}
+</style>
 </head>
 <body>
-<div id="loading">Cargando panel…</div>
+<div id="loading">Cargando Panel Operativo El Cubano…</div>
 <script>
 (async()=>{
+  const files=[
+    '/admin/cocktail-sync.js',
+    '/admin/inventory-card-actions.js',
+    '/admin/history-actions.js',
+    '/admin/recipe-units.js',
+    '/admin/preparation-recipes.js',
+    '/admin/deliveries-simple.js',
+    '/admin/purchases-simple.js',
+    '/admin/purchase-shopping-list.js',
+    '/admin/sales-profits.js',
+    '/admin/auto-confirm-orders.js',
+    '/admin/order-notifications.js',
+    '/admin/delete-cancelled-orders.js'
+  ];
   try{
-    const r=await fetch('/admin/panel-base.html?v=20260901-02',{cache:'no-store'});
-    if(!r.ok)throw new Error('No se pudo cargar el panel');
-    let html=await r.text();
-    html=html.replace("status:'nuevo',deliveryStatus:'por_preparar',directSale:false,createdAt:stamp,createdAtClient:new Date().toISOString()","status:'confirmado',deliveryStatus:'por_preparar',directSale:false,confirmedAt:stamp,createdAt:stamp,createdAtClient:new Date().toISOString()");
-    html=html.replace("toast('Pedido guardado');$('orderModal').hidden=true","toast('Pedido ingresado');$('orderModal').hidden=true");
-    html=html.replace('</body>','<script src="/admin/cocktail-sync.js?v=20260819-16"><\/script><script src="/admin/inventory-card-actions.js?v=20260819-16"><\/script><script src="/admin/history-actions.js?v=20260819-16"><\/script><script src="/admin/recipe-units.js?v=20260819-16"><\/script><script src="/admin/preparation-recipes.js?v=20260819-16"><\/script><script src="/admin/deliveries-simple.js?v=20260819-16"><\/script><script src="/admin/purchases-simple.js?v=20260819-16"><\/script><script src="/admin/purchase-shopping-list.js?v=20260901-01"><\/script><script src="/admin/sales-profits.js?v=20260819-16"><\/script><script src="/admin/auto-confirm-orders.js?v=20260831-01"><\/script><script src="/admin/order-notifications.js?v=20260831-02"><\/script><script src="/admin/delete-cancelled-orders.js?v=20260901-02"><\/script></body>');
-    document.open();document.write(html);document.close();
+    const responses=await Promise.all([
+      fetch('/admin/panel-base.html?v=20260901-03',{cache:'no-store'}),
+      ...files.map(url=>fetch(url+'?v=20260901-03',{cache:'no-store'}))
+    ]);
+    if(responses.some(r=>!r.ok))throw new Error('No se pudieron cargar todos los archivos del panel');
+
+    let html=await responses[0].text();
+    const enhancements=await Promise.all(responses.slice(1).map(r=>r.text()));
+
+    html=html.replace(
+      "status:'nuevo',deliveryStatus:'por_preparar',directSale:false,createdAt:stamp,createdAtClient:new Date().toISOString()",
+      "status:'confirmado',deliveryStatus:'por_preparar',directSale:false,confirmedAt:stamp,createdAt:stamp,createdAtClient:new Date().toISOString()"
+    );
+    html=html.replace(
+      "toast('Pedido guardado');$('orderModal').hidden=true",
+      "toast('Pedido ingresado');$('orderModal').hidden=true"
+    );
+
+    html=html.replace('</head>',`<style id="admin-final-boot-style">
+      main.wrap{visibility:hidden!important}
+      #admin-final-boot{position:fixed;inset:0;z-index:999999;display:grid;place-items:center;background:#fff9ed;color:#174f2b;font:900 18px Arial,Helvetica,sans-serif;text-align:center;padding:24px}
+    </style></head>`);
+    html=html.replace('<body>','<body><div id="admin-final-boot">Cargando Panel Operativo El Cubano…</div>');
+
+    const inline=enhancements.map((code,i)=>{
+      const safe=code.replace(/<\/script/gi,'<\\/script');
+      return `<script data-admin-module="${i+1}">${safe}<\\/script>`;
+    }).join('');
+
+    const reveal=`<script>(()=>{
+      const boot=document.getElementById('admin-final-boot');
+      if(boot)boot.remove();
+      const style=document.getElementById('admin-final-boot-style');
+      if(style)style.remove();
+      document.documentElement.dataset.adminReady='1';
+    })();<\\/script>`;
+
+    html=html.replace('</body>',inline+reveal+'</body>');
+    document.open();
+    document.write(html);
+    document.close();
   }catch(e){
-    document.getElementById('loading').textContent='No se pudo cargar el panel. Recarga la página.';
+    const loading=document.getElementById('loading');
+    if(loading)loading.textContent='No se pudo cargar el panel. Recarga la página.';
     console.error(e);
   }
 })();
