@@ -18,7 +18,7 @@
   document.head.appendChild(style);
 
   const filters=document.querySelector('#orders .orders-status-filter');
-  if(!filters||typeof renderOrders!=='function'||typeof orderMatchesView!=='function')return;
+  if(!filters||typeof renderOrders!=='function')return;
 
   let summary=document.getElementById('orderTotalsSummary');
   if(!summary){
@@ -54,8 +54,20 @@
     },0);
   }
 
+  function totalOrdersToPrepare(){
+    const today=typeof localDay==='function'?localDay():'';
+    return (orders||[]).filter(o=>{
+      if(o?.deleted||o?.directSale)return false;
+      const status=String(o?.status||'nuevo');
+      if(status==='cancelado'||status==='entregado')return false;
+      const day=String(o?.deliveryDate||'');
+      if(today&&day&&day<today)return false;
+      return true;
+    });
+  }
+
   function refreshOrderTotals(){
-    const list=(orders||[]).filter(o=>!o.deleted&&orderMatchesView(o));
+    const list=totalOrdersToPrepare();
     const pounds=list.reduce((sum,o)=>sum+poundsForOrder(o),0);
     const count=document.getElementById('ordersTotalCount');
     const lbs=document.getElementById('ordersTotalPounds');
