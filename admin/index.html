@@ -16,6 +16,7 @@ html,body{margin:0;min-height:100%;background:#fff9ed;font-family:Arial,Helvetic
 (async()=>{
   const files=[
     '/admin/cocktail-sync.js',
+    '/admin/packaging-containers.js',
     '/admin/inventory-card-actions.js',
     '/admin/history-actions.js',
     '/admin/recipe-units.js',
@@ -33,8 +34,8 @@ html,body{margin:0;min-height:100%;background:#fff9ed;font-family:Arial,Helvetic
   ];
   try{
     const responses=await Promise.all([
-      fetch('/admin/panel-base.html?v=20260901-09',{cache:'no-store'}),
-      ...files.map(url=>fetch(url+'?v=20260901-09',{cache:'no-store'}))
+      fetch('/admin/panel-base.html?v=20260901-10',{cache:'no-store'}),
+      ...files.map(url=>fetch(url+'?v=20260901-10',{cache:'no-store'}))
     ]);
     if(responses.some(r=>!r.ok))throw new Error('No se pudieron cargar todos los archivos del panel');
 
