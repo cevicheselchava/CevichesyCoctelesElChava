@@ -1,5 +1,9 @@
-const CACHE='el-cubano-admin-v2';
-const SHELL=['/admin/','/admin/manifest.webmanifest','/control.html','/control-fix.js','/control-theme.js','/admin/prepare-recipe.js','/pwa-icon.svg'];
+const CACHE='el-cubano-admin-v3';
+const SHELL=[
+  '/admin/',
+  '/admin/manifest.webmanifest',
+  '/pwa-icon.svg'
+];
 
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
