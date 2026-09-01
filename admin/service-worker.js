@@ -1,4 +1,4 @@
-const CACHE='el-cubano-admin-v3';
+const CACHE='el-cubano-admin-v4';
 const SHELL=[
   '/admin/',
   '/admin/manifest.webmanifest',
