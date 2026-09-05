@@ -1,0 +1,22 @@
+{
+  "id": "/admin/v2/",
+  "name": "Panel Operativo · El Cubano",
+  "short_name": "Panel El Cubano",
+  "description": "Panel operativo de Ceviches & Cócteles El Cubano.",
+  "lang": "es",
+  "start_url": "/admin/v2/",
+  "scope": "/admin/v2/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbf4e5",
+  "theme_color": "#0b7a43",
+  "icons": [
+    {
+      "src": "/admin/v2/panel-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}
