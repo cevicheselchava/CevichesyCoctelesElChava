@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f8f1df">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <title>Panel Operativo · El Cubano</title>
+  <link rel="stylesheet" href="/admin/v2/styles.css?v=1">
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="/admin/v2/app.js?v=1" defer></script>
+</head>
+<body>
+  <div id="appBoot" class="boot">Cargando Panel Operativo…</div>
+
+  <main id="app" class="app" hidden>
+    <header class="hero">
+      <div class="rasta-line"></div>
+      <img class="brand-logo" src="/logo.png" alt="El Cubano">
+      <div class="hero-copy">
+        <h1>Panel Operativo</h1>
+        <div class="today-pill" id="todayPill">Hoy</div>
+      </div>
+    </header>
+
+    <section class="screen active" id="screen-home" data-screen="home">
+      <div class="home-grid">
+        <button class="home-card green" data-go="orders"><span class="home-icon">📋</span><strong>Pedidos</strong><small>Ver, agregar y editar</small><span class="go">›</span></button>
+        <button class="home-card yellow" data-go="prepare"><span class="home-icon">🥣</span><strong>Preparar</strong><small>Encargados · Extra · Total</small><span class="go">›</span></button>
+        <button class="home-card red" data-go="buy"><span class="home-icon">🛒</span><strong>Comprar</strong><small>Qué necesitas · Qué tienes · Qué falta</small><span class="go">›</span></button>
+        <button class="home-card teal" data-go="deliveries"><span class="home-icon">🛵</span><strong>Entregas</strong><small>Ruta del día · Estados</small><span class="go">›</span></button>
+        <button class="home-card money" data-go="money"><span class="home-icon">💰</span><strong>Dinero</strong><small>Ventas · Compras · Utilidad</small><span class="go">›</span></button>
+      </div>
+
+      <section class="summary-card">
+        <div class="summary-head"><h2>Resumen de hoy</h2><span id="syncBadge" class="sync-badge">Conectando…</span></div>
+        <div class="summary-grid">
+          <div class="metric"><span>📄</span><b id="sumOrders">0</b><small>Pedidos confirmados</small></div>
+          <div class="metric"><span>🥣</span><b id="sumPrep">0 lb</b><small>Total a preparar</small></div>
+          <div class="metric"><span>🛒</span><b id="sumBuy">0</b><small>Productos por comprar</small></div>
+          <div class="metric"><span>💵</span><b id="sumSales">$0.00</b><small>Ventas del día</small></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-orders" data-screen="orders">
+      <div class="screen-head"><button class="back" data-go="home">‹</button><div><h2>Pedidos</h2><p>Lo que tienes encargado.</p></div><button class="primary compact" id="newOrderBtn">+ Pedido</button></div>
+      <div class="filter-row" id="orderFilters">
+        <button class="filter active" data-order-view="today">Hoy</button>
+        <button class="filter" data-order-view="upcoming">Próximos</button>
+        <button class="filter" data-order-view="completed">Completados</button>
+        <button class="filter" data-order-view="cancelled">Cancelados</button>
+      </div>
+      <div id="ordersList" class="stack"></div>
+    </section>
+
+    <section class="screen" id="screen-prepare" data-screen="prepare">
+      <div class="screen-head"><button class="back" data-go="home">‹</button><div><h2>Preparar</h2><p>Encargados + extra = total.</p></div></div>
+      <div class="prep-totals" id="prepTotals"></div>
+      <section class="panel-card">
+        <div class="panel-title"><h3>Preparación extra</h3><small>Escribe solamente lo que quieres hacer además de los pedidos.</small></div>
+        <div id="extraInputs" class="extra-grid"></div>
+        <button class="primary full" id="saveExtraBtn">Guardar preparación extra</button>
+        <button class="secondary full" id="prepareExtraBtn">✓ Ya preparé el extra</button>
+      </section>
+      <section class="panel-card">
+        <div class="panel-title"><h3>Pedidos por preparar</h3><small>Al marcar preparado se descuentan sus insumos y pasa a Entregas.</small></div>
+        <div id="prepareOrders" class="stack"></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-buy" data-screen="buy">
+      <div class="screen-head"><button class="back" data-go="home">‹</button><div><h2>Comprar</h2><p>Lo que necesitas menos lo que ya tienes.</p></div></div>
+      <div class="action-grid">
+        <button class="primary" id="registerPurchaseBtn">🛒 Registrar compra</button>
+        <button class="secondary" id="reviewInventoryBtn">✏️ Revisar inventario real</button>
+      </div>
+      <section class="panel-card shortage-card">
+        <div class="panel-title"><h3>Falta comprar</h3><span class="count-badge" id="shortageCount">0</span></div>
+        <div id="shoppingList" class="stack"></div>
+      </section>
+      <section class="panel-card">
+        <div class="panel-title"><h3>Lo que tienes</h3><small>Toca cualquier producto para corregir cantidad, precio o mínimo.</small></div>
+        <div id="inventoryList" class="inventory-list"></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-deliveries" data-screen="deliveries">
+      <div class="screen-head"><button class="back" data-go="home">‹</button><div><h2>Entregas</h2><p>En orden de horario.</p></div></div>
+      <label class="date-control">Día <input id="deliveryDate" type="date"></label>
+      <div id="deliveryList" class="stack"></div>
+    </section>
+
+    <section class="screen" id="screen-money" data-screen="money">
+      <div class="screen-head"><button class="back" data-go="home">‹</button><div><h2>Dinero</h2><p>Ventas, compras y utilidad.</p></div></div>
+      <div id="moneyMetrics" class="money-grid"></div>
+      <section class="panel-card"><div class="panel-title"><h3>Últimos movimientos</h3></div><div id="moneyList" class="stack"></div></section>
+    </section>
+  </main>
+
+  <div class="modal" id="orderModal" hidden>
+    <section class="sheet">
+      <div class="modal-head"><div><h2 id="orderModalTitle">Ingresar pedido</h2><p>Datos básicos y listo.</p></div><button class="close" data-close="orderModal">×</button></div>
+      <div class="form-grid">
+        <div class="full segmented" id="orderKindBtns"><button type="button" class="active" data-kind="delivery">Pedido / entrega</button><button type="button" data-kind="direct">Venta directa</button></div>
+        <label class="full">Producto<select id="orderProduct"></select></label>
+        <label>Nombre<input id="orderCustomer" autocomplete="name"></label>
+        <label>Teléfono<input id="orderPhone" type="tel"></label>
+        <label class="delivery-only full">Dirección<input id="orderAddress"></label>
+        <label class="delivery-only">ZIP<input id="orderZip" maxlength="5" inputmode="numeric"></label>
+        <label class="delivery-only">Día<input id="orderDate" type="date"></label>
+        <label class="delivery-only full">Horario<select id="orderTime"></select></label>
+        <label>Cantidad<input id="orderQty" type="number" min="0.5" step="0.5"></label>
+        <label>Precio<input id="orderPrice" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Pago<select id="orderPayment"><option>Al recibir</option><option>Efectivo</option><option>Cash App</option><option>Zelle</option><option>Tarjeta</option><option>Otro</option></select></label>
+        <label>Fuente<select id="orderSource"><option>WhatsApp</option><option>Messenger</option><option>Facebook</option><option>SMS</option><option>Teléfono</option><option>Otro</option></select></label>
+        <label class="full">Refresco<select id="orderSoda"></select></label>
+        <label class="full">Notas<input id="orderNotes"></label>
+      </div>
+      <div class="preview" id="orderPreview"></div>
+      <div class="modal-actions"><button class="secondary" data-close="orderModal">Cancelar</button><button class="primary" id="saveOrderBtn">Guardar</button></div>
+    </section>
+  </div>
+
+  <div class="modal" id="inventoryModal" hidden>
+    <section class="sheet">
+      <div class="modal-head"><div><h2>Inventario real</h2><p>Corrige lo que físicamente tienes.</p></div><button class="close" data-close="inventoryModal">×</button></div>
+      <div class="form-grid">
+        <label class="full">Producto<select id="inventoryItem"></select></label>
+        <label class="full">Cantidad real <span id="inventoryUnitHint"></span><input id="inventoryQty" type="number" min="0" step="0.01"></label>
+        <label>Precio de compra usual<input id="inventoryPrice" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Mínimo deseado<input id="inventoryMin" type="number" min="0" step="0.01"></label>
+      </div>
+      <div class="preview" id="inventoryPreview"></div>
+      <div class="modal-actions"><button class="secondary" data-close="inventoryModal">Cancelar</button><button class="primary" id="saveInventoryBtn">Guardar</button></div>
+    </section>
+  </div>
+
+  <div class="modal" id="purchaseModal" hidden>
+    <section class="sheet">
+      <div class="modal-head"><div><h2>Registrar compra</h2><p>Suma inventario y registra el gasto.</p></div><button class="close" data-close="purchaseModal">×</button></div>
+      <div class="form-grid">
+        <label class="full">Producto<select id="purchaseItem"></select></label>
+        <label>Cantidad<input id="purchaseQty" type="number" min="0.01" step="0.01" value="1"></label>
+        <label>Unidad<input id="purchaseUnit" readonly></label>
+        <label class="full">Costo total<input id="purchaseCost" type="number" min="0" step="0.01" inputmode="decimal"></label>
+        <label class="full">Tienda / proveedor<input id="purchaseStore" placeholder="H-E-B, Walmart…"></label>
+      </div>
+      <div class="preview" id="purchasePreview"></div>
+      <div class="modal-actions"><button class="secondary" data-close="purchaseModal">Cancelar</button><button class="primary" id="savePurchaseBtn">Guardar compra</button></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</body>
+</html>
