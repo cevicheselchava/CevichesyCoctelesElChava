@@ -4,8 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f8f1df">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Panel El Cubano">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <title>Panel Operativo · El Cubano</title>
+  <link rel="manifest" href="/admin/v2/manifest.webmanifest?v=20260905-1">
+  <link rel="icon" href="/admin/v2/panel-icon.svg" type="image/svg+xml">
   <style>[hidden]{display:none!important}</style>
   <link rel="stylesheet" href="/admin/v2/styles.css?v=20260905-3">
   <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -151,5 +156,12 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <script>
+    if('serviceWorker' in navigator){
+      window.addEventListener('load',()=>{
+        navigator.serviceWorker.register('/admin/v2/service-worker.js',{scope:'/admin/v2/'}).catch(console.error);
+      });
+    }
+  </script>
 </body>
 </html>
