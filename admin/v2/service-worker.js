@@ -1,9 +1,9 @@
-const CACHE='el-cubano-panel-v2-1';
+const CACHE='el-cubano-panel-v2-2';
 const SHELL=[
   '/admin/v2/',
   '/admin/v2/index.html',
-  '/admin/v2/styles.css?v=20260905-3',
-  '/admin/v2/app.js?v=20260905-3',
+  '/admin/v2/styles.css?v=20260905-4',
+  '/admin/v2/app.js?v=20260905-4',
   '/admin/v2/manifest.webmanifest',
   '/admin/v2/panel-icon.svg'
 ];
