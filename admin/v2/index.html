@@ -12,10 +12,10 @@
   <link rel="manifest" href="/admin/v2/manifest.webmanifest?v=20260905-1">
   <link rel="icon" href="/admin/v2/panel-icon.svg" type="image/svg+xml">
   <style>[hidden]{display:none!important}</style>
-  <link rel="stylesheet" href="/admin/v2/styles.css?v=20260905-3">
+  <link rel="stylesheet" href="/admin/v2/styles.css?v=20260905-4">
   <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script defer src="/admin/v2/app.js?v=20260905-3"></script>
+  <script defer src="/admin/v2/app.js?v=20260905-4"></script>
 </head>
 <body>
   <main id="app" class="app">
@@ -112,17 +112,18 @@
         <label>Teléfono<input id="orderPhone" type="tel"></label>
         <label class="delivery-only full">Dirección<input id="orderAddress"></label>
         <label class="delivery-only">ZIP<input id="orderZip" maxlength="5" inputmode="numeric"></label>
-        <label class="delivery-only">Día<input id="orderDate" type="date"></label>
+        <label class="delivery-only">Día de entrega<input id="orderDate" type="date"></label>
         <label class="delivery-only full">Horario<select id="orderTime"></select></label>
         <label>Cantidad<input id="orderQty" type="number" min="0.5" step="0.5"></label>
         <label>Precio<input id="orderPrice" type="number" min="0" step="0.01" inputmode="decimal"></label>
         <label>Pago<select id="orderPayment"><option>Al recibir</option><option>Efectivo</option><option>Cash App</option><option>Zelle</option><option>Tarjeta</option><option>Otro</option></select></label>
         <label>Fuente<select id="orderSource"><option>WhatsApp</option><option>Messenger</option><option>Facebook</option><option>SMS</option><option>Teléfono</option><option>Otro</option></select></label>
-        <label class="full">Refresco<select id="orderSoda"></select></label>
+        <input id="orderSoda" type="hidden" value="">
+        <div class="preview full">🥤 Refresco incluido en la promoción</div>
         <label class="full">Notas<input id="orderNotes"></label>
       </div>
       <div class="preview" id="orderPreview"></div>
-      <div class="modal-actions"><button class="secondary" data-close="orderModal">Cancelar</button><button class="primary" id="saveOrderBtn">Guardar</button></div>
+      <div class="modal-actions"><button class="secondary" data-close="orderModal">Cancelar</button><button class="primary" id="saveOrderBtn">Guardar pedido</button></div>
     </section>
   </div>
 
