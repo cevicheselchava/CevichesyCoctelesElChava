@@ -9,53 +9,123 @@
 </head>
 <body>
   <div class="app">
-    <header class="hero">
+    <header class="hero" id="hero">
       <div class="hero-row">
         <button class="icon-button" id="menuButton" type="button" aria-label="Abrir menú">☰</button>
-
-        <div class="logo-wrap">
-          <img id="brandLogo" class="brand-logo" alt="Logo del negocio">
-        </div>
-
+        <div class="logo-wrap"><img id="brandLogo" class="brand-logo" alt="Logo del negocio"></div>
         <div class="title-wrap">
           <h1 class="panel-title" id="panelTitle">PANEL <span>OPERATIVO</span></h1>
           <div class="side-slogan" id="sideSlogan">Good Food<br>Good Vibes</div>
         </div>
-
-        <button class="icon-button bell" id="bellButton" type="button" aria-label="Notificaciones">
-          ♧
-          <span class="badge-notify">3</span>
-        </button>
+        <button class="icon-button bell" id="bellButton" type="button" aria-label="Notificaciones">♧<span class="badge-notify">3</span></button>
       </div>
     </header>
 
     <main class="content">
-      <section class="module-grid" id="moduleGrid" aria-label="Módulos del sistema"></section>
-
-      <section class="summary-section">
-        <div class="summary-title-row">
-          <h2 class="summary-title"><span class="bars">▂▅▇</span> Resumen de hoy</h2>
-          <div class="date-pill">▣ <span id="todayDate">Hoy</span></div>
-        </div>
-        <div class="summary-grid" id="summaryGrid"></div>
+      <section class="view active" id="homeView" data-view="home">
+        <section class="module-grid" id="moduleGrid" aria-label="Módulos del sistema"></section>
+        <section class="summary-section">
+          <div class="summary-title-row">
+            <h2 class="summary-title"><span class="bars">▂▅▇</span> Resumen de hoy</h2>
+            <div class="date-pill">▣ <span id="todayDate">Hoy</span></div>
+          </div>
+          <div class="summary-grid" id="summaryGrid"></div>
+        </section>
+        <footer class="footer-brand">
+          <div class="footer-slogan" id="footerSlogan">Ceviches, Cócteles<br>y Buena Vibra</div>
+          <div class="footer-tag" id="footerTag">ONE<br>LOVE</div>
+        </footer>
       </section>
 
-      <footer class="footer-brand">
-        <div class="footer-slogan" id="footerSlogan">Ceviches, Cócteles<br>y Buena Vibra</div>
-        <div class="footer-tag" id="footerTag">ONE<br>LOVE</div>
-      </footer>
+      <section class="view orders-view" id="ordersView" data-view="pedidos">
+        <div class="module-topbar">
+          <button class="back-button" id="ordersBack" type="button">‹</button>
+          <div>
+            <small>MÓDULO</small>
+            <h2>Pedidos</h2>
+          </div>
+          <button class="new-order-button" id="newOrderButton" type="button">＋ Pedido</button>
+        </div>
+
+        <div class="order-kpis" id="orderKpis"></div>
+
+        <div class="orders-toolbar">
+          <label class="orders-search">⌕ <input id="orderSearch" type="search" placeholder="Buscar cliente, folio o teléfono"></label>
+          <select id="orderDayFilter" class="orders-select" aria-label="Día">
+            <option value="today">Hoy</option>
+            <option value="all">Todos</option>
+          </select>
+        </div>
+
+        <div class="status-tabs" id="statusTabs">
+          <button class="active" data-status="active">Activos</button>
+          <button data-status="pending">Pendientes</button>
+          <button data-status="ready">Listos</button>
+          <button data-status="delivered">Entregados</button>
+          <button data-status="all">Todos</button>
+        </div>
+
+        <div class="orders-list" id="ordersList"></div>
+      </section>
     </main>
   </div>
 
-  <nav class="bottom-nav" aria-label="Navegación principal">
+  <nav class="bottom-nav" id="bottomNav" aria-label="Navegación principal">
     <button class="active" type="button" data-nav="inicio"><span class="nav-icon">⌂</span><span>Inicio</span></button>
     <button type="button" data-nav="reportes"><span class="nav-icon">▥</span><span>Reportes</span></button>
     <button type="button" data-nav="configuracion"><span class="nav-icon">⚙</span><span>Configuración</span></button>
     <button type="button" data-nav="perfil"><span class="nav-icon">●</span><span>Perfil</span></button>
   </nav>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="modal" id="orderModal" hidden>
+    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+      <div class="modal-head">
+        <div><small>NUEVO</small><h2 id="orderModalTitle">Pedido</h2></div>
+        <button class="modal-close" id="closeOrderModal" type="button">×</button>
+      </div>
 
+      <form id="orderForm">
+        <div class="form-section">
+          <h3>Producto</h3>
+          <div class="form-grid two">
+            <label class="full">Producto<select id="orderProduct" required></select></label>
+            <label>Cantidad<input id="orderQty" type="number" min="0.5" step="0.5" value="1" required></label>
+            <label>Precio<input id="orderPrice" type="number" min="0" step="0.01" required></label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Cliente</h3>
+          <div class="form-grid two">
+            <label>Nombre<input id="orderCustomer" autocomplete="name" required></label>
+            <label>Teléfono<input id="orderPhone" type="tel" autocomplete="tel"></label>
+            <label class="full">Dirección<input id="orderAddress" autocomplete="street-address"></label>
+            <label>ZIP<input id="orderZip" inputmode="numeric"></label>
+            <label>Origen<select id="orderSource"></select></label>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Entrega y pago</h3>
+          <div class="form-grid two">
+            <label>Día<input id="orderDate" type="date" required></label>
+            <label>Hora<input id="orderTime" type="time" required></label>
+            <label>Pago<select id="orderPayment"></select></label>
+            <label>Estado<select id="orderPaymentStatus"><option value="pending">Pendiente</option><option value="paid">Pagado</option></select></label>
+            <label class="full">Notas<input id="orderNotes" placeholder="Sin cebolla, llamar al llegar, etc."></label>
+          </div>
+        </div>
+
+        <div class="order-preview" id="orderPreview"></div>
+        <div class="modal-actions">
+          <button class="secondary-action" id="cancelOrder" type="button">Cancelar</button>
+          <button class="primary-action" type="submit">Guardar pedido</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
