@@ -1,0 +1,105 @@
+name: Reiniciar panel El Cubano una vez
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reset-panel-el-cubano-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reset_panel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Firebase Admin
+        run: npm install --no-save firebase-admin@13
+
+      - name: Reiniciar datos operativos de El Cubano
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CEVICHES_Y_COCTELES_EL_CHAVA }}
+        run: |
+          node <<'NODE'
+          const admin = require('firebase-admin');
+
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+            projectId: 'ceviches-y-cocteles-el-chava'
+          });
+
+          const db = admin.firestore();
+          const resetStart = admin.firestore.Timestamp.now();
+
+          global.window = {};
+          require(process.cwd() + '/panel/el-cubano/profile.js');
+          const itemKeys = Object.keys(window.PANEL_PROFILE?.items || {});
+          const zeroMinimums = Object.fromEntries(itemKeys.map(k => [k, 0]));
+
+          function isElCubano(data) {
+            return !data.panelTenant || data.panelTenant === 'el-cubano';
+          }
+
+          function timestampFrom(data, fields) {
+            for (const field of fields) {
+              const value = data[field];
+              if (!value) continue;
+              if (value.toMillis) return value;
+              const d = new Date(value);
+              if (!Number.isNaN(d.getTime())) return admin.firestore.Timestamp.fromDate(d);
+            }
+            return null;
+          }
+
+          async function deleteOldDocs(collectionName, dateFields) {
+            const snap = await db.collection(collectionName).get();
+            const refs = [];
+            for (const doc of snap.docs) {
+              const data = doc.data() || {};
+              if (!isElCubano(data)) continue;
+              const ts = timestampFrom(data, dateFields);
+              if (ts && ts.toMillis() >= resetStart.toMillis()) continue;
+              refs.push(doc.ref);
+            }
+            for (let i = 0; i < refs.length; i += 400) {
+              const batch = db.batch();
+              refs.slice(i, i + 400).forEach(ref => batch.delete(ref));
+              await batch.commit();
+            }
+            return refs.length;
+          }
+
+          (async () => {
+            await db.collection('inventario').doc('principal').set({
+              items: {},
+              purchasePrices: {},
+              stockMinimums: zeroMinimums,
+              prepExtra: {},
+              preparedStock: {},
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              resetAt: resetStart
+            }, { merge: true });
+
+            const deletedOrders = await deleteOldDocs('pedidos', [
+              'createdAt', 'createdAtClient', 'confirmedAt', 'deliveryDate'
+            ]);
+            const deletedMovements = await deleteOldDocs('movimientos', [
+              'date', 'createdAt'
+            ]);
+
+            console.log(JSON.stringify({
+              ok: true,
+              resetAt: resetStart.toDate().toISOString(),
+              inventoryItems: itemKeys.length,
+              deletedOrders,
+              deletedMovements
+            }));
+          })().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+          NODE
