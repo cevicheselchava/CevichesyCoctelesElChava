@@ -37,6 +37,9 @@ if(priceLabel){
   if(text)text.nodeValue='Precio';
 }
 priceEl.placeholder='$0.00';
+const purchaseModal=E('purchaseModal');
+const purchaseSubtitle=purchaseModal?.querySelector('.modal-head p');
+if(purchaseSubtitle)purchaseSubtitle.textContent='Lo que estás comprando.';
 
 let contentWrap=E('purchaseContentWrap');
 if(!contentWrap){
@@ -159,9 +162,22 @@ unitEl.addEventListener('change',()=>{if(contentQtyEl)contentQtyEl.value='';sync
 contentQtyEl?.addEventListener('input',updatePreview);
 contentUnitEl?.addEventListener('change',updatePreview);
 
-const postOpen=()=>setTimeout(setDefaultUnit,0);
-E('registerPurchaseBtn')?.addEventListener('click',postOpen);
-E('shoppingList')?.addEventListener('click',e=>{if(e.target.closest('[data-buy-key]'))postOpen();});
+const postOpen=needed=>setTimeout(()=>{
+  setDefaultUnit();
+  if(Number(needed)>0){
+    qtyEl.value=String(needed);
+    updatePreview();
+  }
+},0);
+E('registerPurchaseBtn')?.addEventListener('click',()=>postOpen(null));
+E('shoppingList')?.addEventListener('click',e=>{
+  const row=e.target.closest('[data-buy-key]');
+  if(!row)return;
+  const text=row.querySelector('.shopping-qty')?.textContent||'';
+  const m=text.match(/Faltan\s+([\d.,]+)/i);
+  const needed=m?Number(m[1].replace(',','.')):null;
+  postOpen(needed);
+});
 
 saveEl.onclick=async()=>{
   const key=itemEl.value,item=ITEMS[key];
