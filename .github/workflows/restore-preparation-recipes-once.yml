@@ -1,0 +1,93 @@
+name: Restaurar Preparación y Recetas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore-preparation-recipes-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restaurar recetas y texto de preparar pedido
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('panel/core.js')
+          s = path.read_text()
+
+          marker = "function renderAll(){renderBrand();renderHome();renderOrders();renderPrepare();renderStockAlerts();renderBuy();renderDeliveries();renderMoney();}"
+          if marker not in s:
+              raise SystemExit('No se encontró el punto de inserción en panel/core.js')
+
+          if 'function recipeGuideHtml()' not in s:
+              patch = r'''
+function recipeGuideQty(key,value){
+  const item=ITEMS[key]||{},v=Number(value||0),u=String(item.unit||'');
+  if(u==='lb')return `${n2(v*16)} oz`;
+  if(u==='pzas')return `${n2(v)} pzas`;
+  return `${n2(v)} ${u}`.trim();
+}
+function recipeGuideHtml(){
+  const products=PROFILE.products||{};
+  const cards=Object.entries(products).map(([pkey,p])=>{
+    let recipe={};
+    if(typeof PROFILE.buildRecipe==='function')recipe=PROFILE.buildRecipe(pkey,1,'',add,r3)||{};
+    else Object.entries(p.recipe||{}).forEach(([k,v])=>add(recipe,k,Number(v||0)));
+    const rows=Object.entries(recipe).filter(([k,v])=>ITEMS[k]&&Number(v)>0).map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid #eee6d8"><span>${esc(ITEMS[k].name)}</span><b>${esc(recipeGuideQty(k,v))}</b></div>`).join('');
+    return `<div style="border:1px solid #ded7c8;border-radius:14px;background:#fff;padding:13px;margin-top:10px"><strong style="color:#174f2b">${esc(p.name||p.short||pkey)} · 1 ${esc(p.unit||'')}</strong><div style="margin-top:7px">${rows||'<small>Sin receta configurada.</small>'}</div></div>`;
+  }).join('');
+  return `<details id="recipeGuide" class="panel-card" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:1000;font-size:19px;color:#174f2b">📖 Ver recetas</summary><div style="margin-top:10px"><small style="color:#687386;font-weight:800">Recetas base del panel.</small>${cards}</div></details>`;
+}
+const __baseRenderPrepare=renderPrepare;
+renderPrepare=function(){
+  __baseRenderPrepare();
+  const totals=E('prepTotals');
+  if(totals&&!E('recipeGuide'))totals.insertAdjacentHTML('beforebegin',recipeGuideHtml());
+  document.querySelectorAll('[data-prepared-order]').forEach(btn=>btn.textContent='🥣 PREPARAR ESTE PEDIDO');
+};
+const prepScreen=document.querySelector('[data-screen="prepare"]');
+const prepTitle=prepScreen?.querySelector('.screen-head h2');
+if(prepTitle)prepTitle.textContent='Preparación y Recetas';
+const prepHomeCard=document.querySelector('.home-card[data-go="prepare"]');
+if(prepHomeCard){
+  const strong=prepHomeCard.querySelector('strong');
+  const small=prepHomeCard.querySelector('small');
+  if(strong)strong.textContent='Preparación y Recetas';
+  if(small)small.textContent='Ver recetas · Preparar pedidos';
+}
+'''
+              s = s.replace(marker, patch + '\n' + marker, 1)
+
+          # Corrige también el texto fuente para que no reaparezca mientras renderiza.
+          s = s.replace('>✓ Ya quedó</button>', '>🥣 PREPARAR ESTE PEDIDO</button>')
+
+          path.write_text(s)
+          PY
+
+      - name: Confirmar cambios
+        run: |
+          grep -q "function recipeGuideHtml()" panel/core.js
+          grep -q "PREPARAR ESTE PEDIDO" panel/core.js
+          ! grep -q "Ya quedó" panel/core.js
+
+      - name: Publicar corrección
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add panel/core.js
+          if git diff --cached --quiet; then
+            echo "Sin cambios"
+            exit 0
+          fi
+          git commit -m "Restaurar recetas y acción de preparar pedidos"
+          git push origin main
