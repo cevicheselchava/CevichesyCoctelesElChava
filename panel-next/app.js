@@ -41,9 +41,10 @@ function homeSummary() {
   const active = today.filter(order => ['pending','preparing'].includes(order.status));
   const activeLb = active.reduce((sum, order) => sum + order.items.reduce((x, item) => x + Number(item.qty || 0), 0), 0);
   const sales = today.filter(order => order.status === 'delivered').reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const lbText = Number.isInteger(activeLb) ? String(activeLb) : activeLb.toFixed(1);
   return [
     { label:'Pedidos', value:String(today.length), note:'Total del día', icon:'📋', tone:'mint' },
-    { label:'Por preparar', value:activeLb ? `Mixto ${activeLb:g} lb` : '0 lb', note:'En cocina', icon:'👨‍🍳', tone:'cream' },
+    { label:'Por preparar', value:activeLb ? `Mixto ${lbText} lb` : '0 lb', note:'En cocina', icon:'👨‍🍳', tone:'cream' },
     { label:'Por comprar', value:'8', note:'Productos faltantes', icon:'📦', tone:'pink' },
     { label:'Ventas', value:money.format(sales), note:'Entregado hoy', icon:'$', tone:'mint' }
   ];
@@ -142,10 +143,11 @@ function setView(view) {
   $$('.view').forEach(item => item.classList.toggle('active', item.dataset.view === view));
   $('#hero').classList.toggle('compact', view !== 'home');
   $('#bottomNav').classList.toggle('hidden', view !== 'home');
-  window.location.hash = view === 'home' ? '' : view;
+  const nextHash = view === 'home' ? '' : `#${view}`;
+  if (window.location.hash !== nextHash) window.location.hash = nextHash;
   if (view === 'home') renderHome();
   if (view === 'pedidos') renderOrders();
-  window.scrollTo({top:0,behavior:'instant'});
+  window.scrollTo({top:0,behavior:'auto'});
 }
 
 function fillOrderForm() {
