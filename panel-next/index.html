@@ -26,15 +26,11 @@
     .modal-head small{font-size:13px}
     .order-preview{font-size:18px}
     .primary-action,.secondary-action{font-size:17px;min-height:52px}
-
-    /* El encabezado aprobado se conserva igual en todos los módulos. */
     .hero.compact{padding:14px 16px 12px}
     .hero.compact .brand-logo{max-width:142px}
     .hero.compact .hero-row{grid-template-columns:44px minmax(112px,150px) 1fr 46px}
     .hero.compact .panel-title{font-size:clamp(27px,5vw,48px)}
     .hero.compact .side-slogan{font-size:clamp(14px,2vw,19px)}
-
-    /* PREPARACIÓN */
     .prep-view{max-width:900px;margin:0 auto}
     .prep-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
     .prep-kpi{background:#fff;border:1px solid #e1e7e4;border-radius:18px;padding:14px 13px;min-height:92px;box-shadow:0 7px 18px rgba(29,49,40,.05)}
@@ -67,7 +63,6 @@
     .prep-ready-label{border-radius:14px;background:#dff5e8;color:#08713a;padding:12px 16px;font-size:15px;font-weight:1000}
     .prep-empty{text-align:center;padding:50px 20px;background:#fff;border:1px dashed #cad7d1;border-radius:22px;color:#65716b}
     .prep-empty span{font-size:42px}.prep-empty h3{margin:10px 0 4px;font-size:24px;color:#222}.prep-empty p{margin:0;font-size:15px}
-
     @media(max-width:720px){
       .module-topbar h2{font-size:38px}
       .new-order-button{font-size:18px}
@@ -209,5 +204,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./app.js"></script>
   <script type="module" src="./preparation.js"></script>
+  <script type="module" src="./inventory.js"></script>
 </body>
 </html>
