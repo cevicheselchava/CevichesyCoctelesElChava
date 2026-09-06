@@ -1,2 +1,3 @@
-3e8327680555efaacf0a42e99723df3f30aec115d24ecdc8901ef66ed2b530f6  apks/Ceviches-y-Cocteles-El-Chava-v2.apk
-959757e8d07be04b251c0c992516e2ee8127d169a514ab073976e91a6c34593f  apks/Control-de-Inventario-El-Chava-v2.apk
+045cc048e1cb4a7b199ccce0521e1de103a786035aabe7cecf4277c2a86b387b  apks/Ceviches-y-Cocteles-El-Chava-v2.apk
+fd81d022032c044cb747ec16e9234fbf95731ccaca71b4aba75e9393ce8998c2  apks/Control-de-Inventario-El-Chava-v2.apk
+b11ff350f39d680364b7f3880c5c2674bfdaba3ceb245d4bac2ba98e196939c2  apks/Panel-El-Cubano-v2.apk
