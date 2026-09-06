@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102338">
+<title>Panel Operativo · El Cubano</title>
+<link rel="stylesheet" href="./styles.css?v=1">
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script defer src="./app.js?v=1"></script>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">EC</div>
+      <div><strong>EL CUBANO</strong><small>Panel operativo</small></div>
+    </div>
+    <nav id="mainNav" class="nav">
+      <button class="active" data-screen="dashboard"><span>▦</span>Inicio</button>
+      <button data-screen="orders"><span>▤</span>Pedidos</button>
+      <button data-screen="inventory"><span>▧</span>Inventario</button>
+      <button data-screen="purchases"><span>🛒</span>Compras</button>
+      <button data-screen="history"><span>↺</span>Historial</button>
+      <button data-screen="recipes"><span>☷</span>Recetas</button>
+    </nav>
+    <div class="side-foot"><span id="syncDot" class="dot"></span><span id="syncText">Conectando…</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><h1 id="screenTitle">Inicio</h1><p id="todayText"></p></div>
+      <div class="top-actions"><button id="quickPurchase" class="ghost">+ Compra</button><button id="quickOrder" class="primary">+ Pedido</button></div>
+    </header>
+
+    <section class="screen active" data-view="dashboard">
+      <div class="metrics">
+        <article><small>VENTAS ENTREGADAS HOY</small><strong id="metricSales">$0.00</strong></article>
+        <article><small>UTILIDAD BRUTA HOY</small><strong id="metricProfit">$0.00</strong></article>
+        <article><small>PEDIDOS PENDIENTES</small><strong id="metricPending">0</strong></article>
+        <article><small>PRODUCTOS BAJOS</small><strong id="metricLow">0</strong></article>
+      </div>
+      <div class="dashboard-grid">
+        <section class="card"><div class="card-head"><div><h2>Pedidos pendientes</h2><p>Lo que necesita atención.</p></div><button class="link" data-jump="orders">Ver todos</button></div><div id="dashboardOrders" class="stack"></div></section>
+        <section class="card"><div class="card-head"><div><h2>Inventario bajo</h2><p>Productos en mínimo o por debajo.</p></div><button class="link" data-jump="inventory">Inventario</button></div><div id="dashboardLow" class="stack compact-stack"></div></section>
+      </div>
+    </section>
+
+    <section class="screen" data-view="orders">
+      <div class="toolbar">
+        <input id="orderSearch" class="search" placeholder="Buscar folio, cliente, teléfono o producto">
+        <div id="orderFilters" class="filters"><button class="active" data-filter="pending">Pendientes</button><button data-filter="ready">Listos</button><button data-filter="delivered">Entregados</button><button data-filter="cancelled">Cancelados</button><button data-filter="all">Todos</button></div>
+      </div>
+      <div id="ordersList" class="stack"></div>
+    </section>
+
+    <section class="screen" data-view="inventory">
+      <div class="toolbar inventory-toolbar"><input id="inventorySearch" class="search" placeholder="Buscar ingrediente o insumo"><button id="inventoryAdjustBtn" class="primary">Ajustar inventario</button></div>
+      <div id="inventoryGroups"></div>
+    </section>
+
+    <section class="screen" data-view="purchases">
+      <div class="toolbar"><div><h2>Compras</h2><p>Registra lo que vas agarrando en la tienda con su precio.</p></div><button id="purchaseBtn" class="primary">Registrar compra</button></div>
+      <section class="card"><div class="card-head"><div><h2>Compras recientes</h2><p>Últimos movimientos de entrada.</p></div></div><div id="purchaseHistory" class="stack"></div></section>
+    </section>
+
+    <section class="screen" data-view="history">
+      <div class="toolbar"><input id="historySearch" class="search" placeholder="Buscar movimiento, tienda, producto o pedido"><div id="historyFilters" class="filters"><button class="active" data-history="all">Todo</button><button data-history="sale">Ventas</button><button data-history="purchase">Compras</button><button data-history="adjustment">Ajustes</button></div></div>
+      <div id="historyList" class="stack"></div>
+    </section>
+
+    <section class="screen" data-view="recipes">
+      <div class="toolbar"><input id="recipeSearch" class="search" placeholder="Buscar receta"></div>
+      <div id="recipesGrid" class="recipe-grid"></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="purchaseModal" hidden>
+  <div class="backdrop" data-close="purchaseModal"></div>
+  <section class="sheet">
+    <div class="sheet-head"><div><h2>Registrar compra</h2><p>Precio de la presentación que estás agarrando.</p></div><button class="x" data-close="purchaseModal">×</button></div>
+    <div class="form-grid">
+      <label class="full">Producto<select id="purchaseItem"></select></label>
+      <label>Cantidad<input id="purchaseQty" type="number" min="0.01" step="0.01" value="1"></label>
+      <label>Unidad<select id="purchaseUnit"><option>lb</option><option>oz</option><option>pza</option><option>bolsa</option><option>paquete</option><option>caja</option><option>bote</option><option>botella</option><option>galón</option><option>litro</option><option>fl oz</option><option>manojo</option></select></label>
+      <label>Precio<input id="purchasePrice" type="number" min="0" step="0.01" placeholder="$0.00"></label>
+      <label>Tienda<input id="purchaseStore" placeholder="H-E-B, Walmart…"></label>
+      <label id="conversionWrap" class="full" hidden>Contenido de cada <span id="conversionUnitLabel">unidad</span> en <span id="conversionBaseLabel">unidad base</span><input id="purchaseConversion" type="number" min="0.001" step="0.001"></label>
+    </div>
+    <div id="purchasePreview" class="preview"></div>
+    <div class="sheet-actions"><button class="ghost" data-close="purchaseModal">Cancelar</button><button id="savePurchase" class="primary">Guardar compra</button></div>
+  </section>
+</div>
+
+<div class="modal" id="inventoryModal" hidden>
+  <div class="backdrop" data-close="inventoryModal"></div>
+  <section class="sheet">
+    <div class="sheet-head"><div><h2>Ajustar inventario</h2><p>Lo que tienes físicamente.</p></div><button class="x" data-close="inventoryModal">×</button></div>
+    <div class="form-grid">
+      <label class="full">Producto<select id="inventoryItem"></select></label>
+      <label>Cantidad disponible<input id="inventoryQty" type="number" min="0" step="0.01"></label>
+      <label>Stock mínimo<input id="inventoryMin" type="number" min="0" step="0.01"></label>
+      <label class="full">Precio de compra<input id="inventoryPrice" type="number" min="0" step="0.01"></label>
+    </div>
+    <div id="inventoryHint" class="preview"></div>
+    <div class="sheet-actions"><button class="ghost" data-close="inventoryModal">Cancelar</button><button id="saveInventory" class="primary">Guardar ajuste</button></div>
+  </section>
+</div>
+
+<div class="modal" id="orderModal" hidden>
+  <div class="backdrop" data-close="orderModal"></div>
+  <section class="sheet wide">
+    <div class="sheet-head"><div><h2>Nuevo pedido</h2><p>Pedido recibido por teléfono, WhatsApp o en persona.</p></div><button class="x" data-close="orderModal">×</button></div>
+    <div class="form-grid">
+      <label class="full">Producto<select id="manualProduct"></select></label>
+      <label>Cantidad<input id="manualQty" type="number" min="1" step="1" value="1"></label>
+      <label>Precio<input id="manualPrice" type="number" min="0" step="0.01"></label>
+      <label>Cliente<input id="manualCustomer"></label>
+      <label>Teléfono<input id="manualPhone" type="tel"></label>
+      <label class="full">Dirección<input id="manualAddress"></label>
+      <label>ZIP<input id="manualZip" maxlength="5"></label>
+      <label>Día<input id="manualDate" type="date"></label>
+      <label>Hora<input id="manualTime" type="time"></label>
+      <label>Pago<select id="manualPayment"><option>Efectivo</option><option>Cash App</option><option>Zelle</option><option>Tarjeta</option><option>Otro</option></select></label>
+      <label class="full">Notas<input id="manualNotes"></label>
+    </div>
+    <div id="manualPreview" class="preview"></div>
+    <div class="sheet-actions"><button class="ghost" data-close="orderModal">Cancelar</button><button id="saveManualOrder" class="primary">Guardar pedido</button></div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+</body>
+</html>
