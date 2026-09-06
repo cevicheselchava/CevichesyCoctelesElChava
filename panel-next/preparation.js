@@ -1,4 +1,5 @@
 import { OrdersStore } from './data.js';
+import './inventory.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
