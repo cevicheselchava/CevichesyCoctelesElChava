@@ -4,22 +4,23 @@
   content:"";
   position:fixed;
   left:50%;
-  top:58%;
-  width:min(78vw,520px);
+  top:59%;
+  width:min(82vw,540px);
   aspect-ratio:1;
   transform:translate(-50%,-50%);
   background-image:var(--brand-logo);
   background-repeat:no-repeat;
   background-position:center;
   background-size:contain;
-  opacity:.075;
+  opacity:.115;
   pointer-events:none;
-  z-index:-1;
-  filter:saturate(.85);
+  z-index:0;
+  filter:saturate(.9);
 }
-.orders-view .order-card,.prep-view .prep-card,.preparation-view .prep-card{background:rgba(255,255,255,.90)}
-.orders-view .order-kpi,.prep-view .prep-kpi,.preparation-view .prep-kpi{background:rgba(255,255,255,.91)}
-.orders-view .orders-search,.orders-view .orders-select,.prep-view .prep-steps,.preparation-view .prep-steps{background-color:rgba(255,255,255,.90)}
+.view:not(#homeView)>*{position:relative;z-index:1}
+.orders-view .order-card,.prep-view .prep-card,.preparation-view .prep-card,.inventory-view .inventory-card{background:rgba(255,255,255,.86)}
+.orders-view .order-kpi,.prep-view .prep-kpi,.preparation-view .prep-kpi,.inventory-view .inventory-kpi{background:rgba(255,255,255,.88)}
+.orders-view .orders-search,.orders-view .orders-select,.prep-view .prep-steps,.preparation-view .prep-steps,.inventory-view .inventory-search,.inventory-view .inventory-filter{background-color:rgba(255,255,255,.88)}
 @media(max-width:720px){
-  .view:not(#homeView)::before{top:60%;width:min(92vw,500px);opacity:.085}
+  .view:not(#homeView)::before{top:61%;width:min(94vw,520px);opacity:.13}
 }
