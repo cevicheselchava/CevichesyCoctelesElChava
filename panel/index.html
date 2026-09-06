@@ -3,65 +3,124 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#17365d">
+  <meta name="theme-color" content="#0b7a43">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Panel Operativo · El Cubano</title>
-  <link rel="stylesheet" href="/panel/styles.css?v=soft-20260906-2">
+  <link rel="stylesheet" href="/panel/styles.css?v=soft-20260906-3">
   <style>
     @media(max-width:900px){
-      body:has(.view[data-view-panel="inicio"].active){background:#eef2f5}
-      body:has(.view[data-view-panel="inicio"].active) .app-shell{display:block;min-height:100vh;background:#eef2f5}
-      body:has(.view[data-view-panel="inicio"].active) .workspace{padding:0!important;min-height:0}
+      body:has(.view[data-view-panel="inicio"].active){background:#fff8e9}
+      body:has(.view[data-view-panel="inicio"].active) .app-shell{display:block;min-height:100vh;background:#fff8e9}
+      body:has(.view[data-view-panel="inicio"].active) .workspace{padding:0 16px 34px!important;min-height:0;background:#fff8e9}
       body:has(.view[data-view-panel="inicio"].active) .topbar{display:none!important}
-      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"]{display:none!important}
       body:has(.view[data-view-panel="inicio"].active) .sidebar{
-        position:relative!important;inset:auto!important;transform:none!important;width:100%!important;height:auto!important;min-height:100vh;
-        margin:0;padding:0 16px 24px;background:#eef2f5;color:#17283b;box-shadow:none;display:flex;flex-direction:column;z-index:1
+        position:relative!important;inset:auto!important;transform:none!important;width:100%!important;height:auto!important;min-height:0!important;
+        margin:0;padding:0 16px 16px;background:#fff8e9;color:#153f31;box-shadow:none;display:flex;flex-direction:column;z-index:1
       }
       body:has(.view[data-view-panel="inicio"].active) .sidebar-brand{
-        margin:0 -16px 18px;padding:24px 18px 22px;background:linear-gradient(135deg,#102a49,#17365d 68%,#245784);
-        border:0;border-radius:0 0 24px 24px;color:#fff;box-shadow:0 9px 24px rgba(19,54,93,.18)
+        position:relative;margin:0 -16px 20px;padding:30px 18px 18px;background:#fff8e9;border:0;color:#111;box-shadow:none;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px
       }
-      body:has(.view[data-view-panel="inicio"].active) .brand-logo{width:70px;height:70px;border-radius:15px;border:3px solid rgba(255,255,255,.72)}
-      body:has(.view[data-view-panel="inicio"].active) .eyebrow{font-size:12px;color:#cbd9e8;letter-spacing:.14em}
-      body:has(.view[data-view-panel="inicio"].active) .brand-name{font-size:22px;color:#fff;margin-top:5px}
+      body:has(.view[data-view-panel="inicio"].active) .sidebar-brand:before{
+        content:'';position:absolute;left:0;right:0;top:0;height:9px;background:linear-gradient(to bottom,#149447 0 33%,#ffd429 33% 66%,#ef3333 66% 100%)
+      }
+      body:has(.view[data-view-panel="inicio"].active) .brand-logo{
+        width:142px;height:142px;object-fit:cover;border-radius:50%;border:0;background:transparent;box-shadow:0 8px 20px rgba(0,0,0,.12)
+      }
+      body:has(.view[data-view-panel="inicio"].active) .eyebrow{
+        margin-top:4px;font-size:30px;line-height:1;font-weight:1000;letter-spacing:.015em;color:#111;text-transform:uppercase
+      }
+      body:has(.view[data-view-panel="inicio"].active) .brand-name{
+        font-size:0;color:#155f43;margin-top:4px;font-weight:1000
+      }
+      body:has(.view[data-view-panel="inicio"].active) .brand-name:before{
+        content:'Ceviches & Cócteles El Cubano';font-size:22px;line-height:1.15;color:#155f43
+      }
       body:has(.view[data-view-panel="inicio"].active) .main-nav{
-        display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;overflow:visible;padding:0
+        display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0;overflow:visible;padding:0
       }
       body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="inicio"]{display:none!important}
       body:has(.view[data-view-panel="inicio"].active) .nav-item{
-        min-height:116px;width:100%;padding:14px 14px 16px;border:1px solid #d7e0e8;border-left:6px solid #2b6fb2;border-radius:17px;
-        background:#fff!important;color:#17365d!important;display:flex!important;flex-direction:column;align-items:flex-start;justify-content:center;gap:9px;
-        text-align:left;box-shadow:0 7px 18px rgba(28,52,75,.08);position:relative
+        min-height:168px;width:100%;padding:18px 16px 20px;border:0!important;border-radius:20px;background:#0a9d4a!important;color:#fff!important;
+        display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;
+        box-shadow:0 9px 20px rgba(37,50,44,.14);position:relative;overflow:hidden
+      }
+      body:has(.view[data-view-panel="inicio"].active) .nav-item:before{
+        content:'';position:absolute;right:-36px;bottom:-58px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.08)
       }
       body:has(.view[data-view-panel="inicio"].active) .nav-item>span{
-        width:44px;height:44px;border-radius:12px;background:#eaf1f7!important;color:#17365d;display:grid;place-items:center;font-size:24px
+        width:auto;height:auto;border-radius:0;background:transparent!important;color:inherit;display:grid;place-items:center;font-size:0;line-height:1
       }
-      body:has(.view[data-view-panel="inicio"].active) .nav-item b{font-size:18px;line-height:1.08;color:#17365d}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item>span:before{font-size:48px;line-height:1}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="pedidos"]>span:before{content:'📋'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="preparacion"]>span:before{content:'🥣'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="inventario"]>span:before{content:'📦'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="compras"]>span:before{content:'🛒'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="entregas"]>span:before{content:'🛵'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="dinero"]>span:before{content:'💰'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="recetas"]>span:before{content:'📖'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item b{font-size:25px;line-height:1.04;color:inherit;text-transform:uppercase;position:relative;z-index:1}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item b:after{display:block;margin-top:8px;font-size:13px;line-height:1.25;font-weight:850;text-transform:none;opacity:.94}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="pedidos"] b:after{content:'Ver, agregar y editar'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="preparacion"] b:after{content:'Pasos y producción'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="inventario"] b:after{content:'Cantidad disponible · Stock mínimo'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="compras"] b:after{content:'Compras y reposición'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="entregas"] b:after{content:'Ruta del día · Estados'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="dinero"] b:after{content:'Ventas · Compras · Ganancia'}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="recetas"] b:after{content:'Cantidades guardadas'}
       body:has(.view[data-view-panel="inicio"].active) .nav-item:after{
-        content:'›';position:absolute;right:13px;bottom:10px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
-        background:#edf3f8;color:#17365d;font-size:24px;font-weight:1000
+        content:'›';position:absolute;right:14px;bottom:13px;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+        background:#fff;color:#111;font-size:34px;line-height:1;font-weight:1000;z-index:2
       }
-      body:has(.view[data-view-panel="inicio"].active) .nav-item em{position:absolute;right:11px;top:10px;background:#c83b3f;color:#fff}
-      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="pedidos"]{border-left-color:#2b6fb2}
-      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="preparacion"]{border-left-color:#e2a92f}
-      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="inventario"]{border-left-color:#1f7a45}
-      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="compras"]{border-left-color:#db7d28}
-      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="entregas"]{border-left-color:#168895}
-      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="dinero"]{border-left-color:#7159a6}
-      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="recetas"]{grid-column:1/-1;min-height:96px;border-left-color:#17365d}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item em{
+        position:absolute;right:12px;top:12px;background:#fff;color:#d12f35;border-radius:999px;min-width:34px;padding:5px 8px;font-size:14px;z-index:3
+      }
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="pedidos"]{background:linear-gradient(145deg,#06a44c,#07933f)!important}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="preparacion"]{background:linear-gradient(145deg,#ffd934,#ffc61c)!important;color:#111!important}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="inventario"]{background:linear-gradient(145deg,#f33a36,#e82d2d)!important}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="compras"]{background:linear-gradient(145deg,#f33a36,#e82d2d)!important}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="entregas"]{background:linear-gradient(145deg,#16838a,#11727c)!important}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="dinero"]{grid-column:1/-1;min-height:150px;background:linear-gradient(145deg,#078d78,#12a89f)!important}
+      body:has(.view[data-view-panel="inicio"].active) .nav-item[data-view="recetas"]{grid-column:1/-1;min-height:138px;background:linear-gradient(145deg,#315f35,#477d3f)!important}
       body:has(.view[data-view-panel="inicio"].active) .sidebar-foot{
-        margin-top:18px;padding:12px 13px;border:1px solid #d7e0e8;border-radius:13px;background:#fff;color:#52677b;box-shadow:0 4px 12px rgba(28,52,75,.05)
+        margin:16px 0 0;padding:12px 14px;border:1px solid #d9e3d9;border-radius:14px;background:#fff;color:#4c6a5b;box-shadow:0 5px 14px rgba(54,73,62,.07)
       }
       body:has(.view[data-view-panel="inicio"].active) .sidebar-backdrop{display:none!important}
+
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"]{
+        display:block!important;margin:0;padding:18px;background:#fff;border:1px solid #eadfc9;border-radius:22px;box-shadow:0 9px 22px rgba(70,58,36,.09)
+      }
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"]:before{
+        content:'Resumen de hoy';display:block;margin:0 0 15px;color:#154d38;font-size:27px;font-weight:1000
+      }
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .dashboard-grid,
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .quick-card{display:none!important}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-grid{
+        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px
+      }
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card{
+        min-height:132px;border:1px solid #eadfcf;border-radius:18px;box-shadow:none;padding:16px 12px;text-align:center;display:flex;flex-direction:column;justify-content:center
+      }
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:before{display:none}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(1){background:#eaf5fb;order:4}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(2){background:#fff7c9;order:2}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(3){background:#edf8ef;order:1}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(4){background:#fdeceb;order:3}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card small{font-size:0;color:#164c38;font-weight:950}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(1) small:after{content:'VENTAS';font-size:12px}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(2) small:after{content:'UTILIDAD';font-size:12px}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(3) small:after{content:'PEDIDOS';font-size:12px}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card:nth-child(4) small:after{content:'POR COMPRAR';font-size:12px}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card strong{font-size:31px;color:#154d38;margin-top:8px}
+      body:has(.view[data-view-panel="inicio"].active) .view[data-view-panel="inicio"] .kpi-card span{display:none}
     }
   </style>
   <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-  <script defer src="/panel/el-cubano/profile.js?v=soft-20260906-2"></script>
-  <script defer src="/panel/app.js?v=soft-20260906-2"></script>
+  <script defer src="/panel/el-cubano/profile.js?v=soft-20260906-3"></script>
+  <script defer src="/panel/app.js?v=soft-20260906-3"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -79,7 +138,7 @@
       <button class="nav-item" data-view="pedidos"><span>▤</span><b>Pedidos</b><em id="navOrdersBadge" hidden>0</em></button>
       <button class="nav-item" data-view="preparacion"><span>◉</span><b>Preparación</b></button>
       <button class="nav-item" data-view="inventario"><span>▥</span><b>Inventario</b><em id="navLowBadge" hidden>0</em></button>
-      <button class="nav-item" data-view="compras"><span>🛒</span><b>Compras</b></button>
+      <button class="nav-item" data-view="compras"><span>🛒</span><b>Comprar</b></button>
       <button class="nav-item" data-view="entregas"><span>🛵</span><b>Entregas</b></button>
       <button class="nav-item" data-view="dinero"><span>$</span><b>Dinero</b></button>
       <button class="nav-item" data-view="recetas"><span>≡</span><b>Recetas</b></button>
