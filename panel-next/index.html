@@ -25,6 +25,48 @@
     .modal-head small{font-size:13px}
     .order-preview{font-size:18px}
     .primary-action,.secondary-action{font-size:17px;min-height:52px}
+
+    /* El encabezado aprobado se conserva igual en todos los módulos. */
+    .hero.compact{padding:14px 16px 12px}
+    .hero.compact .brand-logo{max-width:142px}
+    .hero.compact .hero-row{grid-template-columns:44px minmax(112px,150px) 1fr 46px}
+    .hero.compact .panel-title{font-size:clamp(27px,5vw,48px)}
+    .hero.compact .side-slogan{font-size:clamp(14px,2vw,19px)}
+
+    /* PREPARACIÓN */
+    .prep-view{max-width:900px;margin:0 auto}
+    .prep-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+    .prep-kpi{background:#fff;border:1px solid #e1e7e4;border-radius:18px;padding:14px 13px;min-height:92px;box-shadow:0 7px 18px rgba(29,49,40,.05)}
+    .prep-kpi small{display:block;color:#738079;font-size:12px;font-weight:900;text-transform:uppercase}
+    .prep-kpi strong{display:block;margin-top:8px;font-size:29px}
+    .prep-kpi.kitchen{border-top:5px solid var(--yellow)}
+    .prep-kpi.ready{border-top:5px solid var(--green)}
+    .prep-kpi.total{border-top:5px solid var(--orange)}
+    .prep-tabs{display:flex;gap:8px;overflow:auto;padding:2px 1px 10px;scrollbar-width:none}
+    .prep-tabs::-webkit-scrollbar{display:none}
+    .prep-tabs button{border:1px solid #dce4e1;background:#fff;color:#5b6861;border-radius:999px;padding:10px 15px;font-size:16px;font-weight:900;white-space:nowrap}
+    .prep-tabs button.active{background:#111;color:#fff;border-color:#111}
+    .prep-list{display:grid;gap:14px}
+    .prep-card{background:rgba(255,255,255,.97);border:1px solid #dfe6e2;border-radius:22px;padding:18px;box-shadow:0 8px 22px rgba(25,46,37,.055)}
+    .prep-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .prep-card .folio{font-size:13px}
+    .prep-card h3{margin:3px 0 0;font-size:25px}
+    .prep-order-meta{margin-top:5px;color:#637069;font-size:15px;font-weight:700}
+    .prep-product{margin-top:14px;border-radius:16px;background:#fff8d8;padding:15px 16px}
+    .prep-product strong{display:block;font-size:21px}
+    .prep-product small{display:block;margin-top:4px;color:#655c39;font-size:14px;font-weight:800}
+    .prep-steps{margin-top:14px;border:1px solid #e2e8e4;border-radius:16px;padding:15px;background:#fafcfb}
+    .prep-steps h4{margin:0 0 10px;font-size:18px}
+    .prep-step{display:grid;grid-template-columns:31px 1fr;gap:10px;align-items:start;margin-top:9px;font-size:16px;font-weight:700;line-height:1.3}
+    .prep-step span{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;font-weight:1000}
+    .prep-no-recipe{padding:11px;border-radius:12px;background:#eef4f1;color:#526159;font-size:15px;line-height:1.35;font-weight:700}
+    .prep-note{margin-top:12px;border-radius:13px;background:#fff0dc;padding:11px 13px;font-size:15px;font-weight:800}
+    .prep-actions{display:flex;justify-content:flex-end;margin-top:14px}
+    .prep-ready-button{border:0;border-radius:14px;background:var(--green);color:#fff;padding:13px 18px;min-height:48px;font-size:16px;font-weight:1000}
+    .prep-ready-label{border-radius:14px;background:#dff5e8;color:#08713a;padding:12px 16px;font-size:15px;font-weight:1000}
+    .prep-empty{text-align:center;padding:50px 20px;background:#fff;border:1px dashed #cad7d1;border-radius:22px;color:#65716b}
+    .prep-empty span{font-size:42px}.prep-empty h3{margin:10px 0 4px;font-size:24px;color:#222}.prep-empty p{margin:0;font-size:15px}
+
     @media(max-width:720px){
       .module-topbar h2{font-size:38px}
       .new-order-button{font-size:18px}
@@ -32,6 +74,16 @@
       .order-kpi strong{font-size:29px}
       .order-card{padding:18px}
       .order-card-actions{flex-wrap:wrap}
+      .hero.compact{padding:10px 10px 8px}
+      .hero.compact .hero-row{grid-template-columns:34px 92px 1fr 34px;gap:7px}
+      .hero.compact .brand-logo{max-width:92px}
+      .hero.compact .panel-title{font-size:24px}
+      .hero.compact .side-slogan{font-size:10px}
+      .prep-kpis{gap:7px}
+      .prep-kpi{min-height:84px;padding:12px 9px}
+      .prep-kpi small{font-size:10px}.prep-kpi strong{font-size:25px}
+      .prep-card{padding:16px}.prep-card h3{font-size:23px}
+      .prep-product strong{font-size:19px}.prep-step{font-size:15px}
     }
   </style>
 </head>
@@ -68,32 +120,33 @@
       <section class="view orders-view" id="ordersView" data-view="pedidos">
         <div class="module-topbar">
           <button class="back-button" id="ordersBack" type="button">‹</button>
-          <div>
-            <small>MÓDULO</small>
-            <h2>Pedidos</h2>
-          </div>
+          <div><small>MÓDULO</small><h2>Pedidos</h2></div>
           <button class="new-order-button" id="newOrderButton" type="button">＋ Pedido</button>
         </div>
-
         <div class="order-kpis" id="orderKpis"></div>
-
         <div class="orders-toolbar">
           <label class="orders-search">⌕ <input id="orderSearch" type="search" placeholder="Buscar cliente, folio o teléfono"></label>
-          <select id="orderDayFilter" class="orders-select" aria-label="Día">
-            <option value="today">Hoy</option>
-            <option value="all">Todos</option>
-          </select>
+          <select id="orderDayFilter" class="orders-select" aria-label="Día"><option value="today">Hoy</option><option value="all">Todos</option></select>
         </div>
-
         <div class="status-tabs" id="statusTabs">
-          <button class="active" data-status="active">Activos</button>
-          <button data-status="pending">Pendientes</button>
-          <button data-status="ready">Listos</button>
-          <button data-status="delivered">Entregados</button>
-          <button data-status="all">Todos</button>
+          <button class="active" data-status="active">Activos</button><button data-status="pending">Pendientes</button><button data-status="ready">Listos</button><button data-status="delivered">Entregados</button><button data-status="all">Todos</button>
         </div>
-
         <div class="orders-list" id="ordersList"></div>
+      </section>
+
+      <section class="view prep-view" id="preparationView" data-view="preparacion">
+        <div class="module-topbar">
+          <button class="back-button" id="prepBack" type="button">‹</button>
+          <div><small>MÓDULO</small><h2>Preparación</h2></div>
+          <div></div>
+        </div>
+        <div class="prep-kpis" id="prepKpis"></div>
+        <div class="prep-tabs" id="prepTabs">
+          <button class="active" data-prep-filter="preparing">En cocina</button>
+          <button data-prep-filter="ready">Listos</button>
+          <button data-prep-filter="all">Todos</button>
+        </div>
+        <div class="prep-list" id="prepList"></div>
       </section>
     </main>
   </div>
@@ -111,7 +164,6 @@
         <div><small id="orderModalEyebrow">NUEVO</small><h2 id="orderModalTitle">Pedido</h2></div>
         <button class="modal-close" id="closeOrderModal" type="button">×</button>
       </div>
-
       <form id="orderForm">
         <div class="form-section">
           <h3>Producto</h3>
@@ -124,7 +176,6 @@
             <label class="full">Precio unitario<input id="orderPrice" type="number" min="0" step="0.01" placeholder="Escribe el precio" required></label>
           </div>
         </div>
-
         <div class="form-section">
           <h3>Cliente</h3>
           <div class="form-grid two">
@@ -135,7 +186,6 @@
             <label>Origen<select id="orderSource"></select></label>
           </div>
         </div>
-
         <div class="form-section">
           <h3>Entrega y pago</h3>
           <div class="form-grid two">
@@ -146,7 +196,6 @@
             <label class="full">Notas<input id="orderNotes" placeholder="Sin cebolla, llamar al llegar, etc."></label>
           </div>
         </div>
-
         <div class="order-preview" id="orderPreview"></div>
         <div class="modal-actions">
           <button class="secondary-action" id="cancelOrder" type="button">Cancelar</button>
@@ -158,5 +207,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./app.js"></script>
+  <script type="module" src="./preparation.js"></script>
 </body>
 </html>
