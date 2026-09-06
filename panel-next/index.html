@@ -6,6 +6,34 @@
   <meta name="theme-color" content="#078844">
   <title>Panel Operativo · El Cubano</title>
   <link rel="stylesheet" href="./styles.css">
+  <style id="pedidos-legibilidad">
+    .orders-search input,.orders-select,.status-tabs button{font-size:17px}
+    .order-card h3{font-size:25px}
+    .folio{font-size:13px}
+    .status{font-size:12px;padding:9px 12px}
+    .order-main-line strong{font-size:18px}
+    .order-main-line b{font-size:23px}
+    .order-info-grid small{font-size:11px}
+    .order-info-grid strong{font-size:16px}
+    .order-note{font-size:15px}
+    .order-action{font-size:15px;min-height:44px;padding:11px 14px}
+    .order-action.edit{background:#e7f2ff;color:#155c91}
+    .form-section h3{font-size:23px}
+    .form-grid label{font-size:13px}
+    .form-grid input,.form-grid select{font-size:19px;min-height:58px}
+    .modal-head h2{font-size:36px}
+    .modal-head small{font-size:13px}
+    .order-preview{font-size:18px}
+    .primary-action,.secondary-action{font-size:17px;min-height:52px}
+    @media(max-width:720px){
+      .module-topbar h2{font-size:38px}
+      .new-order-button{font-size:18px}
+      .order-kpi small{font-size:12px}
+      .order-kpi strong{font-size:29px}
+      .order-card{padding:18px}
+      .order-card-actions{flex-wrap:wrap}
+    }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -80,7 +108,7 @@
   <div class="modal" id="orderModal" hidden>
     <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
       <div class="modal-head">
-        <div><small>NUEVO</small><h2 id="orderModalTitle">Pedido</h2></div>
+        <div><small id="orderModalEyebrow">NUEVO</small><h2 id="orderModalTitle">Pedido</h2></div>
         <button class="modal-close" id="closeOrderModal" type="button">×</button>
       </div>
 
@@ -88,9 +116,12 @@
         <div class="form-section">
           <h3>Producto</h3>
           <div class="form-grid two">
-            <label class="full">Producto<select id="orderProduct" required></select></label>
-            <label>Cantidad<input id="orderQty" type="number" min="0.5" step="0.5" value="1" required></label>
-            <label>Precio<input id="orderPrice" type="number" min="0" step="0.01" required></label>
+            <label class="full">Producto<input id="orderProductName" list="productOptions" placeholder="Nombre del producto" required></label>
+            <datalist id="productOptions"></datalist>
+            <label>Cantidad<input id="orderQty" type="number" min="0.01" step="0.01" value="1" required></label>
+            <label>Unidad<input id="orderUnit" list="unitOptions" placeholder="orden, lb, pieza..." required></label>
+            <datalist id="unitOptions"></datalist>
+            <label class="full">Precio unitario<input id="orderPrice" type="number" min="0" step="0.01" placeholder="Escribe el precio" required></label>
           </div>
         </div>
 
@@ -119,7 +150,7 @@
         <div class="order-preview" id="orderPreview"></div>
         <div class="modal-actions">
           <button class="secondary-action" id="cancelOrder" type="button">Cancelar</button>
-          <button class="primary-action" type="submit">Guardar pedido</button>
+          <button class="primary-action" id="saveOrderButton" type="submit">Guardar pedido</button>
         </div>
       </form>
     </section>
