@@ -7,6 +7,7 @@ const money = new Intl.NumberFormat('es-US',{style:'currency',currency:'USD'});
 let inventoryFilter = 'all';
 let inventoryQuery = '';
 let editingInventoryId = null;
+let adjustingInventoryId = null;
 
 function ensureInventoryAssets() {
   if (!document.querySelector('link[href="./inventory.css"]')) {
@@ -53,16 +54,27 @@ function ensureInventoryAssets() {
         </div>
         <form id="inventoryForm">
           <div class="inventory-form-section">
-            <h3>Datos del inventario</h3>
+            <h3>Inventario y receta</h3>
             <div class="inventory-form-grid">
-              <label class="full">Producto<input id="inventoryName" required placeholder="Nombre del producto o insumo"></label>
-              <label>Categoría<input id="inventoryCategory" placeholder="Ingrediente, empaque, bebida..."></label>
-              <label>Unidad<input id="inventoryUnit" required placeholder="lb, pieza, oz, caja..."></label>
+              <label class="full">Producto<input id="inventoryName" required placeholder="Filete de pescado"></label>
+              <label>Categoría<input id="inventoryCategory" placeholder="Ingrediente, empaque..."></label>
+              <label>Unidad de inventario<input id="inventoryUnit" required placeholder="lb, oz, pieza..."></label>
               <label>Cantidad actual<input id="inventoryQty" type="number" min="0" step="0.01" required></label>
               <label>Stock mínimo<input id="inventoryMinimum" type="number" min="0" step="0.01" required></label>
-              <label class="full">Costo unitario<input id="inventoryCost" type="number" min="0" step="0.01" placeholder="0.00"></label>
             </div>
           </div>
+
+          <div class="inventory-form-section purchase-presentation">
+            <h3>Presentación de compra</h3>
+            <div class="inventory-form-grid">
+              <label>Unidad de compra<input id="inventoryPurchaseUnit" required placeholder="bolsa, caja, paquete..."></label>
+              <label>Contenido por unidad<input id="inventoryContentQty" type="number" min="0.01" step="0.01" required placeholder="2"></label>
+              <label>Unidad del contenido<input id="inventoryContentUnit" required placeholder="lb, oz, pieza..."></label>
+              <label>Precio por unidad de compra<input id="inventoryPurchasePrice" type="number" min="0" step="0.01" placeholder="9.50"></label>
+            </div>
+            <div class="purchase-calculation" id="purchaseCalculation">Configura la presentación para calcular el costo real.</div>
+          </div>
+
           <div class="inventory-modal-actions">
             <button class="cancel" id="cancelInventory" type="button">Cancelar</button>
             <button class="save" type="submit">Guardar</button>
@@ -116,9 +128,13 @@ function inventoryRows() {
     const min = Number(item.minimum || 0);
     if (inventoryFilter === 'low' && !(qty <= min && qty > 0)) return false;
     if (inventoryFilter === 'out' && qty > 0) return false;
-    if (q && !`${item.name} ${item.category || ''} ${item.unit || ''}`.toLowerCase().includes(q)) return false;
+    if (q && !`${item.name} ${item.category || ''} ${item.unit || ''} ${item.purchaseUnit || ''}`.toLowerCase().includes(q)) return false;
     return true;
   });
+}
+
+function presentationText(item) {
+  return `${item.purchaseUnit || item.unit || 'unidad'} de ${Number(item.contentQty || 1)} ${item.contentUnit || item.unit || ''}`;
 }
 
 function renderInventory() {
@@ -126,7 +142,7 @@ function renderInventory() {
   const items = InventoryStore.list();
   const low = items.filter(item => Number(item.qty || 0) > 0 && Number(item.qty || 0) <= Number(item.minimum || 0)).length;
   const out = items.filter(item => Number(item.qty || 0) <= 0).length;
-  const value = items.reduce((sum,item)=>sum + Number(item.qty || 0) * Number(item.cost || 0),0);
+  const value = items.reduce((sum,item)=>sum + Number(item.qty || 0) * InventoryStore.unitCost(item),0);
   $('#inventoryKpis').innerHTML = [
     ['Productos',items.length,'total'],['Bajo mínimo',low,'low'],['Agotados',out,'out'],['Valor',money.format(value),'value']
   ].map(([label,value,tone])=>`<article class="inventory-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
@@ -134,6 +150,7 @@ function renderInventory() {
   const rows = inventoryRows();
   $('#inventoryList').innerHTML = rows.length ? rows.map(item => {
     const [statusLabel,statusClass] = statusFor(item);
+    const unitCost = InventoryStore.unitCost(item);
     return `
       <article class="inventory-card">
         <div class="inventory-card-head">
@@ -143,7 +160,11 @@ function renderInventory() {
         <div class="inventory-stock">
           <div><small>Existencia</small><strong>${Number(item.qty || 0)} ${item.unit || ''}</strong></div>
           <div><small>Mínimo</small><strong>${Number(item.minimum || 0)} ${item.unit || ''}</strong></div>
-          <div><small>Costo unit.</small><strong>${money.format(Number(item.cost || 0))}</strong></div>
+          <div><small>Costo real</small><strong>${money.format(unitCost)} / ${item.unit || 'unidad'}</strong></div>
+        </div>
+        <div class="purchase-strip">
+          <div><small>Se compra por</small><strong>${presentationText(item)}</strong></div>
+          <div><small>Precio de compra</small><strong>${money.format(Number(item.purchasePrice || 0))} / ${item.purchaseUnit || item.unit || 'unidad'}</strong></div>
         </div>
         <div class="inventory-card-actions">
           <button class="inventory-action edit" data-inventory-action="edit" data-id="${item.id}" type="button">Editar</button>
@@ -168,6 +189,26 @@ function goHome() {
   location.href = clean;
 }
 
+function updatePurchaseCalculation() {
+  const purchaseUnit = $('#inventoryPurchaseUnit')?.value.trim() || 'unidad';
+  const contentQty = Number($('#inventoryContentQty')?.value || 0);
+  const contentUnit = $('#inventoryContentUnit')?.value.trim() || $('#inventoryUnit')?.value.trim() || 'unidad';
+  const purchasePriceRaw = $('#inventoryPurchasePrice')?.value;
+  const purchasePrice = purchasePriceRaw === '' ? null : Number(purchasePriceRaw);
+  const box = $('#purchaseCalculation');
+  if (!box) return;
+  if (!contentQty || contentQty <= 0) {
+    box.textContent = 'Configura la presentación para calcular el costo real.';
+    return;
+  }
+  const base = `1 ${purchaseUnit} = ${contentQty} ${contentUnit}`;
+  if (purchasePrice === null || !Number.isFinite(purchasePrice)) {
+    box.textContent = base;
+    return;
+  }
+  box.innerHTML = `${base} · <strong>${money.format(purchasePrice)} por ${purchaseUnit}</strong> · Costo real <strong>${money.format(purchasePrice / contentQty)} / ${contentUnit}</strong>`;
+}
+
 function openInventoryModal(id = null) {
   editingInventoryId = id;
   $('#inventoryForm').reset();
@@ -181,13 +222,18 @@ function openInventoryModal(id = null) {
     $('#inventoryUnit').value = item.unit || '';
     $('#inventoryQty').value = item.qty ?? 0;
     $('#inventoryMinimum').value = item.minimum ?? 0;
-    $('#inventoryCost').value = item.cost ?? '';
+    $('#inventoryPurchaseUnit').value = item.purchaseUnit || item.unit || '';
+    $('#inventoryContentQty').value = item.contentQty ?? 1;
+    $('#inventoryContentUnit').value = item.contentUnit || item.unit || '';
+    $('#inventoryPurchasePrice').value = item.purchasePrice ?? '';
   } else {
     $('#inventoryEyebrow').textContent = 'NUEVO';
     $('#inventoryModalTitle').textContent = 'Producto';
     $('#inventoryQty').value = '0';
     $('#inventoryMinimum').value = '0';
+    $('#inventoryContentQty').value = '1';
   }
+  updatePurchaseCalculation();
   $('#inventoryModal').hidden = false;
   document.body.classList.add('modal-open');
 }
@@ -198,7 +244,6 @@ function closeInventoryModal() {
   document.body.classList.remove('modal-open');
 }
 
-let adjustingInventoryId = null;
 function openAdjustModal(id) {
   const item = InventoryStore.get(id);
   if (!item) return;
@@ -209,6 +254,7 @@ function openAdjustModal(id) {
   $('#adjustInventoryModal').hidden = false;
   document.body.classList.add('modal-open');
 }
+
 function closeAdjustModal() {
   $('#adjustInventoryModal').hidden = true;
   adjustingInventoryId = null;
@@ -225,7 +271,6 @@ function toast(message) {
 
 ensureInventoryAssets();
 
-// Captura el clic antes del manejador general para convertir Inventario en módulo real.
 document.addEventListener('click', event => {
   const module = event.target.closest('[data-module="inventario"]');
   if (module) {
@@ -252,6 +297,9 @@ $('#adjustInventoryModal')?.addEventListener('click',event=>{ if (event.target =
 
 $('#inventorySearch')?.addEventListener('input',event=>{ inventoryQuery = event.target.value; renderInventory(); });
 $('#inventoryFilter')?.addEventListener('change',event=>{ inventoryFilter = event.target.value; renderInventory(); });
+['inventoryUnit','inventoryPurchaseUnit','inventoryContentQty','inventoryContentUnit','inventoryPurchasePrice'].forEach(id => {
+  $(`#${id}`)?.addEventListener('input',updatePurchaseCalculation);
+});
 
 $('#inventoryForm')?.addEventListener('submit',event=>{
   event.preventDefault();
@@ -262,9 +310,12 @@ $('#inventoryForm')?.addEventListener('submit',event=>{
     unit:$('#inventoryUnit').value.trim(),
     qty:Number($('#inventoryQty').value || 0),
     minimum:Number($('#inventoryMinimum').value || 0),
-    cost:$('#inventoryCost').value === '' ? 0 : Number($('#inventoryCost').value)
+    purchaseUnit:$('#inventoryPurchaseUnit').value.trim(),
+    contentQty:Number($('#inventoryContentQty').value || 0),
+    contentUnit:$('#inventoryContentUnit').value.trim(),
+    purchasePrice:$('#inventoryPurchasePrice').value === '' ? 0 : Number($('#inventoryPurchasePrice').value)
   };
-  if (!payload.name || !payload.unit || !Number.isFinite(payload.qty) || !Number.isFinite(payload.minimum)) return;
+  if (!payload.name || !payload.unit || !payload.purchaseUnit || !payload.contentUnit || !Number.isFinite(payload.qty) || !Number.isFinite(payload.minimum) || !Number.isFinite(payload.contentQty) || payload.contentQty <= 0) return;
   if (editingInventoryId) InventoryStore.update(editingInventoryId,payload);
   else InventoryStore.create(payload);
   closeInventoryModal();
