@@ -1,5 +1,5 @@
-import { BUSINESS, MODULES, PRODUCTS, ORDER_STATUSES, PAYMENT_METHODS, ORDER_SOURCES } from './config.js';
-import { OrdersStore } from './data.js';
+import { BUSINESS, MODULES, UNITS, ORDER_STATUSES, PAYMENT_METHODS, ORDER_SOURCES } from './config.js';
+import { OrdersStore, MenuStore } from './data.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -11,6 +11,7 @@ const state = {
   orderFilter: 'active',
   dayFilter: 'today',
   query: '',
+  editingOrderId: null,
   orders: OrdersStore.list()
 };
 
@@ -28,6 +29,10 @@ function statusMeta(id) {
   return ORDER_STATUSES.find(item => item.id === id) || { id, label:id };
 }
 
+function priceText(value) {
+  return value === null || value === undefined || value === '' ? 'Precio pendiente' : money.format(Number(value) || 0);
+}
+
 function activeOrders() {
   return state.orders.filter(order => !['delivered','cancelled'].includes(order.status));
 }
@@ -39,12 +44,12 @@ function todaysOrders() {
 function homeSummary() {
   const today = todaysOrders();
   const active = today.filter(order => ['pending','preparing'].includes(order.status));
-  const activeLb = active.reduce((sum, order) => sum + order.items.reduce((x, item) => x + Number(item.qty || 0), 0), 0);
-  const sales = today.filter(order => order.status === 'delivered').reduce((sum, order) => sum + Number(order.total || 0), 0);
-  const lbText = Number.isInteger(activeLb) ? String(activeLb) : activeLb.toFixed(1);
+  const sales = today
+    .filter(order => order.status === 'delivered')
+    .reduce((sum, order) => sum + (order.total === null || order.total === undefined ? 0 : Number(order.total || 0)), 0);
   return [
     { label:'Pedidos', value:String(today.length), note:'Total del día', icon:'📋', tone:'mint' },
-    { label:'Por preparar', value:activeLb ? `Mixto ${lbText} lb` : '0 lb', note:'En cocina', icon:'👨‍🍳', tone:'cream' },
+    { label:'Por preparar', value:`${active.length} ${active.length === 1 ? 'pedido' : 'pedidos'}`, note:'En cocina', icon:'👨‍🍳', tone:'cream' },
     { label:'Por comprar', value:'8', note:'Productos faltantes', icon:'📦', tone:'pink' },
     { label:'Ventas', value:money.format(sales), note:'Entregado hoy', icon:'$', tone:'mint' }
   ];
@@ -78,7 +83,9 @@ function orderKpis() {
   const today = todaysOrders();
   const pending = today.filter(o => o.status === 'pending').length;
   const ready = today.filter(o => o.status === 'ready').length;
-  const sales = today.filter(o => o.status === 'delivered').reduce((sum,o)=>sum+Number(o.total||0),0);
+  const sales = today
+    .filter(o => o.status === 'delivered')
+    .reduce((sum,o)=>sum+(o.total === null || o.total === undefined ? 0 : Number(o.total||0)),0);
   return [
     ['Pendientes', pending, 'pending'],
     ['Hoy', today.length, 'today'],
@@ -108,7 +115,7 @@ function orderAction(order) {
 
 function orderCard(order) {
   const status = statusMeta(order.status);
-  const items = order.items.map(item => `${item.qty} ${item.unit} · ${item.name}`).join(' · ');
+  const items = order.items.map(item => `${item.qty} ${item.unit || ''} · ${item.name}`).join(' · ');
   const pay = order.paymentStatus === 'paid' ? '<span class="paid">Pagado</span>' : '<span class="unpaid">Pago pendiente</span>';
   return `
     <article class="order-card" data-order-id="${order.id}">
@@ -116,7 +123,7 @@ function orderCard(order) {
         <div><span class="folio">${order.id}</span><h3>${order.customer || 'Cliente'}</h3></div>
         <span class="status ${order.status}">${status.label}</span>
       </div>
-      <div class="order-main-line"><strong>${items}</strong><b>${money.format(order.total || 0)}</b></div>
+      <div class="order-main-line"><strong>${items}</strong><b>${priceText(order.total)}</b></div>
       <div class="order-info-grid">
         <div><small>Entrega</small><strong>${order.date === todayISO() ? 'Hoy' : order.date} · ${order.time || '--:--'}</strong></div>
         <div><small>Teléfono</small><strong>${order.phone || '—'}</strong></div>
@@ -126,6 +133,7 @@ function orderCard(order) {
       </div>
       ${order.notes ? `<div class="order-note">📝 ${order.notes}</div>` : ''}
       <div class="order-card-actions">
+        ${order.status !== 'cancelled' ? `<button class="order-action edit" data-order-action="edit" data-id="${order.id}">Editar</button>` : ''}
         ${orderAction(order)}
         ${order.status === 'pending' ? `<button class="order-action ghost danger" data-order-action="cancel" data-id="${order.id}">Cancelar</button>` : ''}
       </div>
@@ -150,50 +158,91 @@ function setView(view) {
   window.scrollTo({top:0,behavior:'auto'});
 }
 
-function fillOrderForm() {
-  $('#orderProduct').innerHTML = PRODUCTS.map((product,index)=>`<option value="${product.id}" ${index===0?'selected':''}>${product.name} · ${product.unit} · ${money.format(product.price)}</option>`).join('');
+function populateOrderOptions() {
+  const menu = MenuStore.list();
+  $('#productOptions').innerHTML = menu.map(item => `<option value="${item.name}"></option>`).join('');
+  $('#unitOptions').innerHTML = UNITS.map(unit => `<option value="${unit}"></option>`).join('');
   $('#orderPayment').innerHTML = PAYMENT_METHODS.map(item=>`<option>${item}</option>`).join('');
   $('#orderSource').innerHTML = ORDER_SOURCES.map(item=>`<option>${item}</option>`).join('');
-  $('#orderDate').value = todayISO();
-  $('#orderTime').value = '13:00';
-  syncProductPrice();
-  updateOrderPreview();
 }
 
-function syncProductPrice() {
-  const product = PRODUCTS.find(item => item.id === $('#orderProduct').value) || PRODUCTS[0];
-  $('#orderPrice').value = Number(product?.price || 0).toFixed(2);
+function applyConfiguredProduct() {
+  const name = $('#orderProductName').value.trim().toLowerCase();
+  if (!name) return;
+  const configured = MenuStore.list().find(item => String(item.name || '').trim().toLowerCase() === name);
+  if (!configured) return;
+  if (configured.unit) $('#orderUnit').value = configured.unit;
+  if (configured.price !== null && configured.price !== undefined && configured.price !== '') $('#orderPrice').value = configured.price;
   updateOrderPreview();
 }
 
 function updateOrderPreview() {
-  if (!$('#orderProduct')) return;
-  const product = PRODUCTS.find(item => item.id === $('#orderProduct').value) || PRODUCTS[0];
+  const name = $('#orderProductName').value.trim() || 'Producto';
+  const unit = $('#orderUnit').value.trim();
   const qty = Number($('#orderQty').value || 0);
-  const price = Number($('#orderPrice').value || 0);
-  $('#orderPreview').innerHTML = `<span>${qty || 0} ${product?.unit || ''} · ${product?.name || ''}</span><strong>${money.format(qty * price)}</strong>`;
+  const rawPrice = $('#orderPrice').value;
+  const total = rawPrice === '' ? null : qty * Number(rawPrice || 0);
+  $('#orderPreview').innerHTML = `<span>${qty || 0} ${unit} · ${name}</span><strong>${priceText(total)}</strong>`;
 }
 
-function openOrderModal() {
+function openOrderModal(orderId = null) {
+  state.editingOrderId = orderId;
   $('#orderForm').reset();
-  fillOrderForm();
+  populateOrderOptions();
+
+  if (orderId) {
+    const order = OrdersStore.get(orderId);
+    if (!order) return;
+    const item = order.items?.[0] || {};
+    $('#orderModalEyebrow').textContent = 'EDITAR';
+    $('#orderModalTitle').textContent = `Pedido ${order.id}`;
+    $('#saveOrderButton').textContent = 'Guardar cambios';
+    $('#orderProductName').value = item.name || '';
+    $('#orderQty').value = item.qty ?? 1;
+    $('#orderUnit').value = item.unit || '';
+    $('#orderPrice').value = item.price === null || item.price === undefined ? '' : item.price;
+    $('#orderCustomer').value = order.customer || '';
+    $('#orderPhone').value = order.phone || '';
+    $('#orderAddress').value = order.address || '';
+    $('#orderZip').value = order.zip || '';
+    $('#orderSource').value = order.source || ORDER_SOURCES[0];
+    $('#orderDate').value = order.date || todayISO();
+    $('#orderTime').value = order.time || '13:00';
+    $('#orderPayment').value = order.payment || PAYMENT_METHODS[0];
+    $('#orderPaymentStatus').value = order.paymentStatus || 'pending';
+    $('#orderNotes').value = order.notes || '';
+  } else {
+    $('#orderModalEyebrow').textContent = 'NUEVO';
+    $('#orderModalTitle').textContent = 'Pedido';
+    $('#saveOrderButton').textContent = 'Guardar pedido';
+    $('#orderQty').value = '1';
+    $('#orderDate').value = todayISO();
+    $('#orderTime').value = '13:00';
+    $('#orderPaymentStatus').value = 'pending';
+  }
+
+  updateOrderPreview();
   $('#orderModal').hidden = false;
   document.body.classList.add('modal-open');
-  setTimeout(()=>$('#orderCustomer').focus(),50);
+  setTimeout(()=>$('#orderProductName').focus(),50);
 }
 
 function closeOrderModal() {
   $('#orderModal').hidden = true;
   document.body.classList.remove('modal-open');
+  state.editingOrderId = null;
 }
 
 function saveOrder(event) {
   event.preventDefault();
-  const product = PRODUCTS.find(item => item.id === $('#orderProduct').value) || PRODUCTS[0];
+  const productName = $('#orderProductName').value.trim();
+  const unit = $('#orderUnit').value.trim();
   const qty = Number($('#orderQty').value || 0);
-  const price = Number($('#orderPrice').value || 0);
-  if (!qty || !$('#orderCustomer').value.trim()) return;
-  OrdersStore.create({
+  const rawPrice = $('#orderPrice').value;
+  const price = rawPrice === '' ? null : Number(rawPrice);
+  if (!productName || !unit || !qty || price === null || !Number.isFinite(price) || !$('#orderCustomer').value.trim()) return;
+
+  const payload = {
     customer: $('#orderCustomer').value.trim(),
     phone: $('#orderPhone').value.trim(),
     address: $('#orderAddress').value.trim(),
@@ -204,18 +253,30 @@ function saveOrder(event) {
     payment: $('#orderPayment').value,
     paymentStatus: $('#orderPaymentStatus').value,
     notes: $('#orderNotes').value.trim(),
-    items: [{ productId:product.id, name:product.name, qty, unit:product.unit, price }],
+    items: [{ name:productName, qty, unit, price }],
     total: qty * price
-  });
+  };
+
+  if (state.editingOrderId) {
+    OrdersStore.update(state.editingOrderId, payload);
+    showToast('Pedido actualizado');
+  } else {
+    OrdersStore.create(payload);
+    showToast('Pedido guardado');
+  }
+
   state.orders = OrdersStore.list();
   closeOrderModal();
   renderOrders();
-  showToast('Pedido guardado');
 }
 
 function handleOrderAction(button) {
   const id = button.dataset.id;
   const action = button.dataset.orderAction;
+  if (action === 'edit') {
+    openOrderModal(id);
+    return;
+  }
   if (action === 'prepare') {
     OrdersStore.update(id,{status:'preparing'});
     showToast('Pedido enviado a preparación');
@@ -243,13 +304,15 @@ function bindInteractions() {
   });
 
   $('#ordersBack').addEventListener('click',()=>setView('home'));
-  $('#newOrderButton').addEventListener('click',openOrderModal);
+  $('#newOrderButton').addEventListener('click',()=>openOrderModal());
   $('#closeOrderModal').addEventListener('click',closeOrderModal);
   $('#cancelOrder').addEventListener('click',closeOrderModal);
   $('#orderModal').addEventListener('click',event=>{ if(event.target === $('#orderModal')) closeOrderModal(); });
   $('#orderForm').addEventListener('submit',saveOrder);
-  $('#orderProduct').addEventListener('change',syncProductPrice);
+  $('#orderProductName').addEventListener('change',applyConfiguredProduct);
+  $('#orderProductName').addEventListener('input',updateOrderPreview);
   $('#orderQty').addEventListener('input',updateOrderPreview);
+  $('#orderUnit').addEventListener('input',updateOrderPreview);
   $('#orderPrice').addEventListener('input',updateOrderPreview);
   $('#orderSearch').addEventListener('input',event=>{state.query=event.target.value;renderOrders();});
   $('#orderDayFilter').addEventListener('change',event=>{state.dayFilter=event.target.value;renderOrders();});
@@ -286,6 +349,6 @@ function showToast(message) {
 
 applyBrand();
 renderHome();
-fillOrderForm();
+populateOrderOptions();
 bindInteractions();
 if(location.hash === '#pedidos') setView('pedidos');
