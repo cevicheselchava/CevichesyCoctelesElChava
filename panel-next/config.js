@@ -30,10 +30,11 @@ export const MODULES = [
   { id: 'recetas', label: 'Recetas', subtitle: 'Administra tus recetas y porciones', icon: '📖', color: 'purple', wide: true }
 ];
 
-export const PRODUCTS = [
-  { id: 'ceviche-mixto-lb', name: 'Ceviche mixto', unit: 'lb', price: 17 },
-  { id: 'ceviche-mixto-media', name: 'Ceviche mixto', unit: '1/2 lb', price: 8.5 }
-];
+// El menú NO se fija en el código. Cada negocio configurará sus propios productos,
+// unidades y precios. Este arreglo queda vacío hasta construir Configuración.
+export const MENU_DEFAULT = [];
+
+export const UNITS = ['pieza', 'orden', 'lb', '1/2 lb', 'oz', 'vaso', 'combo', 'paquete', 'otro'];
 
 export const ORDER_STATUSES = [
   { id: 'pending', label: 'Pendiente' },
