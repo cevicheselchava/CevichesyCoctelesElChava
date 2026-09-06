@@ -1,0 +1,56 @@
+name: Corregir registro de compras del panel una vez
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/fix-purchase-entry-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix_purchase_entry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cargar corrección de compra en Panel El Cubano
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('panel/el-cubano/index.html')
+          html = p.read_text(encoding='utf-8')
+          old = '<script defer src="../core.js?v=20260905-3"></script></head>'
+          new = '<script defer src="../core.js?v=20260905-3"></script><script defer src="../purchase-entry-fix.js?v=20260905-1"></script></head>'
+          if 'purchase-entry-fix.js' not in html:
+              if old not in html:
+                  raise SystemExit('No encontré el punto exacto para cargar la corrección')
+              html = html.replace(old, new, 1)
+              p.write_text(html, encoding='utf-8')
+
+          sw = Path('panel/el-cubano/service-worker.js')
+          code = sw.read_text(encoding='utf-8')
+          code = code.replace("const CACHE='panel-el-cubano-v4'", "const CACHE='panel-el-cubano-v5'")
+          old_shell = "'/panel/core.js?v=20260905-3','/panel/styles.css?v=20260905-2'"
+          new_shell = "'/panel/core.js?v=20260905-3','/panel/purchase-entry-fix.js?v=20260905-1','/panel/styles.css?v=20260905-2'"
+          if 'purchase-entry-fix.js' not in code:
+              if old_shell not in code:
+                  raise SystemExit('No encontré la lista de caché del panel')
+              code = code.replace(old_shell, new_shell, 1)
+          sw.write_text(code, encoding='utf-8')
+          PY
+
+      - name: Guardar corrección
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add panel/el-cubano/index.html panel/el-cubano/service-worker.js
+          if git diff --cached --quiet; then
+            echo "La corrección ya estaba aplicada."
+            exit 0
+          fi
+          git commit -m "Load fixed purchase entry in El Cubano panel"
+          git push
