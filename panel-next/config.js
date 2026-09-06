@@ -7,6 +7,9 @@ export const BUSINESS = {
   sideSlogan: 'Good Food\nGood Vibes',
   footerSlogan: 'Ceviches, Cócteles\ny Buena Vibra',
   footerTag: 'ONE\nLOVE',
+  currency: 'USD',
+  locale: 'es-US',
+  serviceModes: ['delivery'],
   theme: {
     green: '#078844',
     yellow: '#ffd52f',
@@ -18,7 +21,7 @@ export const BUSINESS = {
 };
 
 export const MODULES = [
-  { id: 'pedidos', label: 'Pedidos', subtitle: 'Gestiona y consulta los pedidos', icon: '📋', color: 'green', badge: 6 },
+  { id: 'pedidos', label: 'Pedidos', subtitle: 'Gestiona y consulta los pedidos', icon: '📋', color: 'green' },
   { id: 'preparacion', label: 'Preparación', subtitle: 'Controla la cocina y tiempos', icon: '👨‍🍳', color: 'yellow' },
   { id: 'inventario', label: 'Inventario', subtitle: 'Revisa existencias en tiempo real', icon: '📦', color: 'red' },
   { id: 'compras', label: 'Compras', subtitle: 'Genera y da seguimiento a tus compras', icon: '🛒', color: 'blue' },
@@ -27,9 +30,19 @@ export const MODULES = [
   { id: 'recetas', label: 'Recetas', subtitle: 'Administra tus recetas y porciones', icon: '📖', color: 'purple', wide: true }
 ];
 
-export const HOME_SUMMARY = [
-  { label: 'Pedidos', value: '6', note: 'Total del día', icon: '📋', tone: 'mint' },
-  { label: 'Por preparar', value: 'Mixto 6 lb', note: 'En cocina', icon: '👨‍🍳', tone: 'cream' },
-  { label: 'Por comprar', value: '8', note: 'Productos faltantes', icon: '📦', tone: 'pink' },
-  { label: 'Ventas', value: '$102.00', note: 'Total del día', icon: '$', tone: 'mint' }
+export const PRODUCTS = [
+  { id: 'ceviche-mixto-lb', name: 'Ceviche mixto', unit: 'lb', price: 17 },
+  { id: 'ceviche-mixto-media', name: 'Ceviche mixto', unit: '1/2 lb', price: 8.5 }
 ];
+
+export const ORDER_STATUSES = [
+  { id: 'pending', label: 'Pendiente' },
+  { id: 'preparing', label: 'Preparando' },
+  { id: 'ready', label: 'Listo' },
+  { id: 'delivery', label: 'En entrega' },
+  { id: 'delivered', label: 'Entregado' },
+  { id: 'cancelled', label: 'Cancelado' }
+];
+
+export const PAYMENT_METHODS = ['Al recibir', 'Efectivo', 'Cash App', 'Zelle', 'Tarjeta', 'Otro'];
+export const ORDER_SOURCES = ['WhatsApp', 'Facebook', 'Teléfono', 'App', 'Otro'];
