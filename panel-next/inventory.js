@@ -255,6 +255,7 @@ $('#inventoryFilter')?.addEventListener('change',event=>{ inventoryFilter = even
 
 $('#inventoryForm')?.addEventListener('submit',event=>{
   event.preventDefault();
+  const wasEditing = Boolean(editingInventoryId);
   const payload = {
     name:$('#inventoryName').value.trim(),
     category:$('#inventoryCategory').value.trim(),
@@ -268,7 +269,7 @@ $('#inventoryForm')?.addEventListener('submit',event=>{
   else InventoryStore.create(payload);
   closeInventoryModal();
   renderInventory();
-  toast(editingInventoryId ? 'Producto actualizado' : 'Producto agregado');
+  toast(wasEditing ? 'Producto actualizado' : 'Producto agregado');
 });
 
 $('#adjustInventoryForm')?.addEventListener('submit',event=>{
