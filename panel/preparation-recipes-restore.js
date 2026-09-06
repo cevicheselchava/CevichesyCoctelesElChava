@@ -100,14 +100,15 @@ function ensureBack(panel){
 ensureBack(extraPanel);
 ensureBack(ordersPanel);
 
+const PREPARE_LABEL='🥣 PREPARAR ESTE PEDIDO';
 function fixPrepareButtons(){
   E('prepareOrders')?.querySelectorAll('[data-prepared-order]').forEach(btn=>{
-    btn.textContent='🥣 PREPARAR ESTE PEDIDO';
+    if(btn.textContent!==PREPARE_LABEL)btn.textContent=PREPARE_LABEL;
   });
 }
 fixPrepareButtons();
 const ordersBox=E('prepareOrders');
-if(ordersBox)new MutationObserver(fixPrepareButtons).observe(ordersBox,{childList:true,subtree:true});
+if(ordersBox)new MutationObserver(()=>fixPrepareButtons()).observe(ordersBox,{childList:true,subtree:true});
 
 function hideAll(){
   if(totals)totals.hidden=true;
