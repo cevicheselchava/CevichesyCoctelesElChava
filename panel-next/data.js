@@ -1,16 +1,23 @@
-const STORAGE_KEY = 'panel-next-orders-v1';
+const STORAGE_KEY = 'panel-next-orders-v2';
+const MENU_STORAGE_KEY = 'panel-next-menu-v1';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 function seedOrders() {
   const today = todayISO();
   return [
-    { id:'P-1006', customer:'María', phone:'210-555-0118', address:'Fredericksburg Rd', zip:'78201', source:'WhatsApp', date:today, time:'13:00', payment:'Al recibir', paymentStatus:'pending', notes:'', status:'pending', createdAt:Date.now()-600000, items:[{ productId:'ceviche-mixto-lb', name:'Ceviche mixto', qty:1, unit:'lb', price:17 }], total:17 },
-    { id:'P-1005', customer:'Carlos', phone:'210-555-0145', address:'Medical Dr', zip:'78229', source:'Facebook', date:today, time:'13:30', payment:'Zelle', paymentStatus:'paid', notes:'', status:'pending', createdAt:Date.now()-1100000, items:[{ productId:'ceviche-mixto-lb', name:'Ceviche mixto', qty:2, unit:'lb', price:17 }], total:34 },
-    { id:'P-1004', customer:'Ana', phone:'210-555-0172', address:'Bandera Rd', zip:'78228', source:'WhatsApp', date:today, time:'14:00', payment:'Efectivo', paymentStatus:'pending', notes:'Llamar al llegar', status:'preparing', createdAt:Date.now()-1700000, items:[{ productId:'ceviche-mixto-lb', name:'Ceviche mixto', qty:1, unit:'lb', price:17 }], total:17 },
-    { id:'P-1003', customer:'Luis', phone:'210-555-0124', address:'Babcock Rd', zip:'78240', source:'App', date:today, time:'14:30', payment:'Cash App', paymentStatus:'paid', notes:'', status:'ready', createdAt:Date.now()-2400000, items:[{ productId:'ceviche-mixto-lb', name:'Ceviche mixto', qty:1, unit:'lb', price:17 }], total:17 },
-    { id:'P-1002', customer:'Patricia', phone:'210-555-0191', address:'Callaghan Rd', zip:'78228', source:'WhatsApp', date:today, time:'12:00', payment:'Efectivo', paymentStatus:'paid', notes:'', status:'delivered', createdAt:Date.now()-4000000, items:[{ productId:'ceviche-mixto-lb', name:'Ceviche mixto', qty:1, unit:'lb', price:17 }], total:17 },
-    { id:'P-1001', customer:'Jorge', phone:'210-555-0160', address:'Culebra Rd', zip:'78228', source:'Facebook', date:today, time:'11:30', payment:'Zelle', paymentStatus:'paid', notes:'', status:'delivered', createdAt:Date.now()-5200000, items:[{ productId:'ceviche-mixto-lb', name:'Ceviche mixto', qty:1, unit:'lb', price:17 }], total:17 }
+    {
+      id:'P-1002', customer:'María', phone:'210-555-0118', address:'Fredericksburg Rd', zip:'78201',
+      source:'WhatsApp', date:today, time:'13:00', payment:'Al recibir', paymentStatus:'pending', notes:'',
+      status:'pending', createdAt:Date.now()-600000,
+      items:[{ name:'Producto del menú', qty:1, unit:'orden', price:null }], total:null
+    },
+    {
+      id:'P-1001', customer:'Carlos', phone:'210-555-0145', address:'Medical Dr', zip:'78229',
+      source:'Facebook', date:today, time:'13:30', payment:'Zelle', paymentStatus:'paid', notes:'',
+      status:'ready', createdAt:Date.now()-1100000,
+      items:[{ name:'Producto del menú', qty:2, unit:'pieza', price:null }], total:null
+    }
   ];
 }
 
@@ -33,6 +40,20 @@ function write(orders) {
   return orders;
 }
 
+function readMenu() {
+  try {
+    const raw = localStorage.getItem(MENU_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeMenu(items) {
+  localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(items));
+  return items;
+}
+
 export const OrdersStore = {
   list() { return read().sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)); },
   create(order) {
@@ -51,5 +72,12 @@ export const OrdersStore = {
     write(orders);
     return orders[index];
   },
+  get(id) { return read().find(order => order.id === id) || null; },
   resetDemo() { return write(seedOrders()); }
+};
+
+// Queda preparado para que Configuración administre el menú de cada food truck.
+export const MenuStore = {
+  list() { return readMenu(); },
+  save(items) { return writeMenu(Array.isArray(items) ? items : []); }
 };
