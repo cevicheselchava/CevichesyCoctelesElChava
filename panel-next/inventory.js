@@ -4,7 +4,7 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const money = new Intl.NumberFormat('es-US',{style:'currency',currency:'USD'});
 
-const CATEGORIES = ['Ingrediente','Empaque','Bebida','Salsa / condimento','Desechable','Limpieza','Otro'];
+const CATEGORIES = ['Carnes y mariscos','Verduras y frutas','Salsas y condimentos','Bebidas','Empaques','Desechables','Limpieza','Otros'];
 const INVENTORY_UNITS = ['lb','oz','kg','g','pieza','unidad','ml','L','fl oz','galón','docena','otro'];
 const PURCHASE_UNITS = ['bolsa','caja','paquete','pieza','unidad','botella','lata','galón','cubeta','rollo','costal','charola','otro'];
 
