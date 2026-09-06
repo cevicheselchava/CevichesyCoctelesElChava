@@ -1,0 +1,69 @@
+/* RECETAS */
+.recipes-view{max-width:900px;margin:0 auto}
+.recipe-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.recipe-kpi{min-height:88px;border-radius:18px;padding:13px 12px;background:rgba(255,255,255,.92);border:1px solid #e1e7e4;box-shadow:0 7px 18px rgba(29,49,40,.05)}
+.recipe-kpi small{display:block;font-size:11px;color:#6e7a74;font-weight:900;text-transform:uppercase;letter-spacing:.03em}
+.recipe-kpi strong{display:block;margin-top:8px;font-size:25px}
+.recipe-kpi.total{border-top:5px solid var(--purple)}
+.recipe-kpi.ingredients{border-top:5px solid var(--green)}
+.recipe-kpi.linked{border-top:5px solid var(--blue)}
+.recipe-toolbar{margin-bottom:12px}
+.recipe-search{height:50px;border:1px solid #dce4e1;background:rgba(255,255,255,.92);border-radius:15px;padding:0 13px;display:flex;align-items:center;gap:8px;color:#75817b;font-size:22px}
+.recipe-search input{border:0;outline:0;background:transparent;width:100%;font-size:17px;color:#18221e}
+.recipe-list{display:grid;gap:13px}
+.recipe-card{background:rgba(255,255,255,.92);border:1px solid #dfe6e2;border-radius:22px;padding:17px;box-shadow:0 8px 22px rgba(25,46,37,.055)}
+.recipe-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.recipe-type{display:inline-block;border-radius:999px;padding:7px 10px;background:#efe7fb;color:#61359b;font-size:11px;font-weight:1000;text-transform:uppercase}
+.recipe-card h3{margin:7px 0 0;font-size:24px}
+.recipe-yield{border-radius:14px;background:#f1ebfb;color:#60329b;padding:10px 12px;text-align:right;min-width:90px}
+.recipe-yield small{display:block;font-size:10px;font-weight:900;text-transform:uppercase}
+.recipe-yield strong{display:block;margin-top:3px;font-size:19px}
+.recipe-menu-link{margin-top:10px;color:#647069;font-size:14px;font-weight:800}
+.recipe-ingredients{display:grid;gap:7px;margin-top:14px}
+.recipe-ingredient{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border-radius:13px;background:rgba(247,249,248,.94);padding:10px 12px}
+.recipe-ingredient span{font-size:15px;font-weight:800;color:#26322c}
+.recipe-ingredient strong{font-size:15px;white-space:nowrap}
+.recipe-ingredient em{font-style:normal;color:#7b8680;font-size:12px;font-weight:700}
+.recipe-stock-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#bbb;margin-right:6px;vertical-align:1px}
+.recipe-stock-dot.ok{background:var(--green)}
+.recipe-stock-dot.missing{background:var(--red)}
+.recipe-notes{margin-top:11px;border-radius:12px;background:#fff7df;padding:10px 12px;font-size:14px;font-weight:800;color:#685a2b}
+.recipe-card-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
+.recipe-action{border:0;border-radius:12px;padding:11px 14px;min-height:44px;font-size:15px;font-weight:1000}
+.recipe-action.edit{background:#efe7fb;color:#60329b}
+.recipe-empty{text-align:center;padding:46px 18px;background:rgba(255,255,255,.90);border:1px dashed #ccd8d2;border-radius:20px;color:#657069}
+.recipe-empty span{font-size:40px}.recipe-empty h3{margin:8px 0 4px;font-size:24px;color:#222}.recipe-empty p{margin:0;font-size:15px}
+.recipe-modal[hidden]{display:none}
+.recipe-modal{position:fixed;inset:0;z-index:140;background:rgba(11,20,16,.58);display:flex;align-items:flex-end;justify-content:center}
+.recipe-sheet{width:min(820px,100%);max-height:94vh;overflow:auto;background:#f8faf9;border-radius:28px 28px 0 0;padding:20px 18px 24px;box-shadow:0 -16px 50px rgba(0,0,0,.18)}
+.recipe-form-section{background:#fff;border:1px solid #dde5e1;border-radius:20px;padding:16px;margin-top:12px}
+.recipe-form-section h3{margin:0 0 13px;font-size:22px}
+.recipe-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.recipe-form-grid .full{grid-column:1/-1}
+.recipe-form-grid label{display:block;color:#69756f;font-size:12px;font-weight:1000;text-transform:uppercase}
+.recipe-form-grid input,.recipe-form-grid select,.recipe-form-grid textarea{display:block;width:100%;min-height:56px;margin-top:6px;border:1px solid #d8e0dc;border-radius:14px;background:#fff;padding:0 13px;font-size:18px;color:#1c2722;outline:0}
+.recipe-form-grid textarea{min-height:82px;padding-top:12px;resize:vertical}
+.recipe-rows{display:grid;gap:10px}
+.recipe-row{border:1px solid #dde4e0;border-radius:16px;padding:11px;background:#fbfcfb}
+.recipe-row-grid{display:grid;grid-template-columns:minmax(0,1.7fr) .7fr 1fr auto;gap:8px;align-items:end}
+.recipe-row label{display:block;color:#69756f;font-size:10px;font-weight:1000;text-transform:uppercase}
+.recipe-row input,.recipe-row select{display:block;width:100%;min-height:48px;margin-top:5px;border:1px solid #d8e0dc;border-radius:12px;background:#fff;padding:0 10px;font-size:16px;outline:0}
+.recipe-row-buttons{display:flex;gap:6px;align-items:center}
+.recipe-row-buttons button{border:0;border-radius:11px;min-height:44px;padding:0 10px;font-weight:1000}
+.recipe-row-buttons .taste{background:#fff0cb;color:#765900}
+.recipe-row-buttons .taste.active{background:#222;color:#fff}
+.recipe-row-buttons .remove{background:#ffe3e7;color:#ad2231;font-size:20px}
+.recipe-row-note{margin-top:8px}
+.recipe-row-note input{min-height:42px}
+.add-ingredient{width:100%;margin-top:10px;border:1px dashed #bfa9dc;background:#f5effd;color:#6534a6;border-radius:13px;min-height:46px;font-size:15px;font-weight:1000}
+.recipe-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.recipe-modal-actions button{border:0;border-radius:14px;min-height:50px;padding:0 18px;font-size:16px;font-weight:1000}
+.recipe-modal-actions .cancel{background:#edf1ef;color:#344039}
+.recipe-modal-actions .save{background:var(--purple);color:#fff}
+@media(max-width:720px){
+  .recipe-kpis{gap:7px}.recipe-kpi{min-height:84px;padding:12px 9px}.recipe-kpi small{font-size:10px}.recipe-kpi strong{font-size:23px}
+  .recipe-card{padding:16px}.recipe-card h3{font-size:22px}.recipe-yield{min-width:82px}
+  .recipe-form-grid{grid-template-columns:1fr 1fr}.recipe-form-grid input,.recipe-form-grid select,.recipe-form-grid textarea{font-size:18px}
+  .recipe-row-grid{grid-template-columns:1fr 1fr}.recipe-row-grid>label:first-child{grid-column:1/-1}.recipe-row-buttons{justify-content:flex-end}
+  .recipe-sheet{padding:18px 14px 22px}
+}
