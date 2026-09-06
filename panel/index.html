@@ -1,1 +1,237 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=/panel/el-cubano/"><title>Panel Operativo El Cubano</title><script>location.replace('/panel/el-cubano/');</script></head><body></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17365d">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Panel Operativo · El Cubano</title>
+  <link rel="stylesheet" href="/panel/styles.css?v=soft-20260906-1">
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script defer src="/panel/el-cubano/profile.js?v=soft-20260906-1"></script>
+  <script defer src="/panel/app.js?v=soft-20260906-1"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img id="brandLogo" class="brand-logo" hidden alt="Logo El Cubano">
+      <div>
+        <div class="eyebrow">PANEL OPERATIVO</div>
+        <div class="brand-name" id="brandName">El Cubano</div>
+      </div>
+    </div>
+
+    <nav class="main-nav" id="mainNav" aria-label="Módulos">
+      <button class="nav-item active" data-view="inicio"><span>▦</span><b>Inicio</b></button>
+      <button class="nav-item" data-view="pedidos"><span>▤</span><b>Pedidos</b><em id="navOrdersBadge" hidden>0</em></button>
+      <button class="nav-item" data-view="preparacion"><span>◉</span><b>Preparación</b></button>
+      <button class="nav-item" data-view="inventario"><span>▥</span><b>Inventario</b><em id="navLowBadge" hidden>0</em></button>
+      <button class="nav-item" data-view="compras"><span>🛒</span><b>Compras</b></button>
+      <button class="nav-item" data-view="entregas"><span>🛵</span><b>Entregas</b></button>
+      <button class="nav-item" data-view="dinero"><span>$</span><b>Dinero</b></button>
+      <button class="nav-item" data-view="recetas"><span>≡</span><b>Recetas</b></button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="connection-dot" id="connectionDot"></div>
+      <span id="connectionText">Conectando…</span>
+    </div>
+  </aside>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+  <main class="workspace">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Abrir menú">☰</button>
+      <div class="topbar-copy">
+        <h1 id="pageTitle">Inicio</h1>
+        <p id="todayText">Hoy</p>
+      </div>
+      <div class="topbar-actions">
+        <span class="live-pill" id="livePill">● En vivo</span>
+        <button class="icon-btn" id="refreshBtn" title="Actualizar">↻</button>
+      </div>
+    </header>
+
+    <section class="view active" data-view-panel="inicio">
+      <div class="kpi-grid">
+        <article class="kpi-card navy"><small>VENTAS ENTREGADAS HOY</small><strong id="kpiSales">$0.00</strong><span>Pedidos entregados</span></article>
+        <article class="kpi-card green"><small>UTILIDAD BRUTA HOY</small><strong id="kpiProfit">$0.00</strong><span>Ventas − compras</span></article>
+        <article class="kpi-card amber"><small>PEDIDOS PENDIENTES</small><strong id="kpiPending">0</strong><span>Por atender</span></article>
+        <article class="kpi-card red"><small>PRODUCTOS BAJOS</small><strong id="kpiLow">0</strong><span>En mínimo o debajo</span></article>
+      </div>
+
+      <div class="dashboard-grid">
+        <section class="panel-card">
+          <div class="panel-head">
+            <div><h2>Pedidos pendientes</h2><p>Lo que necesita atención primero.</p></div>
+            <button class="text-btn" data-go-view="pedidos">Ver todos</button>
+          </div>
+          <div id="homeOrders" class="compact-list"></div>
+        </section>
+
+        <section class="panel-card">
+          <div class="panel-head">
+            <div><h2>Inventario bajo</h2><p>Productos en mínimo o por debajo.</p></div>
+            <button class="text-btn" data-go-view="inventario">Inventario</button>
+          </div>
+          <div id="homeLowStock" class="compact-list"></div>
+        </section>
+      </div>
+
+      <section class="panel-card quick-card">
+        <div class="panel-head"><div><h2>Acciones rápidas</h2><p>Lo que más vas a usar.</p></div></div>
+        <div class="quick-actions">
+          <button class="quick primary" id="quickNewOrder">＋ Nuevo pedido</button>
+          <button class="quick" id="quickPurchase">🛒 Registrar compra</button>
+          <button class="quick" data-go-view="preparacion">◉ Preparar pedidos</button>
+          <button class="quick" data-go-view="entregas">🛵 Ver entregas</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="view" data-view-panel="pedidos">
+      <div class="section-toolbar">
+        <div class="search-box"><span>⌕</span><input id="orderSearch" placeholder="Buscar folio, cliente, teléfono o producto"></div>
+        <button class="primary-btn" id="newOrderBtn">＋ Pedido</button>
+      </div>
+      <div class="filter-tabs" id="orderFilters">
+        <button class="active" data-order-filter="pending">Pendientes</button>
+        <button data-order-filter="ready">Listos</button>
+        <button data-order-filter="delivered">Entregados</button>
+        <button data-order-filter="cancelled">Cancelados</button>
+        <button data-order-filter="all">Todos</button>
+      </div>
+      <div id="ordersList" class="order-list"></div>
+    </section>
+
+    <section class="view" data-view-panel="preparacion">
+      <div class="production-summary" id="productionSummary"></div>
+      <div class="split-layout">
+        <section class="panel-card">
+          <div class="panel-head"><div><h2>Pedidos por preparar</h2><p>Elige un pedido y sigue los pasos.</p></div></div>
+          <div id="prepOrders" class="prep-order-list"></div>
+        </section>
+        <section class="panel-card prep-detail-card" id="prepDetailCard">
+          <div id="prepDetail" class="prep-detail empty-state">
+            <div class="empty-icon">◉</div><h3>Selecciona un pedido</h3><p>Aquí aparecerán los pasos de preparación.</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view" data-view-panel="inventario">
+      <div class="section-toolbar">
+        <div class="search-box"><span>⌕</span><input id="inventorySearch" placeholder="Buscar ingrediente o insumo"></div>
+        <button class="secondary-btn" id="inventoryAdjustBtn">Ajustar inventario</button>
+      </div>
+      <div class="inventory-summary" id="inventorySummary"></div>
+      <div id="inventoryList" class="inventory-table"></div>
+    </section>
+
+    <section class="view" data-view-panel="compras">
+      <div class="section-toolbar">
+        <div><h2 class="section-title">Compras y reposición</h2><p class="section-subtitle">Registra precio, cantidad, unidad y tienda.</p></div>
+        <button class="primary-btn" id="purchaseBtn">🛒 Registrar compra</button>
+      </div>
+      <div class="dashboard-grid">
+        <section class="panel-card">
+          <div class="panel-head"><div><h2>Por comprar</h2><p>Faltantes y productos bajo mínimo.</p></div></div>
+          <div id="shoppingList" class="compact-list"></div>
+        </section>
+        <section class="panel-card">
+          <div class="panel-head"><div><h2>Últimas compras</h2><p>Movimientos registrados.</p></div></div>
+          <div id="purchaseHistory" class="compact-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view" data-view-panel="entregas">
+      <div class="section-toolbar">
+        <label class="date-picker">Día <input id="deliveryDate" type="date"></label>
+        <div class="route-summary" id="routeSummary"></div>
+      </div>
+      <div id="deliveryList" class="delivery-list"></div>
+    </section>
+
+    <section class="view" data-view-panel="dinero">
+      <div class="kpi-grid money-kpis">
+        <article class="kpi-card green"><small>VENTAS</small><strong id="moneySales">$0.00</strong><span>Periodo seleccionado</span></article>
+        <article class="kpi-card red"><small>COMPRAS</small><strong id="moneyPurchases">$0.00</strong><span>Periodo seleccionado</span></article>
+        <article class="kpi-card navy"><small>RESULTADO BRUTO</small><strong id="moneyGross">$0.00</strong><span>Ventas − compras</span></article>
+      </div>
+      <section class="panel-card">
+        <div class="panel-head">
+          <div><h2>Movimientos</h2><p>Ventas y compras registradas.</p></div>
+          <select id="moneyPeriod" class="compact-select"><option value="today">Hoy</option><option value="7">7 días</option><option value="30">30 días</option><option value="all">Todo</option></select>
+        </div>
+        <div id="moneyList" class="money-list"></div>
+      </section>
+    </section>
+
+    <section class="view" data-view-panel="recetas">
+      <div class="section-toolbar">
+        <div><h2 class="section-title">Recetas</h2><p class="section-subtitle">Cantidades guardadas para cada producto.</p></div>
+        <div class="search-box small"><span>⌕</span><input id="recipeSearch" placeholder="Buscar receta"></div>
+      </div>
+      <div id="recipesList" class="recipes-grid"></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="orderModal" hidden>
+  <section class="modal-sheet">
+    <div class="modal-head"><div><h2 id="orderModalTitle">Nuevo pedido</h2><p>Pedido de entrega.</p></div><button class="modal-close" data-close-modal="orderModal">×</button></div>
+    <div class="form-grid">
+      <label class="full">Producto<select id="orderProduct"></select></label>
+      <label>Cantidad<input id="orderQty" type="number" min="0.5" step="0.5" value="1"></label>
+      <label>Precio<input id="orderPrice" type="number" min="0" step="0.01"></label>
+      <label>Cliente<input id="orderCustomer"></label>
+      <label>Teléfono<input id="orderPhone" type="tel"></label>
+      <label class="full">Dirección<input id="orderAddress"></label>
+      <label>ZIP<input id="orderZip" inputmode="numeric"></label>
+      <label>Día<input id="orderDate" type="date"></label>
+      <label>Hora<input id="orderTime" type="time"></label>
+      <label>Pago<select id="orderPayment"><option>Al recibir</option><option>Efectivo</option><option>Cash App</option><option>Zelle</option><option>Tarjeta</option><option>Otro</option></select></label>
+      <label class="full">Notas<input id="orderNotes"></label>
+    </div>
+    <div class="form-preview" id="orderPreview"></div>
+    <div class="modal-actions"><button class="secondary-btn" data-close-modal="orderModal">Cancelar</button><button class="primary-btn" id="saveOrderBtn">Guardar pedido</button></div>
+  </section>
+</div>
+
+<div class="modal" id="inventoryModal" hidden>
+  <section class="modal-sheet">
+    <div class="modal-head"><div><h2>Ajustar inventario</h2><p>Actualiza cantidad, mínimo y precio.</p></div><button class="modal-close" data-close-modal="inventoryModal">×</button></div>
+    <div class="form-grid">
+      <label class="full">Producto<select id="inventoryItem"></select></label>
+      <label>Cantidad<input id="inventoryQty" type="number" min="0" step="0.01"></label>
+      <label>Unidad<input id="inventoryUnit" readonly></label>
+      <label>Stock mínimo<input id="inventoryMin" type="number" min="0" step="0.01"></label>
+      <label>Precio de compra<input id="inventoryPrice" type="number" min="0" step="0.01"></label>
+    </div>
+    <div class="form-preview" id="inventoryPreview"></div>
+    <div class="modal-actions"><button class="secondary-btn" data-close-modal="inventoryModal">Cancelar</button><button class="primary-btn" id="saveInventoryBtn">Guardar</button></div>
+  </section>
+</div>
+
+<div class="modal" id="purchaseModal" hidden>
+  <section class="modal-sheet">
+    <div class="modal-head"><div><h2>Registrar compra</h2><p>Producto → Cantidad → Unidad → Precio → Tienda</p></div><button class="modal-close" data-close-modal="purchaseModal">×</button></div>
+    <div class="form-grid">
+      <label class="full">Producto<select id="purchaseItem"></select></label>
+      <label>Cantidad<input id="purchaseQty" type="number" min="0.01" step="0.01" value="1"></label>
+      <label>Unidad<select id="purchaseUnit"></select></label>
+      <label>Precio por unidad<input id="purchasePrice" type="number" min="0" step="0.01"></label>
+      <label>Tienda<input id="purchaseStore" placeholder="H-E-B, Walmart…"></label>
+    </div>
+    <div class="form-preview" id="purchasePreview"></div>
+    <div class="modal-actions"><button class="secondary-btn" data-close-modal="purchaseModal">Cancelar</button><button class="primary-btn" id="savePurchaseBtn">Guardar compra</button></div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+</body>
+</html>
