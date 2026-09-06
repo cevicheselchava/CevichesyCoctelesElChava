@@ -4,10 +4,25 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const money = new Intl.NumberFormat('es-US',{style:'currency',currency:'USD'});
 
+const CATEGORIES = ['Ingrediente','Empaque','Bebida','Salsa / condimento','Desechable','Limpieza','Otro'];
+const INVENTORY_UNITS = ['lb','oz','kg','g','pieza','unidad','ml','L','fl oz','galón','docena','otro'];
+const PURCHASE_UNITS = ['bolsa','caja','paquete','pieza','unidad','botella','lata','galón','cubeta','rollo','costal','charola','otro'];
+
 let inventoryFilter = 'all';
 let inventoryQuery = '';
 let editingInventoryId = null;
 let adjustingInventoryId = null;
+
+function options(values, placeholder = 'Seleccionar') {
+  return `<option value="">${placeholder}</option>${values.map(value => `<option value="${value}">${value}</option>`).join('')}`;
+}
+
+function ensureOption(select, value) {
+  if (!select || !value) return;
+  if (![...select.options].some(option => option.value === value)) {
+    select.insertAdjacentHTML('beforeend', `<option value="${value}">${value}</option>`);
+  }
+}
 
 function ensureInventoryAssets() {
   if (!document.querySelector('link[href="./inventory.css"]')) {
@@ -57,8 +72,8 @@ function ensureInventoryAssets() {
             <h3>Inventario y receta</h3>
             <div class="inventory-form-grid">
               <label class="full">Producto<input id="inventoryName" required placeholder="Filete de pescado"></label>
-              <label>Categoría<input id="inventoryCategory" placeholder="Ingrediente, empaque..."></label>
-              <label>Unidad de inventario<input id="inventoryUnit" required placeholder="lb, oz, pieza..."></label>
+              <label>Categoría<select id="inventoryCategory">${options(CATEGORIES,'Elige categoría')}</select></label>
+              <label>Unidad de inventario<select id="inventoryUnit" required>${options(INVENTORY_UNITS,'Elige unidad')}</select></label>
               <label>Cantidad actual<input id="inventoryQty" type="number" min="0" step="0.01" required></label>
               <label>Stock mínimo<input id="inventoryMinimum" type="number" min="0" step="0.01" required></label>
             </div>
@@ -67,9 +82,9 @@ function ensureInventoryAssets() {
           <div class="inventory-form-section purchase-presentation">
             <h3>Presentación de compra</h3>
             <div class="inventory-form-grid">
-              <label>Unidad de compra<input id="inventoryPurchaseUnit" required placeholder="bolsa, caja, paquete..."></label>
+              <label>Unidad de compra<select id="inventoryPurchaseUnit" required>${options(PURCHASE_UNITS,'Elige presentación')}</select></label>
               <label>Contenido por unidad<input id="inventoryContentQty" type="number" min="0.01" step="0.01" required placeholder="2"></label>
-              <label>Unidad del contenido<input id="inventoryContentUnit" required placeholder="lb, oz, pieza..."></label>
+              <label>Unidad del contenido<select id="inventoryContentUnit" required>${options(INVENTORY_UNITS,'Elige unidad')}</select></label>
               <label>Precio por unidad de compra<input id="inventoryPurchasePrice" type="number" min="0" step="0.01" placeholder="9.50"></label>
             </div>
             <div class="purchase-calculation" id="purchaseCalculation">Configura la presentación para calcular el costo real.</div>
@@ -190,9 +205,9 @@ function goHome() {
 }
 
 function updatePurchaseCalculation() {
-  const purchaseUnit = $('#inventoryPurchaseUnit')?.value.trim() || 'unidad';
+  const purchaseUnit = $('#inventoryPurchaseUnit')?.value || 'unidad';
   const contentQty = Number($('#inventoryContentQty')?.value || 0);
-  const contentUnit = $('#inventoryContentUnit')?.value.trim() || $('#inventoryUnit')?.value.trim() || 'unidad';
+  const contentUnit = $('#inventoryContentUnit')?.value || $('#inventoryUnit')?.value || 'unidad';
   const purchasePriceRaw = $('#inventoryPurchasePrice')?.value;
   const purchasePrice = purchasePriceRaw === '' ? null : Number(purchasePriceRaw);
   const box = $('#purchaseCalculation');
@@ -209,6 +224,13 @@ function updatePurchaseCalculation() {
   box.innerHTML = `${base} · <strong>${money.format(purchasePrice)} por ${purchaseUnit}</strong> · Costo real <strong>${money.format(purchasePrice / contentQty)} / ${contentUnit}</strong>`;
 }
 
+function syncContentUnit() {
+  const inventoryUnit = $('#inventoryUnit')?.value;
+  const contentUnit = $('#inventoryContentUnit');
+  if (inventoryUnit && contentUnit && !contentUnit.value) contentUnit.value = inventoryUnit;
+  updatePurchaseCalculation();
+}
+
 function openInventoryModal(id = null) {
   editingInventoryId = id;
   $('#inventoryForm').reset();
@@ -218,12 +240,16 @@ function openInventoryModal(id = null) {
     $('#inventoryEyebrow').textContent = 'EDITAR';
     $('#inventoryModalTitle').textContent = item.name;
     $('#inventoryName').value = item.name || '';
+    ensureOption($('#inventoryCategory'), item.category);
     $('#inventoryCategory').value = item.category || '';
+    ensureOption($('#inventoryUnit'), item.unit);
     $('#inventoryUnit').value = item.unit || '';
     $('#inventoryQty').value = item.qty ?? 0;
     $('#inventoryMinimum').value = item.minimum ?? 0;
+    ensureOption($('#inventoryPurchaseUnit'), item.purchaseUnit || item.unit);
     $('#inventoryPurchaseUnit').value = item.purchaseUnit || item.unit || '';
     $('#inventoryContentQty').value = item.contentQty ?? 1;
+    ensureOption($('#inventoryContentUnit'), item.contentUnit || item.unit);
     $('#inventoryContentUnit').value = item.contentUnit || item.unit || '';
     $('#inventoryPurchasePrice').value = item.purchasePrice ?? '';
   } else {
@@ -297,8 +323,10 @@ $('#adjustInventoryModal')?.addEventListener('click',event=>{ if (event.target =
 
 $('#inventorySearch')?.addEventListener('input',event=>{ inventoryQuery = event.target.value; renderInventory(); });
 $('#inventoryFilter')?.addEventListener('change',event=>{ inventoryFilter = event.target.value; renderInventory(); });
-['inventoryUnit','inventoryPurchaseUnit','inventoryContentQty','inventoryContentUnit','inventoryPurchasePrice'].forEach(id => {
+$('#inventoryUnit')?.addEventListener('change',syncContentUnit);
+['inventoryPurchaseUnit','inventoryContentQty','inventoryContentUnit','inventoryPurchasePrice'].forEach(id => {
   $(`#${id}`)?.addEventListener('input',updatePurchaseCalculation);
+  $(`#${id}`)?.addEventListener('change',updatePurchaseCalculation);
 });
 
 $('#inventoryForm')?.addEventListener('submit',event=>{
@@ -306,13 +334,13 @@ $('#inventoryForm')?.addEventListener('submit',event=>{
   const wasEditing = Boolean(editingInventoryId);
   const payload = {
     name:$('#inventoryName').value.trim(),
-    category:$('#inventoryCategory').value.trim(),
-    unit:$('#inventoryUnit').value.trim(),
+    category:$('#inventoryCategory').value,
+    unit:$('#inventoryUnit').value,
     qty:Number($('#inventoryQty').value || 0),
     minimum:Number($('#inventoryMinimum').value || 0),
-    purchaseUnit:$('#inventoryPurchaseUnit').value.trim(),
+    purchaseUnit:$('#inventoryPurchaseUnit').value,
     contentQty:Number($('#inventoryContentQty').value || 0),
-    contentUnit:$('#inventoryContentUnit').value.trim(),
+    contentUnit:$('#inventoryContentUnit').value,
     purchasePrice:$('#inventoryPurchasePrice').value === '' ? 0 : Number($('#inventoryPurchasePrice').value)
   };
   if (!payload.name || !payload.unit || !payload.purchaseUnit || !payload.contentUnit || !Number.isFinite(payload.qty) || !Number.isFinite(payload.minimum) || !Number.isFinite(payload.contentQty) || payload.contentQty <= 0) return;
