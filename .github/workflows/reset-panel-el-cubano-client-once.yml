@@ -1,0 +1,135 @@
+name: Reiniciar panel El Cubano desde cero
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reset-panel-el-cubano-client-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reset_panel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Firebase cliente
+        run: npm install --no-save firebase@11.10.0
+
+      - name: Dejar datos operativos en cero
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { initializeApp } = require('firebase/app');
+          const {
+            getFirestore, collection, getDocs, doc, getDoc,
+            setDoc, updateDoc, writeBatch, serverTimestamp, Timestamp
+          } = require('firebase/firestore');
+
+          const core = fs.readFileSync('panel/core.js', 'utf8');
+          const configMatch = core.match(/const firebaseConfig=(\{.*?\});/s);
+          if (!configMatch) throw new Error('No se encontró firebaseConfig en panel/core.js');
+          const firebaseConfig = Function(`return (${configMatch[1]})`)();
+
+          global.window = {};
+          require(process.cwd() + '/panel/el-cubano/profile.js');
+          const itemKeys = Object.keys(window.PANEL_PROFILE?.items || {});
+          const zeroMinimums = Object.fromEntries(itemKeys.map(k => [k, 0]));
+
+          const app = initializeApp(firebaseConfig);
+          const db = getFirestore(app);
+          const resetStart = Timestamp.now();
+
+          function isElCubano(data) {
+            return !data.panelTenant || data.panelTenant === 'el-cubano';
+          }
+
+          function millis(value) {
+            if (!value) return null;
+            if (typeof value.toMillis === 'function') return value.toMillis();
+            if (typeof value === 'string' || typeof value === 'number') {
+              const n = new Date(value).getTime();
+              return Number.isNaN(n) ? null : n;
+            }
+            return null;
+          }
+
+          function createdMillis(data, fields) {
+            for (const field of fields) {
+              const n = millis(data[field]);
+              if (n !== null) return n;
+            }
+            return null;
+          }
+
+          async function markOldOrdersDeleted() {
+            const snap = await getDocs(collection(db, 'pedidos'));
+            const refs = [];
+            for (const row of snap.docs) {
+              const data = row.data() || {};
+              if (!isElCubano(data)) continue;
+              const when = createdMillis(data, ['createdAt', 'createdAtClient', 'confirmedAt']);
+              if (when !== null && when >= resetStart.toMillis()) continue;
+              refs.push(row.ref);
+            }
+            for (let i = 0; i < refs.length; i += 400) {
+              const batch = writeBatch(db);
+              refs.slice(i, i + 400).forEach(ref => {
+                batch.update(ref, { deleted: true, resetDeletedAt: serverTimestamp() });
+              });
+              await batch.commit();
+            }
+            return refs.length;
+          }
+
+          async function deleteOldMovements() {
+            const snap = await getDocs(collection(db, 'movimientos'));
+            const refs = [];
+            for (const row of snap.docs) {
+              const data = row.data() || {};
+              if (!isElCubano(data)) continue;
+              const when = createdMillis(data, ['date', 'createdAt']);
+              if (when !== null && when >= resetStart.toMillis()) continue;
+              refs.push(row.ref);
+            }
+            for (let i = 0; i < refs.length; i += 400) {
+              const batch = writeBatch(db);
+              refs.slice(i, i + 400).forEach(ref => batch.delete(ref));
+              await batch.commit();
+            }
+            return refs.length;
+          }
+
+          (async () => {
+            const invRef = doc(db, 'inventario', 'principal');
+            const inventoryReset = {
+              items: {},
+              purchasePrices: {},
+              stockMinimums: zeroMinimums,
+              prepExtra: {},
+              preparedStock: {},
+              updatedAt: serverTimestamp(),
+              resetAt: resetStart
+            };
+
+            const invSnap = await getDoc(invRef);
+            if (invSnap.exists()) await updateDoc(invRef, inventoryReset);
+            else await setDoc(invRef, inventoryReset);
+
+            const ordersReset = await markOldOrdersDeleted();
+            const movementsReset = await deleteOldMovements();
+
+            console.log('RESET_OK');
+            console.log(`resetAt=${resetStart.toDate().toISOString()}`);
+            console.log(`inventoryItems=${itemKeys.length}`);
+            console.log(`ordersReset=${ordersReset}`);
+            console.log(`movementsReset=${movementsReset}`);
+          })().catch(err => {
+            console.error('RESET_FAILED');
+            console.error(err);
+            process.exit(1);
+          });
+          NODE
