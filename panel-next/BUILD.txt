@@ -1,2 +1,0 @@
-Panel Operativo hotfix 2026-09-07 16:55 CT
-Corrige caché de assets, carga de vistas y logo.
