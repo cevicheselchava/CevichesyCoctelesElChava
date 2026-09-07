@@ -1,8 +1,8 @@
 export const BUSINESS = {
   id: 'el-cubano',
   name: 'El Cubano',
-  logo: '/logo.png',
-  watermark: '/logo.png',
+  logo: '../logo.png?v=20260907-1655',
+  watermark: '../logo.png?v=20260907-1655',
   panelTitle: 'PANEL OPERATIVO',
   sideSlogan: 'Good Food\nGood Vibes',
   footerSlogan: 'Ceviches, Cócteles\ny Buena Vibra',
