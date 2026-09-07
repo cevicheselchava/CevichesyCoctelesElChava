@@ -1,4 +1,5 @@
 import { OrdersStore } from './data.js';
+import { recipePlanForItem, consumeInventoryForOrder } from './recipe-engine.js';
 import './inventory.js';
 
 const $ = selector => document.querySelector(selector);
@@ -28,23 +29,75 @@ function stepsFor(item) {
   return Array.isArray(raw) ? raw.filter(Boolean) : [];
 }
 
+function amountText(ingredient) {
+  if (ingredient.fixed === false) return 'Al gusto';
+  const qty = Number(ingredient.qty || 0);
+  const shown = Number.isInteger(qty) ? qty : Math.round(qty * 100) / 100;
+  return `${shown} ${ingredient.unit || ''}`.trim();
+}
+
+function recipeBlock(item) {
+  const plan = recipePlanForItem(item);
+  if (!plan.recipe) {
+    const legacySteps = stepsFor(item);
+    if (legacySteps.length) {
+      return `
+        <div class="prep-steps">
+          <h4>Pasos de preparación</h4>
+          ${legacySteps.map((step,index)=>`<div class="prep-step"><span>${index+1}</span><div>${step}</div></div>`).join('')}
+        </div>`;
+    }
+    return `
+      <div class="prep-steps">
+        <h4>Receta</h4>
+        <div class="prep-no-recipe">Sin receta vinculada a este producto. Agrégala en Recetas para que aquí aparezcan las cantidades automáticamente.</div>
+      </div>`;
+  }
+
+  const recipe = plan.recipe;
+  const scaleNote = plan.compatible
+    ? `Cantidades calculadas para ${item.qty || 0} ${item.unit || ''}.`
+    : `Receta base: rinde ${recipe.yieldQty} ${recipe.yieldUnit}. El pedido está en ${item.qty || 0} ${item.unit || ''}; falta definir la equivalencia para calcular el consumo automático.`;
+
+  const ingredients = plan.ingredients.map((ingredient,index)=>`
+    <div class="prep-step">
+      <span>${index+1}</span>
+      <div>${ingredient.name} · <strong>${amountText(ingredient)}</strong>${ingredient.linked ? '' : ' · no vinculado a inventario'}</div>
+    </div>`).join('');
+
+  return `
+    <div class="prep-steps">
+      <h4>${recipe.name}</h4>
+      <div class="prep-no-recipe">${scaleNote}</div>
+      ${ingredients}
+      ${recipe.notes ? `<div class="prep-note">📝 ${recipe.notes}</div>` : ''}
+    </div>`;
+}
+
+function inventoryResult(order) {
+  const info = order.inventoryConsumption;
+  if (!info) return '';
+  const alerts = Array.isArray(info.items)
+    ? info.items.filter(row=>['shortage','unlinked','ingredient_unit_mismatch','order_unit_mismatch','no_recipe'].includes(row.status))
+    : [];
+  if (!alerts.length && info.deducted) {
+    return `<div class="prep-ready-label">✓ Inventario actualizado automáticamente · ${info.deducted} ${info.deducted === 1 ? 'ingrediente' : 'ingredientes'}</div>`;
+  }
+  if (alerts.length) {
+    const details = alerts.slice(0,2).map(row=>row.ingredient ? `${row.ingredient}: ${row.label}` : row.label).join(' · ');
+    return `<div class="prep-note">⚠ Inventario: ${details}${alerts.length > 2 ? ` · +${alerts.length-2} avisos` : ''}</div>`;
+  }
+  return '';
+}
+
 function prepCard(order) {
   const items = Array.isArray(order.items) ? order.items : [];
-  const products = items.map(item => {
-    const steps = stepsFor(item);
-    const stepsHtml = steps.length
-      ? steps.map((step,index)=>`<div class="prep-step"><span>${index+1}</span><div>${step}</div></div>`).join('')
-      : `<div class="prep-no-recipe">Sin receta configurada para este producto. Cuando el negocio agregue su receta, aquí aparecerán los pasos automáticamente.</div>`;
-    return `
+  const products = items.map(item => `
       <div class="prep-product">
         <strong>${item.qty || 0} ${item.unit || ''} · ${item.name || 'Producto'}</strong>
         <small>${order.time ? `Entrega ${order.date === todayISO() ? 'hoy' : order.date} · ${order.time}` : 'Sin hora de entrega'}</small>
       </div>
-      <div class="prep-steps">
-        <h4>Pasos de preparación</h4>
-        ${stepsHtml}
-      </div>`;
-  }).join('');
+      ${recipeBlock(item)}`).join('');
 
   return `
     <article class="prep-card">
@@ -58,6 +111,7 @@ function prepCard(order) {
       </div>
       ${products}
       ${order.notes ? `<div class="prep-note">📝 ${order.notes}</div>` : ''}
+      ${inventoryResult(order)}
       <div class="prep-actions">
         ${order.status === 'preparing'
           ? `<button class="prep-ready-button" data-prep-action="ready" data-id="${order.id}" type="button">✓ Marcar listo</button>`
@@ -91,14 +145,27 @@ function goHome() {
   location.href = clean;
 }
 
+function showPrepToast(message) {
+  const toast = $('#toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),1900);
+}
+
 function markReady(id) {
+  const result = consumeInventoryForOrder(id);
   OrdersStore.update(id,{status:'ready'});
   renderPreparation();
-  const toast = $('#toast');
-  if (toast) {
-    toast.textContent = 'Pedido marcado como listo';
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'),1600);
+
+  if (result?.deducted && result?.alerts) {
+    showPrepToast(`Listo · inventario actualizado con ${result.alerts} ${result.alerts === 1 ? 'aviso' : 'avisos'}`);
+  } else if (result?.deducted) {
+    showPrepToast('Listo · inventario actualizado');
+  } else if (result?.alerts) {
+    showPrepToast(`Listo · revisa ${result.alerts} ${result.alerts === 1 ? 'dato' : 'datos'} de inventario`);
+  } else {
+    showPrepToast('Pedido marcado como listo');
   }
 }
 
