@@ -76,7 +76,10 @@ function matchesFilter(order) {
 
 function itemText(order) {
   const items = Array.isArray(order.items) ? order.items : [];
-  return items.map(item=>`${item.qty || 0} ${item.unit || ''} · ${item.name || 'Producto'}`).join(' · ') || 'Sin productos';
+  return items.map(item=>{
+    const base = `${item.qty || 0} ${item.unit || ''} · ${item.name || 'Producto'}`;
+    return item.detail ? `${base} (${item.detail})` : base;
+  }).join(' · ') || 'Sin productos';
 }
 
 function paymentHtml(order) {
@@ -209,6 +212,10 @@ $('#deliveryTabs')?.addEventListener('click',event=>{
   deliveryFilter = button.dataset.deliveryFilter;
   $$('#deliveryTabs button').forEach(item=>item.classList.toggle('active',item === button));
   renderDeliveries();
+});
+
+window.addEventListener('panel:orders-changed',()=>{
+  if ($('#deliveriesView')?.classList.contains('active')) renderDeliveries();
 });
 
 if (location.hash === '#entregas') openDeliveries();
