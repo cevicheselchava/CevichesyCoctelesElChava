@@ -167,8 +167,9 @@ function cloudItems(items = []) {
 
 async function pushPanelOrder(order) {
   if (!order?.cloud || !order.firestoreId) return;
+  const cloudStatus = order.status === 'cancelled' ? 'cancelado' : (order.status || 'pending');
   const patch = {
-    status:order.status || 'pending',
+    status:cloudStatus,
     customer:order.customer || '',
     phone:order.phone || '',
     address:order.address || '',
