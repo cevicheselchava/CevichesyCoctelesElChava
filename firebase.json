@@ -11,6 +11,13 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/panel-next",
+        "destination": "/panel-next/operativo",
+        "type": 302
+      }
+    ],
     "headers": [
       {
         "source": "/",
@@ -23,6 +30,15 @@
       },
       {
         "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store, no-cache, must-revalidate, max-age=0"
+          }
+        ]
+      },
+      {
+        "source": "/manifest.webmanifest",
         "headers": [
           {
             "key": "Cache-Control",
