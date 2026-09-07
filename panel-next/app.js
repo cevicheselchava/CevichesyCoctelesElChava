@@ -1,5 +1,5 @@
 import { BUSINESS, MODULES, UNITS, ORDER_STATUSES, PAYMENT_METHODS, ORDER_SOURCES } from './config.js';
-import { OrdersStore, MenuStore } from './data.js';
+import { OrdersStore, MenuStore, InventoryStore } from './data.js';
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -47,10 +47,11 @@ function homeSummary() {
   const sales = today
     .filter(order => order.status === 'delivered')
     .reduce((sum, order) => sum + (order.total === null || order.total === undefined ? 0 : Number(order.total || 0)), 0);
+  const low = InventoryStore.low().length;
   return [
     { label:'Pedidos', value:String(today.length), note:'Total del día', icon:'📋', tone:'mint' },
     { label:'Por preparar', value:`${active.length} ${active.length === 1 ? 'pedido' : 'pedidos'}`, note:'En cocina', icon:'👨‍🍳', tone:'cream' },
-    { label:'Por comprar', value:'8', note:'Productos faltantes', icon:'📦', tone:'pink' },
+    { label:'Por comprar', value:String(low), note:low === 1 ? 'Producto faltante' : 'Productos faltantes', icon:'📦', tone:'pink' },
     { label:'Ventas', value:money.format(sales), note:'Entregado hoy', icon:'$', tone:'mint' }
   ];
 }
@@ -72,11 +73,20 @@ function summaryCard(item) {
   return `<article class="summary-card ${item.tone}"><span class="summary-icon">${item.icon}</span><strong>${item.value}</strong><b>${item.label}</b><small>${item.note}</small></article>`;
 }
 
+function updateBell() {
+  const badge = $('.badge-notify');
+  if (!badge) return;
+  const count = activeOrders().length;
+  badge.textContent = String(count);
+  badge.hidden = count === 0;
+}
+
 function renderHome() {
   $('#moduleGrid').innerHTML = MODULES.map(moduleCard).join('');
   $('#summaryGrid').innerHTML = homeSummary().map(summaryCard).join('');
   const date = new Intl.DateTimeFormat('es-MX',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}).format(new Date());
   $('#todayDate').textContent = date.replace('.', '');
+  updateBell();
 }
 
 function orderKpis() {
@@ -104,7 +114,7 @@ function matchesFilter(order) {
   if (state.orderFilter !== 'active' && state.orderFilter !== 'all' && order.status !== state.orderFilter) return false;
   const query = state.query.trim().toLowerCase();
   if (!query) return true;
-  return [order.id, order.customer, order.phone, order.address, ...order.items.map(i=>i.name)].join(' ').toLowerCase().includes(query);
+  return [order.id, order.customer, order.phone, order.address, ...(order.items || []).map(i=>i.name)].join(' ').toLowerCase().includes(query);
 }
 
 function orderAction(order) {
@@ -113,9 +123,14 @@ function orderAction(order) {
   return '';
 }
 
+function itemLabel(item) {
+  const base = `${item.qty ?? 0} ${item.unit || ''} · ${item.name || 'Producto'}`;
+  return item.detail ? `${base} (${item.detail})` : base;
+}
+
 function orderCard(order) {
   const status = statusMeta(order.status);
-  const items = order.items.map(item => `${item.qty} ${item.unit || ''} · ${item.name}`).join(' · ');
+  const items = (order.items || []).map(itemLabel).join(' · ');
   const pay = order.paymentStatus === 'paid' ? '<span class="paid">Pagado</span>' : '<span class="unpaid">Pago pendiente</span>';
   return `
     <article class="order-card" data-order-id="${order.id}">
@@ -123,9 +138,9 @@ function orderCard(order) {
         <div><span class="folio">${order.id}</span><h3>${order.customer || 'Cliente'}</h3></div>
         <span class="status ${order.status}">${status.label}</span>
       </div>
-      <div class="order-main-line"><strong>${items}</strong><b>${priceText(order.total)}</b></div>
+      <div class="order-main-line"><strong>${items || 'Sin productos'}</strong><b>${priceText(order.total)}</b></div>
       <div class="order-info-grid">
-        <div><small>Entrega</small><strong>${order.date === todayISO() ? 'Hoy' : order.date} · ${order.time || '--:--'}</strong></div>
+        <div><small>Entrega</small><strong>${order.date === todayISO() ? 'Hoy' : (order.date || '—')} · ${order.time || '--:--'}</strong></div>
         <div><small>Teléfono</small><strong>${order.phone || '—'}</strong></div>
         <div class="full"><small>Dirección</small><strong>${order.address || 'Sin dirección'}${order.zip ? ` · ${order.zip}` : ''}</strong></div>
         <div><small>Origen</small><strong>${order.source || '—'}</strong></div>
@@ -142,6 +157,7 @@ function orderCard(order) {
 
 function renderOrders() {
   renderOrderKpis();
+  updateBell();
   const filtered = state.orders.filter(matchesFilter);
   $('#ordersList').innerHTML = filtered.length ? filtered.map(orderCard).join('') : `<div class="orders-empty"><span>📋</span><h3>No hay pedidos aquí</h3><p>Cambia el filtro o registra un pedido nuevo.</p></div>`;
 }
@@ -164,6 +180,14 @@ function populateOrderOptions() {
   $('#unitOptions').innerHTML = UNITS.map(unit => `<option value="${unit}"></option>`).join('');
   $('#orderPayment').innerHTML = PAYMENT_METHODS.map(item=>`<option>${item}</option>`).join('');
   $('#orderSource').innerHTML = ORDER_SOURCES.map(item=>`<option>${item}</option>`).join('');
+}
+
+function ensureSelectValue(select, value) {
+  if (!select || !value) return;
+  if (![...select.options].some(option=>option.value === value)) {
+    select.insertAdjacentHTML('beforeend',`<option value="${value}">${value}</option>`);
+  }
+  select.value = value;
 }
 
 function applyConfiguredProduct() {
@@ -205,10 +229,10 @@ function openOrderModal(orderId = null) {
     $('#orderPhone').value = order.phone || '';
     $('#orderAddress').value = order.address || '';
     $('#orderZip').value = order.zip || '';
-    $('#orderSource').value = order.source || ORDER_SOURCES[0];
+    ensureSelectValue($('#orderSource'),order.source || ORDER_SOURCES[0]);
     $('#orderDate').value = order.date || todayISO();
     $('#orderTime').value = order.time || '13:00';
-    $('#orderPayment').value = order.payment || PAYMENT_METHODS[0];
+    ensureSelectValue($('#orderPayment'),order.payment || PAYMENT_METHODS[0]);
     $('#orderPaymentStatus').value = order.paymentStatus || 'pending';
     $('#orderNotes').value = order.notes || '';
   } else {
@@ -233,6 +257,12 @@ function closeOrderModal() {
   state.editingOrderId = null;
 }
 
+function lineTotal(item) {
+  if (item.lineTotal !== null && item.lineTotal !== undefined && Number.isFinite(Number(item.lineTotal))) return Number(item.lineTotal);
+  if (item.price !== null && item.price !== undefined) return Number(item.qty || 0) * Number(item.price || 0);
+  return 0;
+}
+
 function saveOrder(event) {
   event.preventDefault();
   const productName = $('#orderProductName').value.trim();
@@ -241,6 +271,19 @@ function saveOrder(event) {
   const rawPrice = $('#orderPrice').value;
   const price = rawPrice === '' ? null : Number(rawPrice);
   if (!productName || !unit || !qty || price === null || !Number.isFinite(price) || !$('#orderCustomer').value.trim()) return;
+
+  const existing = state.editingOrderId ? OrdersStore.get(state.editingOrderId) : null;
+  const oldItems = Array.isArray(existing?.items) ? existing.items : [];
+  const firstItem = {
+    ...(oldItems[0] || {}),
+    name:productName,
+    qty,
+    unit,
+    price,
+    lineTotal:qty * price
+  };
+  const items = [firstItem,...oldItems.slice(1)];
+  const total = items.reduce((sum,item)=>sum + lineTotal(item),0);
 
   const payload = {
     customer: $('#orderCustomer').value.trim(),
@@ -253,8 +296,8 @@ function saveOrder(event) {
     payment: $('#orderPayment').value,
     paymentStatus: $('#orderPaymentStatus').value,
     notes: $('#orderNotes').value.trim(),
-    items: [{ name:productName, qty, unit, price }],
-    total: qty * price
+    items,
+    total
   };
 
   if (state.editingOrderId) {
@@ -325,7 +368,7 @@ function bindInteractions() {
   });
 
   $('#menuButton').addEventListener('click',()=>showToast('Menú general'));
-  $('#bellButton').addEventListener('click',()=>showToast('3 notificaciones'));
+  $('#bellButton').addEventListener('click',()=>showToast(`${activeOrders().length} pedidos activos`));
   $$('.bottom-nav button').forEach(button=>button.addEventListener('click',()=>{
     $$('.bottom-nav button').forEach(item=>item.classList.remove('active'));
     button.classList.add('active');
@@ -335,6 +378,23 @@ function bindInteractions() {
   window.addEventListener('hashchange',()=>{
     if(location.hash === '#pedidos') setView('pedidos');
     else if(!location.hash) setView('home');
+  });
+
+  window.addEventListener('panel:orders-changed',()=>{
+    state.orders = OrdersStore.list();
+    if (state.view === 'pedidos') renderOrders();
+    if (state.view === 'home') renderHome();
+    updateBell();
+  });
+
+  window.addEventListener('panel:new-order',event=>{
+    const order = event.detail?.order;
+    if (navigator.vibrate) navigator.vibrate([180,80,180]);
+    showToast(`Nuevo pedido${order?.customer ? ` · ${order.customer}` : ''}`);
+  });
+
+  window.addEventListener('panel:firebase-state',event=>{
+    if (event.detail?.state === 'error') showToast('Sin conexión con pedidos de Firebase');
   });
 }
 
