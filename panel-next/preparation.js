@@ -1,6 +1,7 @@
 import { OrdersStore } from './data.js';
 import { recipePlanForItem, consumeInventoryForOrder } from './recipe-engine.js';
 import './inventory.js';
+import './purchases.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
