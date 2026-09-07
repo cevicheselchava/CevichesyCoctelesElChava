@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'panel-next-orders-v2';
+const STORAGE_KEY = 'panel-next-orders-v3';
 const MENU_STORAGE_KEY = 'panel-next-menu-v1';
 const INVENTORY_STORAGE_KEY = 'panel-next-inventory-v2';
 
@@ -22,17 +22,17 @@ function seedOrders() {
   ];
 }
 
+function notify(name, detail = {}) {
+  if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(name,{ detail }));
+}
+
 function read() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      const seeded = seedOrders();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-      return seeded;
-    }
-    return JSON.parse(raw);
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return seedOrders();
+    return [];
   }
 }
 
@@ -121,9 +121,10 @@ export const OrdersStore = {
   create(order) {
     const orders = read();
     const nextNumber = orders.reduce((max, item) => Math.max(max, Number(String(item.id || '').replace(/\D/g,'')) || 0), 1000) + 1;
-    const created = { ...order, id:`P-${nextNumber}`, createdAt:Date.now(), status:'pending' };
+    const created = { ...order, id:`P-${nextNumber}`, createdAt:Date.now(), status:'pending', cloud:false };
     orders.unshift(created);
     write(orders);
+    notify('panel:orders-changed',{ source:'local-create', order:created });
     return created;
   },
   update(id, patch) {
@@ -132,10 +133,32 @@ export const OrdersStore = {
     if (index < 0) return null;
     orders[index] = { ...orders[index], ...patch, updatedAt:Date.now() };
     write(orders);
-    return orders[index];
+    const updated = orders[index];
+    notify('panel:order-updated',{ source:'local-update', order:updated, patch:{ ...patch } });
+    notify('panel:orders-changed',{ source:'local-update', order:updated });
+    return updated;
   },
   get(id) { return read().find(order => order.id === id) || null; },
-  resetDemo() { return write(seedOrders()); }
+  syncExternal(remoteOrders = []) {
+    const current = read();
+    const currentById = new Map(current.map(order => [order.id,order]));
+    const localOnly = current.filter(order => !order.cloud);
+    const cloud = remoteOrders.map(order => ({
+      ...(currentById.get(order.id) || {}),
+      ...order,
+      cloud:true,
+      syncedAt:Date.now()
+    }));
+    const merged = [...localOnly,...cloud];
+    write(merged);
+    notify('panel:orders-changed',{ source:'firebase-sync', count:cloud.length });
+    return merged;
+  },
+  resetDemo() {
+    const rows = write(seedOrders());
+    notify('panel:orders-changed',{ source:'demo-reset' });
+    return rows;
+  }
 };
 
 export const MenuStore = {
