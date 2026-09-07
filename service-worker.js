@@ -1,4 +1,4 @@
-const CACHE_NAME = 'el-cubano-pwa-v3';
+const CACHE_NAME = 'el-cubano-pwa-v4';
 const STATIC_SHELL = [
   '/manifest.webmanifest',
   '/pwa-icon.svg'
@@ -22,6 +22,24 @@ self.addEventListener('activate', event => {
 
 async function freshNetwork(request) {
   return fetch(new Request(request, { cache: 'no-store' }));
+}
+
+async function freshCustomerPage(request) {
+  const response = await freshNetwork(request);
+  if (!response || !response.ok) return response;
+  const type = response.headers.get('content-type') || '';
+  if (!type.includes('text/html')) return response;
+
+  let html = await response.text();
+  html = html
+    .replace('class="section promo-section open" data-group="promotions"', 'class="section promo-section" data-group="promotions"')
+    .replace('class="section-title promo-title" type="button" aria-expanded="true"', 'class="section-title promo-title" type="button" aria-expanded="false"');
+
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  headers.delete('content-encoding');
+  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  return new Response(html, { status: response.status, statusText: response.statusText, headers });
 }
 
 async function networkFirst(request) {
@@ -55,14 +73,22 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // La página principal NUNCA sale de caché: evita enseñar primero una versión anterior.
-  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
-    event.respondWith(freshNetwork(request));
+  // El panel administrativo queda completamente fuera del service worker de clientes.
+  if (url.pathname === '/panel-next' || url.pathname.startsWith('/panel-next/')) return;
+
+  // La app de clientes siempre abre fresca y con las categorías cerradas.
+  if (request.mode === 'navigate' && (url.pathname === '/' || url.pathname === '/index.html')) {
+    event.respondWith(freshCustomerPage(request));
     return;
   }
 
-  const isAdmin = ['/control.html','/control-fix.js','/control-theme.js'].includes(url.pathname);
-  if (isAdmin || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(freshCustomerPage(request));
+    return;
+  }
+
+  const isAdminLegacy = ['/control.html','/control-fix.js','/control-theme.js'].includes(url.pathname);
+  if (isAdminLegacy || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     event.respondWith(networkFirst(request));
     return;
   }
