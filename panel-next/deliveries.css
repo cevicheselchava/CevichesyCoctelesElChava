@@ -1,0 +1,55 @@
+/* ENTREGAS */
+.deliveries-view{max-width:900px;margin:0 auto}
+.delivery-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.delivery-kpi{min-height:96px;border-radius:20px;padding:14px 12px;background:rgba(255,255,255,.95);border:1px solid #dde6e1;box-shadow:0 8px 20px rgba(26,48,39,.06);position:relative;overflow:hidden}
+.delivery-kpi:before{content:"";position:absolute;left:0;right:0;top:0;height:5px}
+.delivery-kpi.ready{background:linear-gradient(160deg,#fff 18%,#fff8d8 100%)}
+.delivery-kpi.ready:before{background:var(--yellow)}
+.delivery-kpi.route{background:linear-gradient(160deg,#fff 18%,#fff0df 100%)}
+.delivery-kpi.route:before{background:var(--red)}
+.delivery-kpi.done{background:linear-gradient(160deg,#fff 18%,#eaf8ef 100%)}
+.delivery-kpi.done:before{background:var(--green)}
+.delivery-kpi small{display:block;margin-top:5px;font-size:12px;color:#627069;font-weight:1000;text-transform:uppercase}
+.delivery-kpi strong{display:block;margin-top:8px;font-size:30px;line-height:1}
+.delivery-tabs{display:flex;gap:8px;overflow:auto;padding:2px 1px 11px;scrollbar-width:none}
+.delivery-tabs::-webkit-scrollbar{display:none}
+.delivery-tabs button{border:1px solid #d9e2dd;background:rgba(255,255,255,.95);color:#536159;border-radius:999px;padding:11px 15px;font-size:16px;font-weight:1000;white-space:nowrap}
+.delivery-tabs button.active{background:var(--green);color:#fff;border-color:var(--green)}
+.delivery-list{display:grid;gap:13px}
+.delivery-card{background:rgba(255,255,255,.96);border:1px solid #dfe7e3;border-radius:22px;padding:17px;box-shadow:0 8px 22px rgba(25,46,37,.055);position:relative;overflow:hidden}
+.delivery-card:before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--green) 0 42%,var(--yellow) 42% 72%,var(--red) 72% 100%)}
+.delivery-card.ready{border-left:6px solid var(--yellow)}
+.delivery-card.delivery{border-left:6px solid var(--red)}
+.delivery-card.delivered{border-left:6px solid var(--green)}
+.delivery-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-top:3px}
+.delivery-folio{font-size:12px;color:#77837d;font-weight:1000}
+.delivery-card h3{margin:3px 0 0;font-size:25px}
+.delivery-status{border-radius:999px;padding:8px 11px;font-size:11px;font-weight:1000;white-space:nowrap}
+.delivery-status.ready{background:#fff3b5;color:#6e5900}
+.delivery-status.delivery{background:#ffe5e7;color:#a32431}
+.delivery-status.delivered{background:#dff5e8;color:#08713a}
+.delivery-items{margin-top:13px;border-radius:14px;background:#f7faf8;padding:12px 13px;font-size:17px;font-weight:900;color:#26322c}
+.delivery-info{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.delivery-info div{border-radius:13px;background:#f8faf9;padding:10px 11px}
+.delivery-info .full{grid-column:1/-1}
+.delivery-info small{display:block;font-size:10px;color:#76827c;font-weight:1000;text-transform:uppercase}
+.delivery-info strong{display:block;margin-top:4px;font-size:16px;color:#27332d}
+.delivery-paid{color:#08713a}.delivery-unpaid{color:#bd252f}
+.delivery-note{margin-top:11px;border-radius:13px;background:#fff7db;color:#6d5a13;padding:11px 13px;font-size:15px;font-weight:900}
+.delivery-done-note{margin-top:11px;border-radius:13px;background:#e4f6eb;color:#08713a;padding:11px 13px;font-size:15px;font-weight:1000}
+.delivery-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.delivery-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:12px;min-height:44px;padding:0 14px;font-size:15px;font-weight:1000}
+.delivery-link.phone{background:#eef8f2;color:#08713a}
+.delivery-link.map{background:#fff6cf;color:#6e5700}
+.delivery-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:13px}
+.delivery-action{border:0;border-radius:13px;min-height:48px;padding:0 15px;font-size:16px;font-weight:1000}
+.delivery-action.payment{background:#fff2b7;color:#6a5200}
+.delivery-action.start{background:var(--red);color:#fff}
+.delivery-action.delivered{background:var(--green);color:#fff}
+.delivery-empty{text-align:center;padding:48px 20px;background:rgba(255,255,255,.94);border:1px dashed #cad7d1;border-radius:22px;color:#65716b}
+.delivery-empty span{font-size:42px}.delivery-empty h3{margin:10px 0 4px;font-size:24px;color:#222}.delivery-empty p{margin:0;font-size:15px}
+@media(max-width:720px){
+ .delivery-kpis{gap:7px}.delivery-kpi{min-height:90px;padding:12px 9px}.delivery-kpi small{font-size:10px}.delivery-kpi strong{font-size:27px}
+ .delivery-card{padding:16px}.delivery-card h3{font-size:23px}.delivery-items{font-size:16px}
+ .delivery-info strong{font-size:15px}.delivery-action{font-size:15px;padding:0 13px}
+}
