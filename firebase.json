@@ -14,7 +14,17 @@
     "redirects": [
       {
         "source": "/panel-next",
-        "destination": "/panel-next/operativo",
+        "destination": "/panel-next/app",
+        "type": 302
+      },
+      {
+        "source": "/panel-next/operativo",
+        "destination": "/panel-next/app",
+        "type": 302
+      },
+      {
+        "source": "/panel-next/operativo.html",
+        "destination": "/panel-next/app",
         "type": 302
       }
     ],
