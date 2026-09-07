@@ -4,10 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#078844">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <title>Panel Operativo · El Cubano</title>
-  <link rel="stylesheet" href="./styles.css">
-  <link rel="stylesheet" href="./watermarks.css">
+  <link rel="stylesheet" href="./styles.css?v=20260907-1655">
+  <link rel="stylesheet" href="./watermarks.css?v=20260907-1655">
   <style id="pedidos-legibilidad">
+    [hidden]{display:none!important}.view{display:none}.view.active{display:block}
     .orders-search input,.orders-select,.status-tabs button{font-size:17px}
     .order-card h3{font-size:25px}
     .folio{font-size:13px}
@@ -88,7 +90,7 @@
     <header class="hero" id="hero">
       <div class="hero-row">
         <button class="icon-button" id="menuButton" type="button" aria-label="Abrir menú">☰</button>
-        <div class="logo-wrap"><img id="brandLogo" class="brand-logo" alt="Logo del negocio"></div>
+        <div class="logo-wrap"><img id="brandLogo" class="brand-logo" src="../logo.png?v=20260907-1655" alt="Logo del negocio"></div>
         <div class="title-wrap">
           <h1 class="panel-title" id="panelTitle">PANEL <span>OPERATIVO</span></h1>
           <div class="side-slogan" id="sideSlogan">Good Food<br>Good Vibes</div>
@@ -202,13 +204,13 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="./app.js"></script>
-  <script type="module" src="./preparation.js"></script>
-  <script type="module" src="./inventory.js"></script>
-  <script type="module" src="./recipes.js"></script>
-  <script type="module" src="./purchases.js"></script>
-  <script type="module" src="./deliveries.js"></script>
-  <script type="module" src="./money.js"></script>
-  <script type="module" src="./firebase-sync.js"></script>
+  <script type="module" src="./app.js?v=20260907-1655"></script>
+  <script type="module" src="./preparation.js?v=20260907-1655"></script>
+  <script type="module" src="./inventory.js?v=20260907-1655"></script>
+  <script type="module" src="./recipes.js?v=20260907-1655"></script>
+  <script type="module" src="./purchases.js?v=20260907-1655"></script>
+  <script type="module" src="./deliveries.js?v=20260907-1655"></script>
+  <script type="module" src="./money.js?v=20260907-1655"></script>
+  <script type="module" src="./firebase-sync.js?v=20260907-1655"></script>
 </body>
 </html>
