@@ -125,7 +125,10 @@ function movementRows() {
     amount:Number(order.total || 0),
     label:order.paymentStatus === 'paid' ? 'Venta cobrada' : 'Venta por cobrar',
     meta:[order.payment || '—',order.time || '—',order.id],
-    note:(order.items || []).map(item=>`${item.qty || 0} ${item.unit || ''} · ${item.name || 'Producto'}`).join(' · '),
+    note:(order.items || []).map(item=>{
+      const base = `${item.qty || 0} ${item.unit || ''} · ${item.name || 'Producto'}`;
+      return item.detail ? `${base} (${item.detail})` : base;
+    }).join(' · '),
     at:Number(order.deliveredAt || order.updatedAt || order.createdAt || 0)
   }));
 
@@ -275,6 +278,10 @@ $('#moneyTabs')?.addEventListener('click',event=>{
   moneyFilter = button.dataset.moneyFilter;
   $$('#moneyTabs button').forEach(item=>item.classList.toggle('active',item === button));
   renderMoney();
+});
+
+window.addEventListener('panel:orders-changed',()=>{
+  if ($('#moneyView')?.classList.contains('active')) renderMoney();
 });
 
 if (location.hash === '#dinero') openMoney();
