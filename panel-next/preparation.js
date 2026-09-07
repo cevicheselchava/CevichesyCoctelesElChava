@@ -25,11 +25,6 @@ function prepKpis() {
   ];
 }
 
-function stepsFor(item) {
-  const raw = item?.preparationSteps || item?.steps || item?.recipe?.steps || [];
-  return Array.isArray(raw) ? raw.filter(Boolean) : [];
-}
-
 function amountText(ingredient) {
   if (ingredient.fixed === false) return 'Al gusto';
   const qty = Number(ingredient.qty || 0);
@@ -37,17 +32,16 @@ function amountText(ingredient) {
   return `${shown} ${ingredient.unit || ''}`.trim();
 }
 
+function requestedRecipeAmount(item) {
+  return {
+    qty:item.recipeQty ?? item.qty ?? 0,
+    unit:item.recipeUnit || item.unit || ''
+  };
+}
+
 function recipeBlock(item) {
   const plan = recipePlanForItem(item);
   if (!plan.recipe) {
-    const legacySteps = stepsFor(item);
-    if (legacySteps.length) {
-      return `
-        <div class="prep-steps">
-          <h4>Pasos de preparación</h4>
-          ${legacySteps.map((step,index)=>`<div class="prep-step"><span>${index+1}</span><div>${step}</div></div>`).join('')}
-        </div>`;
-    }
     return `
       <div class="prep-steps">
         <h4>Receta</h4>
@@ -56,9 +50,10 @@ function recipeBlock(item) {
   }
 
   const recipe = plan.recipe;
+  const requested = requestedRecipeAmount(item);
   const scaleNote = plan.compatible
-    ? `Cantidades calculadas para ${item.qty || 0} ${item.unit || ''}.`
-    : `Receta base: rinde ${recipe.yieldQty} ${recipe.yieldUnit}. El pedido está en ${item.qty || 0} ${item.unit || ''}; falta definir la equivalencia para calcular el consumo automático.`;
+    ? `Cantidades calculadas para ${requested.qty} ${requested.unit}.`
+    : `Receta base: rinde ${recipe.yieldQty} ${recipe.yieldUnit}. El pedido requiere ${requested.qty} ${requested.unit}; falta una equivalencia compatible.`;
 
   const ingredients = plan.ingredients.map((ingredient,index)=>`
     <div class="prep-step">
@@ -71,7 +66,6 @@ function recipeBlock(item) {
       <h4>${recipe.name}</h4>
       <div class="prep-no-recipe">${scaleNote}</div>
       ${ingredients}
-      ${recipe.notes ? `<div class="prep-note">📝 ${recipe.notes}</div>` : ''}
     </div>`;
 }
 
@@ -96,7 +90,7 @@ function prepCard(order) {
   const products = items.map(item => `
       <div class="prep-product">
         <strong>${item.qty || 0} ${item.unit || ''} · ${item.name || 'Producto'}</strong>
-        <small>${order.time ? `Entrega ${order.date === todayISO() ? 'hoy' : order.date} · ${order.time}` : 'Sin hora de entrega'}</small>
+        <small>${item.detail ? `${item.detail} · ` : ''}${order.time ? `Entrega ${order.date === todayISO() ? 'hoy' : order.date} · ${order.time}` : 'Sin hora de entrega'}</small>
       </div>
       ${recipeBlock(item)}`).join('');
 
@@ -170,7 +164,6 @@ function markReady(id) {
   }
 }
 
-// Captura el clic antes del manejador general para que Preparación sea un módulo real.
 document.addEventListener('click', event => {
   const module = event.target.closest('[data-module="preparacion"]');
   if (module) {
@@ -194,6 +187,10 @@ $('#prepTabs')?.addEventListener('click', event => {
   prepFilter = button.dataset.prepFilter;
   $$('#prepTabs button').forEach(item => item.classList.toggle('active', item === button));
   renderPreparation();
+});
+
+window.addEventListener('panel:orders-changed',()=>{
+  if ($('#preparationView')?.classList.contains('active')) renderPreparation();
 });
 
 if (location.hash === '#preparacion') openPreparation();
