@@ -11,6 +11,13 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/panel-next",
+        "destination": "/panel-next/index",
+        "type": 302
+      }
+    ],
     "headers": [
       {
         "source": "/",
@@ -45,15 +52,6 @@
           {
             "key": "Cache-Control",
             "value": "no-cache, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/panel-next/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-store, no-cache, must-revalidate, max-age=0"
           }
         ]
       },
