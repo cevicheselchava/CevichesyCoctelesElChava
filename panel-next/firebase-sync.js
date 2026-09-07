@@ -41,6 +41,11 @@ const STATUS_MAP = {
   cancelled:'cancelled'
 };
 
+const CLOUD_RELEVANT_FIELDS = new Set([
+  'status','customer','phone','address','zip','date','time','payment','paymentStatus','notes','items','total',
+  'deliveryStartedAt','deliveredAt','paidAt'
+]);
+
 function normalizeStatus(value) {
   const key = String(value || '').trim().toLowerCase();
   return STATUS_MAP[key] || 'pending';
@@ -193,7 +198,9 @@ async function pushPanelOrder(order) {
 
 window.addEventListener('panel:order-updated',event=>{
   const order = event.detail?.order;
+  const changed = Object.keys(event.detail?.patch || {});
   if (!order?.cloud) return;
+  if (!changed.some(field=>CLOUD_RELEVANT_FIELDS.has(field))) return;
   pushPanelOrder(order);
 });
 
