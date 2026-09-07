@@ -1,0 +1,28 @@
+{
+  "id": "/panel-next/app.html",
+  "name": "Panel Operativo · El Cubano",
+  "short_name": "Panel Operativo",
+  "description": "Panel administrativo y operativo de El Cubano.",
+  "lang": "es",
+  "start_url": "/panel-next/app.html",
+  "scope": "/panel-next/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7f8f6",
+  "theme_color": "#078844",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg?v=20260907-panel",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.svg?v=20260907-panel",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}
