@@ -109,11 +109,11 @@ export function findRecipeForItem(item) {
 }
 
 function orderScale(item, recipe) {
-  const orderQty = Number(item?.qty || 0);
+  const orderQty = Number(item?.recipeQty ?? item?.qty ?? 0);
   const recipeQty = Number(recipe?.yieldQty || 0);
   if (!(orderQty > 0) || !(recipeQty > 0)) return null;
 
-  const orderUnit = unitKey(item?.unit);
+  const orderUnit = unitKey(item?.recipeUnit || item?.unit);
   const yieldUnit = unitKey(recipe?.yieldUnit);
   if (!orderUnit || !yieldUnit) return orderQty / recipeQty;
   if (strip(orderUnit) === strip(yieldUnit)) return orderQty / recipeQty;
@@ -177,11 +177,13 @@ export function consumeInventoryForOrder(orderId) {
     recipeCount += 1;
 
     if (!plan.compatible) {
+      const requestedQty = item.recipeQty ?? item.qty ?? 0;
+      const requestedUnit = item.recipeUnit || item.unit || '';
       results.push({
         product:item.name,
         recipe:plan.recipe.name,
         status:'order_unit_mismatch',
-        label:`No se puede calcular ${item.qty || 0} ${item.unit || ''} contra ${plan.recipe.yieldQty} ${plan.recipe.yieldUnit}`
+        label:`No se puede calcular ${requestedQty} ${requestedUnit} contra ${plan.recipe.yieldQty} ${plan.recipe.yieldUnit}`
       });
       continue;
     }
