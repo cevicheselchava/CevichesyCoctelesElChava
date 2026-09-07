@@ -102,3 +102,31 @@ export function recipeCost(recipe = {}) {
     estimated:missing.length === 0 && alGusto.length > 0
   };
 }
+
+if (typeof document !== 'undefined' && !document.getElementById('recipe-cost-ui')) {
+  const style = document.createElement('style');
+  style.id = 'recipe-cost-ui';
+  style.textContent = `
+    .recipe-basic-grid{grid-template-columns:1fr 1fr}
+    .recipe-ingredient-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right}
+    .recipe-ingredient-right small{font-size:13px;font-weight:900;color:#65736c}
+    .recipe-cost-box{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px;border-radius:18px;padding:14px;border:1px solid #d7e3dc;background:linear-gradient(135deg,#eff9f3,#fff8d8)}
+    .recipe-cost-box.partial{background:linear-gradient(135deg,#fff8d8,#fff0f1);border-color:#eadba8}
+    .recipe-cost-box>div{background:rgba(255,255,255,.72);border-radius:13px;padding:10px 11px}
+    .recipe-cost-box small,.recipe-cost-preview small{display:block;font-size:11px;font-weight:1000;text-transform:uppercase;color:#617069}
+    .recipe-cost-box strong{display:block;margin-top:4px;font-size:24px;color:#153d27}
+    .recipe-cost-box p{grid-column:1/-1;margin:1px 2px 0;font-size:14px;font-weight:850;color:#5b675f}
+    .recipe-cost-preview{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px;border-radius:18px;padding:14px;background:linear-gradient(135deg,#eef8f2,#fff8d9);border:1px solid #d6e4da}
+    .recipe-cost-preview>div{background:rgba(255,255,255,.75);border-radius:13px;padding:10px 11px}
+    .recipe-cost-preview strong{display:block;margin-top:4px;font-size:22px;color:#153d27}
+    .recipe-cost-preview p{grid-column:1/-1;margin:1px 2px 0;font-size:14px;font-weight:850;color:#5b675f}
+    .recipe-cost-preview>span{grid-column:1/-1;font-size:15px;font-weight:800;color:#637069;text-align:center;padding:5px}
+    .recipe-action.edit{background:#e9f6ee!important;color:#08713a!important;border-color:#bfe2cd!important}
+    @media(max-width:430px){
+      .recipe-cost-box,.recipe-cost-preview{grid-template-columns:1fr 1fr;padding:11px;gap:7px}
+      .recipe-cost-box strong,.recipe-cost-preview strong{font-size:20px}
+      .recipe-cost-box p,.recipe-cost-preview p{font-size:13px}
+    }
+  `;
+  document.head.appendChild(style);
+}
