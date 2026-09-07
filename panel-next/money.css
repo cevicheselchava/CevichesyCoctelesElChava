@@ -1,0 +1,70 @@
+/* DINERO */
+.money-view{max-width:900px;margin:0 auto}
+.money-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+.money-kpi{min-height:102px;border-radius:20px;padding:14px 12px;background:rgba(255,255,255,.96);border:1px solid #dde6e1;box-shadow:0 8px 20px rgba(26,48,39,.06);position:relative;overflow:hidden}
+.money-kpi:before{content:"";position:absolute;left:0;right:0;top:0;height:5px}
+.money-kpi.sales{background:linear-gradient(160deg,#fff 18%,#eaf8ef 100%)}
+.money-kpi.sales:before{background:var(--green)}
+.money-kpi.expenses{background:linear-gradient(160deg,#fff 18%,#fff0f1 100%)}
+.money-kpi.expenses:before{background:var(--red)}
+.money-kpi.result{background:linear-gradient(160deg,#fff 18%,#fff8d8 100%)}
+.money-kpi.result:before{background:var(--yellow)}
+.money-kpi.pending{background:linear-gradient(160deg,#fff 18%,#f5f0df 100%)}
+.money-kpi.pending:before{background:#111}
+.money-kpi small{display:block;margin-top:5px;font-size:11px;color:#627069;font-weight:1000;text-transform:uppercase}
+.money-kpi strong{display:block;margin-top:9px;font-size:28px;line-height:1}
+.money-kpi.result.negative strong{color:var(--red)}
+.money-tabs{display:flex;gap:8px;overflow:auto;padding:2px 1px 11px;scrollbar-width:none}
+.money-tabs::-webkit-scrollbar{display:none}
+.money-tabs button{border:1px solid #d9e2dd;background:#fff;color:#536159;border-radius:999px;padding:11px 15px;font-size:16px;font-weight:1000;white-space:nowrap}
+.money-tabs button.active{background:var(--green);color:#fff;border-color:var(--green)}
+.money-section{margin-top:5px}
+.money-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px}
+.money-section-head h3{margin:0;font-size:26px}
+.money-section-head small{font-size:14px;color:#6c7872;font-weight:800}
+.money-list{display:grid;gap:11px}
+.money-row{background:rgba(255,255,255,.97);border:1px solid #dfe7e3;border-radius:20px;padding:15px 16px;box-shadow:0 7px 18px rgba(25,46,37,.05);position:relative;overflow:hidden}
+.money-row:before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
+.money-row.income:before{background:var(--green)}
+.money-row.expense:before{background:var(--red)}
+.money-row.pending:before{background:var(--yellow)}
+.money-row-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.money-row small{font-size:11px;color:#77837d;font-weight:1000;text-transform:uppercase}
+.money-row h4{margin:3px 0 0;font-size:21px}
+.money-amount{font-size:24px;font-weight:1000;white-space:nowrap}
+.money-row.income .money-amount{color:var(--green)}
+.money-row.expense .money-amount{color:var(--red)}
+.money-row.pending .money-amount{color:#8a6d00}
+.money-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
+.money-meta div{background:#f7faf8;border-radius:12px;padding:9px 10px}
+.money-meta div:nth-child(2){background:#fff8d9}
+.money-meta div:nth-child(3){background:#fff1f2}
+.money-meta small{display:block;font-size:10px;color:#77837d;font-weight:1000}
+.money-meta strong{display:block;margin-top:3px;font-size:15px}
+.money-note{margin-top:10px;border-radius:12px;background:#f5f8f6;padding:10px 12px;font-size:14px;font-weight:850;color:#56645d}
+.money-empty{background:rgba(255,255,255,.94);border:1px dashed #cbd8d1;border-radius:20px;padding:38px 18px;text-align:center;color:#66736c}
+.money-empty span{font-size:38px}.money-empty h4{font-size:22px;margin:8px 0 4px;color:#253029}.money-empty p{margin:0;font-size:15px}
+.money-modal[hidden]{display:none}
+.money-modal{position:fixed;inset:0;z-index:160;background:rgba(11,20,16,.58);display:flex;align-items:flex-end;justify-content:center}
+.money-sheet{width:min(760px,100%);max-height:94vh;overflow:auto;background:#f5f8f7;border-radius:28px 28px 0 0;padding:20px 16px 24px;box-shadow:0 -16px 50px rgba(0,0,0,.18);position:relative}
+.money-sheet:before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:linear-gradient(90deg,var(--green) 0 42%,var(--yellow) 42% 72%,var(--red) 72% 100%)}
+.money-form-section{background:#fff;border:1px solid #dde5e1;border-radius:21px;padding:17px;margin-top:12px;box-shadow:0 6px 16px rgba(27,47,38,.04)}
+.money-form-section h3{margin:0 0 14px;font-size:24px}
+.money-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.money-form-grid .full{grid-column:1/-1}
+.money-form-grid label{display:block;color:#5f6d66;font-size:13px;font-weight:1000;text-transform:uppercase}
+.money-form-grid input{display:block;width:100%;min-height:60px;margin-top:6px;border:1px solid #d6dfda;border-radius:15px;background:#fff;padding:0 13px;font-size:20px;color:#1d2923;outline:0}
+.money-form-grid input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(7,136,68,.10)}
+.money-choice-label{margin-top:13px;color:#5f6d66;font-size:13px;font-weight:1000;text-transform:uppercase}
+.money-choice-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px}
+.money-choice-grid button{border:1px solid #d7e1dc;background:#fff;color:#536159;border-radius:999px;min-height:42px;padding:0 13px;font-size:14px;font-weight:1000}
+.money-choice-grid button.active{background:var(--green);border-color:var(--green);color:#fff}
+.money-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.money-modal-actions button{border:0;border-radius:14px;min-height:52px;padding:0 18px;font-size:17px;font-weight:1000}
+.money-modal-actions .cancel{background:#f3ecec;color:#8d222a}
+.money-modal-actions .save{background:var(--green);color:#fff}
+@media(max-width:720px){
+ .money-kpis{grid-template-columns:1fr 1fr;gap:8px}.money-kpi{min-height:92px;padding:12px 10px}.money-kpi small{font-size:10px}.money-kpi strong{font-size:26px}
+ .money-section-head h3{font-size:24px}.money-row{padding:15px}.money-row h4{font-size:20px}.money-amount{font-size:22px}
+ .money-meta{grid-template-columns:1fr 1fr}.money-meta div:last-child{grid-column:1/-1}.money-form-grid{grid-template-columns:1fr 1fr}.money-form-grid input{font-size:19px}.money-sheet{padding:18px 14px 22px}
+}
