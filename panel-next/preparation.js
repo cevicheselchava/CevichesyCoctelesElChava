@@ -1,4 +1,5 @@
 import { OrdersStore, MenuStore } from './data.js';
+import { RecipeStore } from './recipes-data.js';
 import { recipePlanForItem, consumeInventoryForOrder } from './recipe-engine.js';
 import './inventory.js';
 import './purchases.js';
@@ -13,8 +14,17 @@ const localISO = (date = new Date()) => {
 };
 const todayISO = () => localISO();
 const PLAN_KEY = 'panel-preparation-plan-v1';
+const SELECTED_DISH_KEY = 'panel-preparation-selected-dish-v1';
 
 let prepFilter = 'preparing';
+
+function normalize(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .trim()
+    .toLowerCase();
+}
 
 function prepOrders() {
   return OrdersStore.list().filter(order => ['preparing','ready'].includes(order.status));
@@ -39,43 +49,6 @@ function amountText(ingredient) {
   return `${shown} ${ingredient.unit || ''}`.trim();
 }
 
-function requestedRecipeAmount(item) {
-  return {
-    qty:item.recipeQty ?? item.qty ?? 0,
-    unit:item.recipeUnit || item.unit || ''
-  };
-}
-
-function recipeBlock(item) {
-  const plan = recipePlanForItem(item);
-  if (!plan.recipe) {
-    return `
-      <div class="prep-steps">
-        <h4>Receta</h4>
-        <div class="prep-no-recipe">Sin receta vinculada a este producto. Agrégala en Recetas para que aquí aparezcan las cantidades automáticamente.</div>
-      </div>`;
-  }
-
-  const recipe = plan.recipe;
-  const requested = requestedRecipeAmount(item);
-  const scaleNote = plan.compatible
-    ? `Cantidades calculadas para ${requested.qty} ${requested.unit}.`
-    : `Receta base: rinde ${recipe.yieldQty} ${recipe.yieldUnit}. El pedido requiere ${requested.qty} ${requested.unit}; falta una equivalencia compatible.`;
-
-  const ingredients = plan.ingredients.map((ingredient,index)=>`
-    <div class="prep-step">
-      <span>${index+1}</span>
-      <div>${ingredient.name} · <strong>${amountText(ingredient)}</strong>${ingredient.linked ? '' : ' · no vinculado a inventario'}</div>
-    </div>`).join('');
-
-  return `
-    <div class="prep-steps">
-      <h4>${recipe.name}</h4>
-      <div class="prep-no-recipe">${scaleNote}</div>
-      ${ingredients}
-    </div>`;
-}
-
 function inventoryResult(order) {
   const info = order.inventoryConsumption;
   if (!info) return '';
@@ -98,8 +71,7 @@ function prepCard(order) {
       <div class="prep-product">
         <strong>${item.qty || 0} ${item.unit || ''} · ${item.name || 'Producto'}</strong>
         <small>${item.detail ? `${item.detail} · ` : ''}${order.time ? `Entrega ${order.date === todayISO() ? 'hoy' : order.date} · ${order.time}` : 'Sin hora de entrega'}</small>
-      </div>
-      ${recipeBlock(item)}`).join('');
+      </div>`).join('');
 
   return `
     <article class="prep-card">
@@ -144,12 +116,6 @@ function formatQty(value) {
   return Number.isInteger(qty) ? String(qty) : String(Math.round(qty * 100) / 100);
 }
 
-function formatDay(dateISO) {
-  const [y,m,d] = String(dateISO).split('-').map(Number);
-  if (!y || !m || !d) return dateISO;
-  return new Intl.DateTimeFormat('es-US',{weekday:'long',day:'numeric',month:'long'}).format(new Date(y,m-1,d));
-}
-
 function aggregateOrders(dateISO) {
   const map = new Map();
   OrdersStore.list()
@@ -163,124 +129,275 @@ function aggregateOrders(dateISO) {
         map.get(key).qty += Number(item.qty || 0);
       });
     });
-  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'es'));
+  return [...map.values()];
 }
 
-function dailyPlanRows(dateISO) {
-  const map = new Map(aggregateOrders(dateISO).map(row => [row.key,{ ...row }]));
+function dailyDishes(dateISO) {
+  const byName = new Map();
+
+  RecipeStore.list()
+    .filter(recipe => String(recipe.type || '').toLowerCase() === 'producto final')
+    .forEach(recipe => {
+      const name = String(recipe.menuItem || recipe.name || '').trim();
+      if (!name) return;
+      const keyName = normalize(name);
+      byName.set(keyName,{
+        name,
+        unit:String(recipe.yieldUnit || 'unidad').trim() || 'unidad',
+        qty:0,
+        recipeId:recipe.id
+      });
+    });
 
   MenuStore.list().forEach(item => {
     const name = String(item.name || '').trim();
     if (!name) return;
-    const unit = String(item.unit || 'lb').trim() || 'lb';
-    const key = productKey(name,unit);
-    if (!map.has(key)) map.set(key,{ key, name, unit, qty:0 });
+    const keyName = normalize(name);
+    if (!byName.has(keyName)) {
+      byName.set(keyName,{
+        name,
+        unit:String(item.unit || 'unidad').trim() || 'unidad',
+        qty:0,
+        recipeId:null
+      });
+    }
   });
 
-  if (!map.size) {
-    const name = 'Ceviche mixto';
-    const unit = 'lb';
-    const key = productKey(name,unit);
-    map.set(key,{ key, name, unit, qty:0 });
+  aggregateOrders(dateISO).forEach(orderRow => {
+    const keyName = normalize(orderRow.name);
+    const existing = byName.get(keyName);
+    if (!existing) {
+      byName.set(keyName,{ ...orderRow, recipeId:null });
+      return;
+    }
+    if (normalize(existing.unit) === normalize(orderRow.unit)) {
+      existing.qty += Number(orderRow.qty || 0);
+    }
+  });
+
+  return [...byName.values()]
+    .map(row => ({ ...row, key:productKey(row.name,row.unit) }))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es'));
+}
+
+function readSelectedDish() {
+  try { return localStorage.getItem(SELECTED_DISH_KEY) || ''; }
+  catch (_) { return ''; }
+}
+
+function writeSelectedDish(key) {
+  try { localStorage.setItem(SELECTED_DISH_KEY,key); }
+  catch (_) {}
+}
+
+function preparationSteps(productName) {
+  const name = normalize(productName);
+  if (!name.includes('ceviche')) return [];
+
+  const steps = [];
+  if (name.includes('pescado') || name.includes('mixto')) {
+    steps.push('Cocer el pescado y dejarlo enfriar por completo.');
+  }
+  if (name.includes('camaron') || name.includes('mixto')) {
+    steps.push('Cocer el camarón y dejarlo enfriar por completo.');
+  }
+  if (name.includes('pulpo')) {
+    steps.push('Tener el pulpo cocido y frío.');
+  }
+  steps.push('Picar tomate, pepino, cebolla morada y cilantro.');
+  steps.push('Mezclar los mariscos con las verduras.');
+  steps.push('Agregar el jugo de limón y el Clamato.');
+  steps.push('Mezclar bien, porcionar y mantener refrigerado.');
+  return steps;
+}
+
+function recipeWorkspace(row, plannedQty, hasValue) {
+  const requestedQty = hasValue && plannedQty > 0 ? plannedQty : 1;
+  const plan = recipePlanForItem({
+    name:row.name,
+    qty:requestedQty,
+    unit:row.unit,
+    recipeQty:requestedQty,
+    recipeUnit:row.unit
+  });
+
+  if (!plan.recipe) {
+    return `
+      <section class="prep-dish-recipe missing">
+        <h4>Receta</h4>
+        <p>Este platillo todavía no tiene una receta vinculada.</p>
+      </section>`;
   }
 
-  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'es'));
+  if (!plan.compatible) {
+    return `
+      <section class="prep-dish-recipe missing">
+        <h4>${plan.recipe.name}</h4>
+        <p>La receta rinde ${formatQty(plan.recipe.yieldQty)} ${plan.recipe.yieldUnit}; la unidad del platillo es ${row.unit}. Hay que ajustar esa equivalencia.</p>
+      </section>`;
+  }
+
+  const ingredientRows = plan.ingredients.map(ingredient => `
+    <div class="prep-dish-ingredient">
+      <span>${ingredient.name}</span>
+      <strong>${amountText(ingredient)}</strong>
+    </div>`).join('');
+
+  const steps = preparationSteps(row.name);
+  const procedure = steps.length
+    ? `<ol>${steps.map(step=>`<li>${step}</li>`).join('')}</ol>`
+    : `<p class="prep-procedure-pending">Procedimiento pendiente de configurar para este platillo.</p>`;
+
+  const amountLabel = hasValue && plannedQty > 0
+    ? `Para ${formatQty(plannedQty)} ${row.unit}`
+    : `Receta base · ${formatQty(plan.recipe.yieldQty)} ${plan.recipe.yieldUnit}`;
+
+  return `
+    <section class="prep-dish-recipe">
+      <div class="prep-dish-section">
+        <div class="prep-dish-section-title"><h4>Ingredientes</h4><small>${amountLabel}</small></div>
+        <div class="prep-dish-ingredients">${ingredientRows}</div>
+      </div>
+      <div class="prep-dish-section prep-dish-procedure">
+        <div class="prep-dish-section-title"><h4>Preparación</h4></div>
+        ${procedure}
+      </div>
+    </section>`;
 }
 
-function requirementPreview(row, plannedQty) {
-  if (!(plannedQty > 0)) return '';
-  const plan = recipePlanForItem({
-    name: row.name,
-    qty: plannedQty,
-    unit: row.unit,
-    recipeQty: plannedQty,
-    recipeUnit: row.unit
-  });
-  if (!plan.recipe || !plan.compatible) return '';
-  const ingredients = plan.ingredients.map(ingredient => `${ingredient.name}: ${amountText(ingredient)}`).join(' · ');
-  if (!ingredients) return '';
-  return `<div class="prep-plan-recipe"><strong>Ingredientes:</strong> ${ingredients}</div>`;
+function selectedDish(rows, dayPlan) {
+  const stored = readSelectedDish();
+  if (stored) {
+    const found = rows.find(row=>row.key === stored);
+    if (found) return found;
+  }
+
+  const planned = rows.find(row=>Number(dayPlan[row.key] || 0) > 0);
+  if (planned) {
+    writeSelectedDish(planned.key);
+    return planned;
+  }
+
+  const ordered = rows.find(row=>Number(row.qty || 0) > 0);
+  if (ordered) {
+    writeSelectedDish(ordered.key);
+    return ordered;
+  }
+
+  return null;
 }
 
-function planRow(row, savedValue) {
-  const hasValue = savedValue !== '' && savedValue !== null && savedValue !== undefined;
-  const planned = hasValue ? Number(savedValue) : 0;
-  const available = hasValue ? planned - row.qty : null;
+function dishWorkspace(row, dayPlan) {
+  if (!row) {
+    return `
+      <div class="prep-dish-empty">
+        <span>🍽️</span>
+        <strong>Elige un platillo</strong>
+        <p>Toca <b>Platillos</b> para abrir la lista y seleccionar qué vas a preparar.</p>
+      </div>`;
+  }
+
+  const raw = dayPlan[row.key];
+  const hasValue = raw !== '' && raw !== null && raw !== undefined;
+  const planned = hasValue ? Number(raw) : 0;
+  const available = hasValue ? planned - Number(row.qty || 0) : null;
   const shortage = hasValue && available < 0;
-  const encodedKey = encodeURIComponent(row.key);
   const availableText = !hasValue
     ? '—'
     : shortage
-      ? `Faltan ${formatQty(Math.abs(available))} ${row.unit}`.trim()
-      : `${formatQty(available)} ${row.unit}`.trim();
+      ? `Faltan ${formatQty(Math.abs(available))} ${row.unit}`
+      : `${formatQty(available)} ${row.unit}`;
+  const encodedKey = encodeURIComponent(row.key);
 
   return `
-    <article class="prep-plan-row ${shortage ? 'shortage' : ''}">
-      <div class="prep-plan-product">
-        <strong>${row.name}</strong>
-        <small>${row.unit || 'unidad sin definir'}</small>
+    <article class="prep-dish-workspace ${shortage ? 'shortage' : ''}">
+      <div class="prep-dish-head">
+        <div><small>PLATILLO SELECCIONADO</small><h3>${row.name}</h3></div>
+        <span>${row.unit}</span>
       </div>
-      <div class="prep-plan-metrics">
-        <div class="prep-plan-stat">
+
+      <div class="prep-dish-metrics">
+        <div class="prep-dish-stat">
           <small>Pedidos confirmados</small>
           <strong>${formatQty(row.qty)} ${row.unit}</strong>
         </div>
-        <label class="prep-plan-input">
+        <label class="prep-dish-input">
           <small>Cantidad por preparar</small>
-          <div><input type="number" min="0" step="0.01" inputmode="decimal" data-prep-plan-key="${encodedKey}" value="${hasValue ? formatQty(planned) : ''}" placeholder="Escribe cantidad"><span>${row.unit}</span></div>
+          <div><input type="number" min="0" step="0.01" inputmode="decimal" data-prep-plan-key="${encodedKey}" value="${hasValue ? formatQty(planned) : ''}" placeholder="Cantidad"><span>${row.unit}</span></div>
         </label>
-        <div class="prep-plan-stat available">
+        <div class="prep-dish-stat available">
           <small>Disponible para vender</small>
           <strong>${availableText}</strong>
         </div>
       </div>
-      ${requirementPreview(row,planned)}
+
+      ${recipeWorkspace(row,planned,hasValue)}
     </article>`;
 }
 
-function upcomingSummary() {
-  const today = todayISO();
-  const dates = [...new Set(OrdersStore.list()
-    .filter(order => order.status !== 'cancelled' && order.date && order.date > today)
-    .map(order => order.date))]
-    .sort()
-    .slice(0,7);
-
-  if (!dates.length) return '';
-
-  const blocks = dates.map(date => {
-    const rows = aggregateOrders(date);
-    const products = rows.map(row => `<span><strong>${formatQty(row.qty)} ${row.unit}</strong> ${row.name}</span>`).join('');
-    return `<div class="prep-upcoming-day"><small>${formatDay(date)}</small><div>${products || '<span>Sin productos</span>'}</div></div>`;
-  }).join('');
-
-  return `
-    <section class="prep-upcoming">
-      <div class="prep-upcoming-title"><strong>Próximos pedidos</strong><small>Solo pedidos confirmados. La cantidad por preparar se define ese mismo día.</small></div>
-      ${blocks}
+function ensureDishModal() {
+  if ($('#prepDishModal')) return;
+  const modal = document.createElement('div');
+  modal.className = 'prep-dish-modal';
+  modal.id = 'prepDishModal';
+  modal.hidden = true;
+  modal.innerHTML = `
+    <section class="prep-dish-sheet" role="dialog" aria-modal="true" aria-labelledby="prepDishModalTitle">
+      <div class="prep-dish-modal-head">
+        <div><small>SELECCIONA</small><h3 id="prepDishModalTitle">Platillos</h3></div>
+        <button id="prepDishModalClose" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div class="prep-dish-options" id="prepDishOptions"></div>
     </section>`;
+  document.body.appendChild(modal);
+}
+
+function renderDishOptions(rows, selectedKey) {
+  ensureDishModal();
+  const host = $('#prepDishOptions');
+  if (!host) return;
+  host.innerHTML = rows.length
+    ? rows.map(row=>`
+      <button class="prep-dish-option ${row.key === selectedKey ? 'selected' : ''}" data-prep-select-dish="${encodeURIComponent(row.key)}" type="button">
+        <span>${row.name}</span>
+        <small>${row.unit}</small>
+      </button>`).join('')
+    : `<div class="prep-dish-options-empty">Todavía no hay platillos configurados.</div>`;
+}
+
+function openDishModal() {
+  const date = todayISO();
+  const rows = dailyDishes(date);
+  renderDishOptions(rows, readSelectedDish());
+  $('#prepDishModal').hidden = false;
+  document.body.classList.add('modal-open');
+}
+
+function closeDishModal() {
+  if ($('#prepDishModal')) $('#prepDishModal').hidden = true;
+  document.body.classList.remove('modal-open');
 }
 
 function renderDailyPlan() {
   const host = $('#prepDailyPlan');
   if (!host) return;
   const date = todayISO();
-  const rows = dailyPlanRows(date);
+  const rows = dailyDishes(date);
   const plan = readPlan();
   const dayPlan = plan[date] || {};
-
-  const content = rows.map(row => planRow(row, dayPlan[row.key] ?? '')).join('');
+  const selected = selectedDish(rows,dayPlan);
 
   host.innerHTML = `
-    <section class="prep-daily-plan-card">
-      <div class="prep-plan-head">
-        <div><small>PLAN DEL DÍA</small><h3>${formatDay(date)}</h3></div>
-        <span>Se actualiza con todos los pedidos</span>
-      </div>
-      <p class="prep-plan-help">Aunque hoy tengas 0 pedidos, puedes definir <strong>Cantidad por preparar</strong>. Si entran pedidos después, se suman solos y se recalcula lo disponible para vender.</p>
-      <div class="prep-plan-rows">${content}</div>
-    </section>
-    ${upcomingSummary()}`;
+    <section class="prep-dish-panel">
+      <button class="prep-dish-picker" id="prepDishPicker" type="button">
+        <span class="prep-dish-picker-icon">🍽️</span>
+        <span class="prep-dish-picker-copy"><strong>Platillos</strong><small>${selected ? selected.name : 'Elegir platillo'}</small></span>
+        <span class="prep-dish-picker-arrow">›</span>
+      </button>
+      ${dishWorkspace(selected,dayPlan)}
+    </section>`;
+
+  renderDishOptions(rows, selected?.key || '');
 }
 
 function ensureDailyPlanHost() {
@@ -298,13 +415,14 @@ function ensurePlanStyles() {
   const style = document.createElement('style');
   style.id = 'prepDailyPlanStyles';
   style.textContent = `
-    .prep-daily-plan{margin:0 0 14px}.prep-daily-plan-card,.prep-upcoming{background:#fff;border:1px solid #dfe6e2;border-radius:22px;padding:18px;box-shadow:0 8px 22px rgba(25,46,37,.055)}
-    .prep-plan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.prep-plan-head small{font-size:11px;font-weight:1000;color:#078844;letter-spacing:.06em}.prep-plan-head h3{margin:3px 0 0;font-size:25px;text-transform:capitalize}.prep-plan-head>span{background:#eef7f2;border-radius:999px;padding:8px 11px;color:#3b6650;font-size:12px;font-weight:900;text-align:center}
-    .prep-plan-help{margin:12px 0 15px;color:#617068;font-size:15px;line-height:1.35}.prep-plan-rows{display:grid;gap:11px}.prep-plan-row{border:1px solid #e1e8e4;border-radius:18px;padding:14px;background:#fbfdfc}.prep-plan-row.shortage{border-color:#f0b8b8;background:#fff9f9}.prep-plan-product{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px}.prep-plan-product strong{font-size:20px}.prep-plan-product small{font-size:12px;color:#77837d;font-weight:800}
-    .prep-plan-metrics{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:8px}.prep-plan-stat,.prep-plan-input{border-radius:14px;background:#f1f5f3;padding:11px}.prep-plan-stat small,.prep-plan-input small{display:block;margin-bottom:6px;color:#68756e;font-size:11px;font-weight:900;text-transform:uppercase}.prep-plan-stat strong{font-size:18px}.prep-plan-stat.available{background:#eaf7ef}.prep-plan-row.shortage .prep-plan-stat.available{background:#fdeaea;color:#a12b2b}
-    .prep-plan-input{background:#fff7d8}.prep-plan-input>div{display:flex;align-items:center;gap:7px}.prep-plan-input input{width:100%;min-width:0;border:1px solid #d8c878;background:#fff;border-radius:10px;padding:10px 9px;font-size:18px;font-weight:900}.prep-plan-input span{font-size:14px;font-weight:900;color:#665d2a}.prep-plan-recipe{margin-top:10px;padding:10px 12px;border-radius:12px;background:#f4f0ff;color:#54416d;font-size:13px;line-height:1.35}.prep-plan-empty{padding:18px;border:1px dashed #cbd8d1;border-radius:15px;color:#68756e;text-align:center;font-weight:700}
-    .prep-upcoming{margin-top:12px}.prep-upcoming-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.prep-upcoming-title strong{font-size:18px}.prep-upcoming-title small{max-width:380px;color:#77837d;font-size:12px;text-align:right}.prep-upcoming-day{padding:11px 0;border-top:1px solid #edf1ef}.prep-upcoming-day>small{display:block;margin-bottom:5px;color:#078844;font-size:12px;font-weight:1000;text-transform:capitalize}.prep-upcoming-day>div{display:flex;gap:8px;flex-wrap:wrap}.prep-upcoming-day span{background:#f3f6f4;border-radius:999px;padding:7px 10px;font-size:13px}
-    @media(max-width:720px){.prep-daily-plan-card,.prep-upcoming{padding:15px}.prep-plan-head{display:block}.prep-plan-head>span{display:inline-block;margin-top:8px}.prep-plan-metrics{grid-template-columns:1fr}.prep-plan-stat,.prep-plan-input{padding:10px}.prep-upcoming-title{display:block}.prep-upcoming-title small{display:block;margin-top:4px;text-align:left}.prep-plan-product strong{font-size:19px}}
+    .prep-daily-plan{margin:0 0 14px}.prep-dish-panel{display:grid;gap:12px}
+    .prep-dish-picker{width:100%;border:0;border-radius:18px;background:#ffd52f;color:#1d241f;padding:14px 16px;display:flex;align-items:center;gap:12px;text-align:left;box-shadow:0 7px 18px rgba(79,67,9,.12)}.prep-dish-picker-icon{font-size:25px}.prep-dish-picker-copy{display:grid;gap:2px;flex:1}.prep-dish-picker-copy strong{font-size:20px}.prep-dish-picker-copy small{font-size:13px;font-weight:800;color:#665b23}.prep-dish-picker-arrow{font-size:34px;line-height:1;font-weight:500}
+    .prep-dish-workspace{background:#fff;border:1px solid #dfe6e2;border-radius:22px;padding:17px;box-shadow:0 8px 22px rgba(25,46,37,.055)}.prep-dish-workspace.shortage{border-color:#efb5b5}.prep-dish-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.prep-dish-head small{font-size:10px;font-weight:1000;letter-spacing:.06em;color:#078844}.prep-dish-head h3{margin:4px 0 0;font-size:24px}.prep-dish-head>span{background:#eef3f0;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:1000;color:#64716a}
+    .prep-dish-metrics{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:9px;margin-top:14px}.prep-dish-stat,.prep-dish-input{border-radius:14px;background:#f1f5f3;padding:11px}.prep-dish-stat small,.prep-dish-input small{display:block;margin-bottom:6px;color:#68756e;font-size:10px;font-weight:1000;text-transform:uppercase}.prep-dish-stat strong{font-size:17px}.prep-dish-stat.available{background:#eaf7ef}.prep-dish-workspace.shortage .prep-dish-stat.available{background:#fdeaea;color:#a12b2b}.prep-dish-input{background:#fff7d8}.prep-dish-input>div{display:flex;align-items:center;gap:7px}.prep-dish-input input{width:100%;min-width:0;border:1px solid #d8c878;background:#fff;border-radius:10px;padding:9px;font-size:18px;font-weight:1000}.prep-dish-input span{font-size:14px;font-weight:1000;color:#665d2a}
+    .prep-dish-recipe{margin-top:14px;border:1px solid #e3e8e5;border-radius:17px;overflow:hidden}.prep-dish-recipe.missing{padding:15px;background:#fff7e9;color:#6f5328}.prep-dish-recipe.missing h4{margin:0 0 5px;font-size:18px}.prep-dish-recipe.missing p{margin:0;line-height:1.35}.prep-dish-section{padding:15px}.prep-dish-section + .prep-dish-section{border-top:1px solid #e7ece9}.prep-dish-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}.prep-dish-section-title h4{margin:0;font-size:19px}.prep-dish-section-title small{font-size:12px;color:#6d7972;font-weight:900}.prep-dish-ingredients{display:grid;gap:7px}.prep-dish-ingredient{display:flex;align-items:center;justify-content:space-between;gap:15px;border-radius:11px;background:#f5f7f6;padding:10px 12px}.prep-dish-ingredient span{font-size:15px}.prep-dish-ingredient strong{font-size:16px;white-space:nowrap}.prep-dish-procedure{background:#fffaf0}.prep-dish-procedure ol{margin:0;padding-left:24px;display:grid;gap:9px}.prep-dish-procedure li{padding-left:3px;font-size:15px;line-height:1.35}.prep-procedure-pending{margin:0;color:#6a716c;font-size:14px;font-weight:700}
+    .prep-dish-empty{background:#fff;border:1px dashed #cbd8d1;border-radius:20px;padding:28px 18px;text-align:center;color:#68756e}.prep-dish-empty>span{display:block;font-size:34px;margin-bottom:7px}.prep-dish-empty strong{display:block;font-size:19px;color:#263129}.prep-dish-empty p{margin:7px auto 0;max-width:380px;line-height:1.4}
+    .prep-dish-modal[hidden]{display:none}.prep-dish-modal{position:fixed;inset:0;z-index:10060;background:rgba(13,20,16,.58);display:flex;align-items:flex-end;justify-content:center;padding:18px}.prep-dish-sheet{width:min(560px,100%);max-height:78vh;overflow:auto;background:#fff;border-radius:24px;padding:17px;box-shadow:0 24px 70px rgba(0,0,0,.28)}.prep-dish-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.prep-dish-modal-head small{font-size:10px;font-weight:1000;color:#078844;letter-spacing:.07em}.prep-dish-modal-head h3{margin:2px 0 0;font-size:25px}.prep-dish-modal-head button{width:40px;height:40px;border:0;border-radius:12px;background:#f0f3f1;font-size:27px}.prep-dish-options{display:grid;gap:8px}.prep-dish-option{border:1px solid #dfe6e2;border-radius:14px;background:#fff;padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}.prep-dish-option span{font-size:17px;font-weight:900;color:#263129}.prep-dish-option small{font-size:12px;font-weight:900;color:#738078}.prep-dish-option.selected{border-color:#078844;background:#eef8f2}.prep-dish-options-empty{padding:18px;text-align:center;color:#68756e;font-weight:800}
+    @media(max-width:720px){.prep-dish-workspace{padding:14px}.prep-dish-head h3{font-size:21px}.prep-dish-metrics{grid-template-columns:1fr}.prep-dish-stat,.prep-dish-input{padding:10px}.prep-dish-section{padding:13px}.prep-dish-ingredient{padding:10px}.prep-dish-ingredient span{font-size:14px}.prep-dish-ingredient strong{font-size:15px}.prep-dish-procedure li{font-size:14px}.prep-dish-modal{padding:10px}.prep-dish-sheet{border-radius:22px 22px 16px 16px}}
   `;
   document.head.appendChild(style);
 }
@@ -313,6 +431,7 @@ function renderPreparation() {
   if (!$('#prepKpis') || !$('#prepList')) return;
   ensurePlanStyles();
   ensureDailyPlanHost();
+  ensureDishModal();
 
   $('#prepKpis').innerHTML = prepKpis().map(([label,value,tone]) => `
     <article class="prep-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
@@ -322,7 +441,7 @@ function renderPreparation() {
   const filtered = prepOrders().filter(order => prepFilter === 'all' || order.status === prepFilter);
   $('#prepList').innerHTML = filtered.length
     ? filtered.map(prepCard).join('')
-    : `<div class="prep-empty"><span>👨‍🍳</span><h3>No hay pedidos en esta etapa</h3><p>El plan del día de arriba ya cuenta todos los pedidos confirmados; no necesitas enviarlos uno por uno para saber cuánto preparar.</p></div>`;
+    : `<div class="prep-empty"><span>👨‍🍳</span><h3>No hay pedidos en esta etapa</h3><p>Usa el botón Platillos de arriba para elegir qué vas a preparar y calcular la receta.</p></div>`;
 }
 
 function openPreparation() {
@@ -383,6 +502,32 @@ document.addEventListener('click', event => {
     event.preventDefault();
     event.stopImmediatePropagation();
     openPreparation();
+    return;
+  }
+
+  if (event.target.closest('#prepDishPicker')) {
+    event.preventDefault();
+    openDishModal();
+    return;
+  }
+
+  if (event.target.closest('#prepDishModalClose')) {
+    event.preventDefault();
+    closeDishModal();
+    return;
+  }
+
+  const dish = event.target.closest('[data-prep-select-dish]');
+  if (dish) {
+    event.preventDefault();
+    writeSelectedDish(decodeURIComponent(dish.dataset.prepSelectDish));
+    closeDishModal();
+    renderDailyPlan();
+    return;
+  }
+
+  if (event.target.id === 'prepDishModal') {
+    closeDishModal();
     return;
   }
 
