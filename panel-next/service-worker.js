@@ -1,20 +1,13 @@
-const CACHE_NAME = 'panel-operativo-v3';
+const CACHE_NAME = 'panel-operativo-v4';
 const APP_URL = '/panel-next/app';
-const APP_SHELL = [
-  APP_URL,
-  '/panel-next/styles.css',
-  '/panel-next/watermarks.css',
-  '/panel-next/admin-shell.css',
-  '/logo.png'
-];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_NAME);
-    await Promise.allSettled(APP_SHELL.map(async url => {
-      const response = await fetch(url, { cache:'reload' });
-      if (response.ok) await cache.put(url, response.clone());
-    }));
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      const response = await fetch(APP_URL, { cache:'reload' });
+      if (response.ok) await cache.put(APP_URL, response.clone());
+    } catch (_) {}
     await self.skipWaiting();
   })());
 });
@@ -29,16 +22,6 @@ self.addEventListener('activate', event => {
   })());
 });
 
-async function fetchWithTimeout(request, timeoutMs = 4500) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(request, { cache:'no-store', signal:controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
@@ -48,40 +31,28 @@ self.addEventListener('fetch', event => {
 
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
       try {
-        // Siempre abre la ruta estable del panel. Esto también corrige instalaciones
-        // antiguas cuyo start_url todavía apunta a app.html.
-        const response = await fetchWithTimeout(new Request(APP_URL, {
-          headers: request.headers,
-          credentials:'same-origin',
-          redirect:'follow'
-        }));
+        const response = await fetch(request, { cache:'no-store' });
         if (response && response.ok) {
-          await cache.put(APP_URL, response.clone());
+          try {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(APP_URL, response.clone());
+          } catch (_) {}
           return response;
         }
       } catch (_) {}
 
-      const cached = await cache.match(APP_URL);
-      if (cached) return cached;
-      return new Response('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel Operativo</title><body style="font-family:Arial;padding:24px"><h2>Panel Operativo</h2><p>No se pudo cargar. Revisa tu conexión y vuelve a abrir la app.</p></body>', {
-        headers:{'Content-Type':'text/html; charset=utf-8'}
-      });
-    })());
-    return;
-  }
+      try {
+        const fallback = await fetch(APP_URL, { cache:'no-store' });
+        if (fallback && fallback.ok) return fallback;
+      } catch (_) {}
 
-  const cacheable = ['/panel-next/styles.css','/panel-next/watermarks.css','/panel-next/admin-shell.css'];
-  if (cacheable.includes(url.pathname)) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(url.pathname);
-      const networkPromise = fetch(request, {cache:'no-store'}).then(async response => {
-        if (response.ok) await cache.put(url.pathname, response.clone());
-        return response;
-      }).catch(() => null);
-      return cached || await networkPromise || Response.error();
+      const cached = await caches.match(APP_URL);
+      if (cached) return cached;
+
+      return new Response('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel Operativo</title><body style="font-family:Arial;padding:24px"><h2>Panel Operativo</h2><p>No se pudo cargar. Cierra y vuelve a abrir la app.</p></body>', {
+        headers:{ 'Content-Type':'text/html; charset=utf-8' }
+      });
     })());
   }
 });
