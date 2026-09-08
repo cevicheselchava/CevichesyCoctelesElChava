@@ -1,4 +1,4 @@
-import { OrdersStore } from './data.js';
+import { OrdersStore, MenuStore } from './data.js';
 import { recipePlanForItem, consumeInventoryForOrder } from './recipe-engine.js';
 import './inventory.js';
 import './purchases.js';
@@ -166,6 +166,27 @@ function aggregateOrders(dateISO) {
   return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'es'));
 }
 
+function dailyPlanRows(dateISO) {
+  const map = new Map(aggregateOrders(dateISO).map(row => [row.key,{ ...row }]));
+
+  MenuStore.list().forEach(item => {
+    const name = String(item.name || '').trim();
+    if (!name) return;
+    const unit = String(item.unit || 'lb').trim() || 'lb';
+    const key = productKey(name,unit);
+    if (!map.has(key)) map.set(key,{ key, name, unit, qty:0 });
+  });
+
+  if (!map.size) {
+    const name = 'Ceviche mixto';
+    const unit = 'lb';
+    const key = productKey(name,unit);
+    map.set(key,{ key, name, unit, qty:0 });
+  }
+
+  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'es'));
+}
+
 function requirementPreview(row, plannedQty) {
   if (!(plannedQty > 0)) return '';
   const plan = recipePlanForItem({
@@ -244,13 +265,11 @@ function renderDailyPlan() {
   const host = $('#prepDailyPlan');
   if (!host) return;
   const date = todayISO();
-  const rows = aggregateOrders(date);
+  const rows = dailyPlanRows(date);
   const plan = readPlan();
   const dayPlan = plan[date] || {};
 
-  const content = rows.length
-    ? rows.map(row => planRow(row, dayPlan[row.key] ?? '')).join('')
-    : `<div class="prep-plan-empty">No hay pedidos confirmados para hoy. Si entra uno, aparecerá aquí automáticamente.</div>`;
+  const content = rows.map(row => planRow(row, dayPlan[row.key] ?? '')).join('');
 
   host.innerHTML = `
     <section class="prep-daily-plan-card">
@@ -258,7 +277,7 @@ function renderDailyPlan() {
         <div><small>PLAN DEL DÍA</small><h3>${formatDay(date)}</h3></div>
         <span>Se actualiza con todos los pedidos</span>
       </div>
-      <p class="prep-plan-help">Los pedidos se suman solos. Tú solo defines <strong>Cantidad por preparar</strong> el mismo día.</p>
+      <p class="prep-plan-help">Aunque hoy tengas 0 pedidos, puedes definir <strong>Cantidad por preparar</strong>. Si entran pedidos después, se suman solos y se recalcula lo disponible para vender.</p>
       <div class="prep-plan-rows">${content}</div>
     </section>
     ${upcomingSummary()}`;
