@@ -1,7 +1,6 @@
 if (typeof window !== 'undefined') {
   setTimeout(() => import('./whatsapp-ops.js?v=20260908-0730').catch(error => console.error('Operación WhatsApp:', error)), 0);
   setTimeout(() => import('./purchase-plan.js?v=20260908-1310').catch(error => console.error('Planeación de compras:', error)), 0);
-  setTimeout(() => import('./preparation-guide.js?v=20260908-1426').catch(error => console.error('Guía de preparación:', error)), 0);
 }
 
 export const BUSINESS = {
