@@ -2,6 +2,7 @@ if (typeof window !== 'undefined') {
   setTimeout(() => import('./whatsapp-ops.js?v=20260908-0730').catch(error => console.error('Operación WhatsApp:', error)), 0);
   setTimeout(() => import('./purchase-plan.js?v=20260908-1310').catch(error => console.error('Planeación de compras:', error)), 0);
   setTimeout(() => import('./preparation-fonts.js?v=20260908-1537').catch(error => console.error('Legibilidad de Preparación:', error)), 0);
+  setTimeout(() => import('./order-product-picker.js?v=20260908-1703').catch(error => console.error('Selector de productos:', error)), 0);
 }
 
 export const BUSINESS = {
