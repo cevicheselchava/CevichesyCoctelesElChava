@@ -50,4 +50,4 @@ export const ORDER_STATUSES = [
 ];
 
 export const PAYMENT_METHODS = ['Al recibir', 'Efectivo', 'Cash App', 'Zelle', 'Tarjeta', 'Otro'];
-export const ORDER_SOURCES = ['WhatsApp', 'Facebook', 'Teléfono', 'App', 'Otro'];
+export const ORDER_SOURCES = ['Campaña Facebook', 'WhatsApp', 'Facebook', 'Teléfono', 'App', 'Otro'];
