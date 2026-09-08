@@ -1,10 +1,10 @@
 {
-  "id": "/panel-next/app.html",
+  "id": "/panel-next/app",
   "name": "Panel Operativo · El Cubano",
   "short_name": "Panel Operativo",
   "description": "Panel administrativo y operativo de El Cubano.",
   "lang": "es",
-  "start_url": "/panel-next/app.html?source=pwa",
+  "start_url": "/panel-next/app?source=pwa&v=20260908-0745",
   "scope": "/panel-next/",
   "display": "standalone",
   "orientation": "portrait-primary",
