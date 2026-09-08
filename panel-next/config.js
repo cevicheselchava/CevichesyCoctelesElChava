@@ -1,3 +1,7 @@
+if (typeof window !== 'undefined') {
+  setTimeout(() => import('./whatsapp-ops.js?v=20260908-0730').catch(error => console.error('Operación WhatsApp:', error)), 0);
+}
+
 export const BUSINESS = {
   id: 'el-cubano',
   name: 'El Cubano',
