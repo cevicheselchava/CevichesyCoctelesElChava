@@ -49,6 +49,12 @@ function upsertManualCloud(order) {
   return next;
 }
 
+function setTextIfChanged(node, value) {
+  if (!node) return;
+  const text = String(value);
+  if (node.textContent !== text) node.textContent = text;
+}
+
 function repairHomeCounters() {
   const today = localDateISO();
   const rows = readOrders();
@@ -66,14 +72,14 @@ function repairHomeCounters() {
         badge.className = 'module-badge';
         orderCard.prepend(badge);
       }
-      badge.textContent = String(active.length);
+      setTextIfChanged(badge, active.length);
       badge.hidden = false;
     } else if (badge) badge.remove();
   }
 
   const bell = document.querySelector('.badge-notify');
   if (bell) {
-    bell.textContent = String(active.length);
+    setTextIfChanged(bell, active.length);
     bell.hidden = active.length === 0;
   }
 
@@ -81,9 +87,9 @@ function repairHomeCounters() {
     const label = card.querySelector('b')?.textContent?.trim();
     const strong = card.querySelector('strong');
     if (!strong) return;
-    if (label === 'Pedidos') strong.textContent = String(todays.length);
-    if (label === 'Por preparar') strong.textContent = `${preparing.length} ${preparing.length === 1 ? 'pedido' : 'pedidos'}`;
-    if (label === 'Ventas') strong.textContent = new Intl.NumberFormat('es-US',{style:'currency',currency:'USD'}).format(sales);
+    if (label === 'Pedidos') setTextIfChanged(strong, todays.length);
+    if (label === 'Por preparar') setTextIfChanged(strong, `${preparing.length} ${preparing.length === 1 ? 'pedido' : 'pedidos'}`);
+    if (label === 'Ventas') setTextIfChanged(strong, new Intl.NumberFormat('es-US',{style:'currency',currency:'USD'}).format(sales));
   });
 }
 
@@ -128,7 +134,22 @@ function refreshUi() {
 setTimeout(refreshUi,0);
 setTimeout(refreshUi,700);
 window.addEventListener('panel:orders-changed',()=>setTimeout(refreshUi,0));
-new MutationObserver(()=>refreshUi()).observe(document.documentElement,{subtree:true,childList:true});
+
+// Solo observa cambios directos en la lista de pedidos para volver a poner
+// accesos rápidos después de filtros o re-render. No observa todo el documento:
+// hacerlo provocaba un bucle de mutaciones que bloqueaba los botones del panel.
+const ordersList = document.querySelector('#ordersList');
+if (ordersList) {
+  let enhanceScheduled = false;
+  new MutationObserver(() => {
+    if (enhanceScheduled) return;
+    enhanceScheduled = true;
+    requestAnimationFrame(() => {
+      enhanceScheduled = false;
+      enhanceOrderCards();
+    });
+  }).observe(ordersList,{childList:true});
+}
 
 (async function bootManualOrderCloud() {
   try {
