@@ -70,6 +70,7 @@ function ensureProductPicker() {
   const select = document.createElement('select');
   select.id = 'orderProductName';
   select.required = true;
+  select.autocomplete = 'off';
   select.setAttribute('aria-label','Producto');
   current.replaceWith(select);
   populatePicker(select);
