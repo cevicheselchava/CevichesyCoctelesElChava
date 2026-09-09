@@ -303,7 +303,6 @@ window.addEventListener('panel:order-updated',event=>{
 
 export { db };
 
-// Carga al final para reemplazar la pantalla de compras vieja sin tocar el resto del panel.
-import('./purchase-system-fix.js');
+// Compras se carga únicamente desde purchases.js.
 import('./legacy-disposable-prices.js');
 import('./purchase-price-sync.js');
