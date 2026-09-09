@@ -38,7 +38,7 @@ function upsertManualCloud(order) {
   const next = {
     ...(index >= 0 ? rows[index] : {}),
     ...order,
-    cloud:false,
+    cloud:true,
     remoteManual:true,
     syncedAt:Date.now()
   };
@@ -135,9 +135,6 @@ setTimeout(refreshUi,0);
 setTimeout(refreshUi,700);
 window.addEventListener('panel:orders-changed',()=>setTimeout(refreshUi,0));
 
-// Solo observa cambios directos en la lista de pedidos para volver a poner
-// accesos rápidos después de filtros o re-render. No observa todo el documento:
-// hacerlo provocaba un bucle de mutaciones que bloqueaba los botones del panel.
 const ordersList = document.querySelector('#ordersList');
 if (ordersList) {
   let enhanceScheduled = false;
@@ -182,7 +179,9 @@ if (ordersList) {
     }));
 
     const cloudPayload = order => ({
-      source:'panel-operativo',
+      id:order.id,
+      source:'app-clientes',
+      panelSource:'panel-operativo',
       orderSource:order.source || 'WhatsApp',
       status:order.status || 'pending',
       customer:order.customer || '',
@@ -204,11 +203,12 @@ if (ordersList) {
       if (event.detail?.source !== 'local-create') return;
       const order = event.detail?.order;
       if (!order?.id) return;
+      updateLocalOrder(order.id,{firestoreId:order.id,remoteManual:true,cloud:true});
       try {
         await setDoc(doc(db,'pedidos',order.id),{...cloudPayload(order),createdAt:serverTimestamp()},{merge:true});
-        updateLocalOrder(order.id,{firestoreId:order.id,remoteManual:true});
         dispatch('panel:manual-order-saved',{orderId:order.id});
       } catch (error) {
+        updateLocalOrder(order.id,{firestoreId:null,remoteManual:false,cloud:false});
         console.error('No se pudo guardar el pedido manual en Firebase:',error);
       }
     });
@@ -226,7 +226,7 @@ if (ordersList) {
     onSnapshot(collection(db,'pedidos'),snapshot=>{
       snapshot.forEach(row=>{
         const raw = row.data() || {};
-        if (raw.source !== 'panel-operativo') return;
+        if (raw.panelSource !== 'panel-operativo') return;
         upsertManualCloud({
           id:row.id,
           firestoreId:row.id,
