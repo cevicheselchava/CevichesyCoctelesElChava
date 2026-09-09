@@ -1,6 +1,6 @@
 import { BUSINESS } from './config.js';
 import { InventoryStore } from './data.js';
-import { PurchaseStore, registerPurchase, suggestedPurchaseQuantity, purchasePreview } from './purchases-data.js';
+import { PurchaseStore, registerPurchase, purchasePreview } from './purchases-data.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -41,7 +41,7 @@ function ensureAssets() {
       </div>
       <div class="purchase-kpis" id="purchaseKpis"></div>
       <section class="purchase-section">
-        <div class="purchase-section-title"><div><h3>Por comprar</h3><small>Sale automático del inventario bajo</small></div></div>
+        <div class="purchase-section-title"><div><h3>Inventario bajo</h3><small>Referencia de existencias y stock mínimo</small></div></div>
         <div class="purchase-low-list" id="purchaseLowList"></div>
       </section>
       <section class="purchase-section">
@@ -67,7 +67,7 @@ function ensureAssets() {
             <h3>Registrar compra</h3>
             <div class="purchase-form-grid">
               <label class="full">Producto<select id="purchaseProduct" required></select></label>
-              <label>Cantidad<input id="purchaseQty" type="number" min="0.01" step="0.01" value="1" required></label>
+              <label>Cantidad<input id="purchaseQty" type="number" min="0.01" step="0.01" placeholder="Cantidad" required></label>
               <label>Unidad<select id="purchaseUnit" required></select></label>
               <label class="full">Precio por unidad<input id="purchasePrice" type="number" min="0" step="0.01" placeholder="0.00" required></label>
               <label class="full">Tienda<input id="purchaseStore" placeholder="Ej. H-E-B, Walmart, Restaurant Depot" required></label>
@@ -106,25 +106,22 @@ function purchaseKpis() {
   const today = PurchaseStore.today();
   const spend = today.reduce((sum,row)=>sum + Number(row.total || 0),0);
   return [
-    ['Por comprar',lowItems().length,'low'],
+    ['Inventario bajo',lowItems().length,'low'],
     ['Compras hoy',today.length,'today'],
     ['Gasto hoy',money.format(spend),'spend']
   ];
 }
 
 function lowCard(item) {
-  const suggestion = suggestedPurchaseQuantity(item);
-  const configured = `${item.contentQty || 1} ${item.contentUnit || item.unit} por ${item.purchaseUnit || item.unit}`;
   return `
     <article class="purchase-low-card">
       <div class="purchase-low-head">
         <div>
           <h4>${item.name}</h4>
-          <div class="purchase-stock">Tienes <b>${cleanNumber(item.qty)} ${item.unit}</b> · mínimo ${cleanNumber(item.minimum)} ${item.unit}</div>
+          <div class="purchase-stock">Inventario actual <b>${cleanNumber(item.qty)} ${item.unit}</b> · stock mínimo <b>${cleanNumber(item.minimum)} ${item.unit}</b></div>
         </div>
-        <button class="purchase-buy-button" data-buy-product="${item.id}" type="button">Comprar</button>
+        <button class="purchase-buy-button" data-buy-product="${item.id}" type="button">Registrar compra</button>
       </div>
-      <div class="purchase-suggestion">Sugerencia: ${suggestion} ${suggestion === 1 ? (item.purchaseUnit || 'unidad') : (item.purchaseUnit || 'unidades')} · ${configured}</div>
     </article>`;
 }
 
@@ -154,7 +151,7 @@ function renderPurchases() {
   const low = lowItems();
   $('#purchaseLowList').innerHTML = low.length
     ? low.map(lowCard).join('')
-    : `<div class="purchase-empty"><span>✓</span><h4>No falta nada</h4><p>Todo el inventario está arriba de su mínimo.</p></div>`;
+    : `<div class="purchase-empty"><span>✓</span><h4>Inventario arriba del mínimo</h4><p>Puedes registrar una compra de cualquier producto cuando quieras.</p></div>`;
 
   const history = PurchaseStore.list().slice(0,12);
   $('#purchaseHistory').innerHTML = history.length
@@ -171,7 +168,7 @@ function updateHomePurchaseSummary() {
   const value = card.querySelector('strong');
   const note = card.querySelector('small');
   if (value) value.textContent = String(count);
-  if (note) note.textContent = count === 1 ? 'Producto faltante' : 'Productos faltantes';
+  if (note) note.textContent = count === 1 ? 'Producto bajo mínimo' : 'Productos bajo mínimo';
 }
 
 function openPurchases() {
@@ -201,7 +198,7 @@ function selectedItem() {
   return inventoryItems().find(item=>item.id === id) || null;
 }
 
-function applyProductDefaults(useSuggestion = false) {
+function applyProductDefaults() {
   const item = selectedItem();
   if (!item) {
     selectedProductId = null;
@@ -213,7 +210,6 @@ function applyProductDefaults(useSuggestion = false) {
   $('#purchaseUnit').innerHTML = unitOptions(item.purchaseUnit || item.unit);
   $('#purchaseUnit').value = item.purchaseUnit || item.unit;
   $('#purchasePrice').value = Number(item.purchasePrice || 0) || '';
-  $('#purchaseQty').value = useSuggestion ? suggestedPurchaseQuantity(item) : ($('#purchaseQty').value || '1');
   updatePurchasePreview();
 }
 
@@ -232,14 +228,14 @@ function updatePurchasePreview() {
     <div class="purchase-preview-row"><span>Entra a inventario</span><strong>${preview.automatic ? `+${cleanNumber(preview.stockAdded)} ${preview.stockUnit}` : 'Revisar equivalencia'}</strong></div>`;
 }
 
-function openPurchaseModal(productId = null) {
+function openPurchaseModal(productId = null, quantity = null) {
   ensureAssets();
   $('#purchaseForm').reset();
   selectedProductId = productId;
   populateProducts(productId);
   $('#purchaseUnit').innerHTML = unitOptions();
-  $('#purchaseQty').value = '1';
-  if (productId) applyProductDefaults(true);
+  $('#purchaseQty').value = quantity && Number(quantity) > 0 ? String(quantity) : '';
+  if (productId) applyProductDefaults();
   else updatePurchasePreview();
   $('#purchaseModal').hidden = false;
   document.body.classList.add('modal-open');
@@ -300,12 +296,18 @@ document.addEventListener('click',event=>{
   }
 },true);
 
+window.addEventListener('panel:open-purchase',event=>{
+  const productId = event.detail?.productId || null;
+  const quantity = event.detail?.quantity || null;
+  openPurchaseModal(productId,quantity);
+});
+
 $('#purchasesBack')?.addEventListener('click',goHome);
 $('#newPurchaseButton')?.addEventListener('click',()=>openPurchaseModal());
 $('#closePurchaseModal')?.addEventListener('click',closePurchaseModal);
 $('#cancelPurchase')?.addEventListener('click',closePurchaseModal);
 $('#purchaseModal')?.addEventListener('click',event=>{if(event.target === $('#purchaseModal')) closePurchaseModal();});
-$('#purchaseProduct')?.addEventListener('change',()=>applyProductDefaults(true));
+$('#purchaseProduct')?.addEventListener('change',applyProductDefaults);
 $('#purchaseQty')?.addEventListener('input',updatePurchasePreview);
 $('#purchaseUnit')?.addEventListener('change',updatePurchasePreview);
 $('#purchasePrice')?.addEventListener('input',updatePurchasePreview);
