@@ -26,6 +26,25 @@ const db = getFirestore(app);
 let initialSnapshotReceived = false;
 let lastCloudIds = new Set();
 
+const ORDERS_RESET_AT = Date.parse('2026-09-09T17:56:07Z');
+const ORDERS_STORAGE_KEY = 'panel-next-orders-v3';
+const ORDERS_ARCHIVE_SOURCE = 'archived-reset-20260909';
+
+function clearLocalOrdersBeforeReset() {
+  try {
+    const raw = localStorage.getItem(ORDERS_STORAGE_KEY);
+    if (!raw) return;
+    const rows = JSON.parse(raw);
+    if (!Array.isArray(rows)) return;
+    const kept = rows.filter(order=>Number(order?.createdAt || 0) > ORDERS_RESET_AT);
+    if (kept.length === rows.length) return;
+    localStorage.setItem(ORDERS_STORAGE_KEY,JSON.stringify(kept));
+    window.dispatchEvent(new CustomEvent('panel:orders-changed',{ detail:{ source:'orders-reset' } }));
+  } catch (error) {
+    console.warn('No se pudieron limpiar pedidos locales:',error);
+  }
+}
+
 const PRICE_MIGRATION_KEY = 'panel-next-price-migration-20260909-v2';
 const FLOZ_TO_ML = 29.5735295625;
 
@@ -188,7 +207,7 @@ function mapItem(item = {}) {
 
 function mapRemoteOrder(snapshot) {
   const raw = snapshot.data() || {};
-  const createdAt = toMillis(raw.createdAt, toMillis(raw.createdAtClient));
+  const createdAt = toMillis(raw.createdAt, toMillis(raw.createdAtClient,0));
   return {
     id:snapshot.id,
     firestoreId:snapshot.id,
@@ -222,12 +241,23 @@ function showConnectionState(state, message = '') {
   dispatch('panel:firebase-state',{ state, message });
 }
 
+clearLocalOrdersBeforeReset();
 migrateLegacyPurchasePrices();
 
 onSnapshot(collection(db,'pedidos'),snapshot=>{
   const remote = [];
   snapshot.forEach(row=>{
     const data = row.data() || {};
+    const createdAt = toMillis(data.createdAt,toMillis(data.createdAtClient,0));
+    if (createdAt <= ORDERS_RESET_AT) {
+      if (data.source !== ORDERS_ARCHIVE_SOURCE) {
+        updateDoc(doc(db,'pedidos',row.id),{
+          source:ORDERS_ARCHIVE_SOURCE,
+          archivedAt:serverTimestamp()
+        }).catch(error=>console.warn('No se pudo archivar pedido anterior:',error));
+      }
+      return;
+    }
     if (data.source !== 'app-clientes') return;
     remote.push(mapRemoteOrder(row));
   });
