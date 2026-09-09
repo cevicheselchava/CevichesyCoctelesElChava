@@ -15,43 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Borrar datos operativos de Firebase
-        if: github.event.head_commit.message == 'PURGA_DATOS_OPERATIVOS_20260909'
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CEVICHES_Y_COCTELES_EL_CHAVA }}
-        run: |
-          npm install firebase-admin@12 --no-save
-          node <<'NODE'
-          const admin = require('firebase-admin');
-          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-          admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            projectId: 'ceviches-y-cocteles-el-chava'
-          });
-          const db = admin.firestore();
-
-          async function purgeCollection(name) {
-            let total = 0;
-            while (true) {
-              const snapshot = await db.collection(name).limit(400).get();
-              if (snapshot.empty) break;
-              const batch = db.batch();
-              snapshot.docs.forEach(doc => batch.delete(doc.ref));
-              await batch.commit();
-              total += snapshot.size;
-            }
-            console.log(`Deleted ${total} docs from ${name}`);
-          }
-
-          (async () => {
-            await purgeCollection('pedidos');
-            console.log('PURGE_COMPLETE');
-          })().catch(error => {
-            console.error(error);
-            process.exit(1);
-          });
-          NODE
-
       - name: Publicar en Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
