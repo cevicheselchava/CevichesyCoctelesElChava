@@ -15,6 +15,12 @@ function deliveryOrders() {
   return OrdersStore.list().filter(order => ['ready','delivery','delivered'].includes(order.status));
 }
 
+function deliverySortValue(order) {
+  const date = String(order.date || '9999-12-31');
+  const time = String(order.time || '23:59').padStart(5,'0');
+  return `${date}T${time}`;
+}
+
 function deliveredToday(order) {
   if (order.status !== 'delivered') return false;
   if (order.deliveredAt) return localDateISO(order.deliveredAt) === localDateISO();
@@ -138,7 +144,9 @@ function renderDeliveries() {
   $('#deliveryKpis').innerHTML = deliveryKpis().map(([label,value,tone])=>`
     <article class="delivery-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
 
-  const rows = deliveryOrders().filter(matchesFilter);
+  const rows = deliveryOrders()
+    .filter(matchesFilter)
+    .sort((a,b)=>deliverySortValue(a).localeCompare(deliverySortValue(b)) || Number(a.createdAt || 0) - Number(b.createdAt || 0));
   $('#deliveryList').innerHTML = rows.length
     ? rows.map(deliveryCard).join('')
     : `<div class="delivery-empty"><span>🛵</span><h3>No hay entregas aquí</h3><p>Los pedidos listos y en ruta aparecerán automáticamente.</p></div>`;
