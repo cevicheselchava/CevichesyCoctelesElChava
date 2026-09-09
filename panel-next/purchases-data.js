@@ -10,7 +10,7 @@ const localDateISO = () => {
 const UNIT_META = {
   g:{group:'mass',factor:1}, kg:{group:'mass',factor:1000}, oz:{group:'mass',factor:28.349523125}, lb:{group:'mass',factor:453.59237},
   ml:{group:'volume',factor:1}, L:{group:'volume',factor:1000}, 'fl oz':{group:'volume',factor:29.5735295625}, 'galón':{group:'volume',factor:3785.411784},
-  pieza:{group:'count',factor:1}, unidad:{group:'count',factor:1}
+  pieza:{group:'count',factor:1}, unidad:{group:'count',factor:1}, pzas:{group:'count',factor:1}
 };
 
 function convertQty(qty, from, to) {
@@ -26,18 +26,22 @@ function convertQty(qty, from, to) {
 function normalizePurchase(row = {}) {
   const quantity = Number(row.quantity || 0);
   const unitPrice = Number(row.unitPrice || 0);
+  const contentQty = Number(row.contentQty || 0);
   return {
     ...row,
     productId:String(row.productId || ''),
     productName:String(row.productName || '').trim(),
     quantity:Number.isFinite(quantity) ? quantity : 0,
     unit:String(row.unit || '').trim(),
+    contentQty:Number.isFinite(contentQty) ? contentQty : 0,
+    contentUnit:String(row.contentUnit || '').trim(),
     unitPrice:Number.isFinite(unitPrice) ? unitPrice : 0,
     total:Number.isFinite(Number(row.total)) ? Number(row.total) : quantity * unitPrice,
     store:String(row.store || '').trim(),
     date:String(row.date || localDateISO()),
     stockAdded:Number(row.stockAdded || 0),
     stockUnit:String(row.stockUnit || '').trim(),
+    unitCost:Number(row.unitCost || 0),
     autoStock:Boolean(row.autoStock),
     expenseStatus:String(row.expenseStatus || 'pending-dinero')
   };
@@ -70,12 +74,12 @@ function findInventoryItem(productId, productName) {
     || null;
 }
 
-export function stockPerPurchaseUnit(item) {
+export function stockPerPurchaseUnit(item, contentQty = null, contentUnit = null) {
   if (!item) return null;
-  const contentQty = Number(item.contentQty || 1);
-  const contentUnit = item.contentUnit || item.unit;
-  const converted = convertQty(contentQty, contentUnit, item.unit);
-  return converted === null ? null : converted;
+  const qty = contentQty === null || contentQty === undefined || contentQty === '' ? Number(item.contentQty || 1) : Number(contentQty);
+  const unit = contentUnit || item.contentUnit || item.unit;
+  if (!(qty > 0)) return null;
+  return convertQty(qty, unit, item.unit);
 }
 
 export function suggestedPurchaseQuantity(item) {
@@ -87,19 +91,25 @@ export function suggestedPurchaseQuantity(item) {
   return Math.max(1, Math.ceil(gap / perUnit));
 }
 
-export function purchasePreview(item, quantity, purchaseUnit) {
+export function purchasePreview(item, quantity, purchaseUnit, contentQty = null, contentUnit = null) {
   const qty = Number(quantity || 0);
   if (!item || !Number.isFinite(qty) || qty <= 0) return { stockAdded:null, stockUnit:item?.unit || '', automatic:false };
 
+  const explicitContent = contentQty !== null && contentQty !== undefined && contentQty !== '' && contentUnit;
+  if (explicitContent) {
+    const perUnit = stockPerPurchaseUnit(item,contentQty,contentUnit);
+    if (perUnit !== null) return { stockAdded:qty * perUnit, stockUnit:item.unit, automatic:true, stockPerPresentation:perUnit };
+  }
+
   if (purchaseUnit === item.purchaseUnit) {
     const perUnit = stockPerPurchaseUnit(item);
-    if (perUnit !== null) return { stockAdded:qty * perUnit, stockUnit:item.unit, automatic:true };
+    if (perUnit !== null) return { stockAdded:qty * perUnit, stockUnit:item.unit, automatic:true, stockPerPresentation:perUnit };
   }
 
   const direct = convertQty(qty, purchaseUnit, item.unit);
-  if (direct !== null) return { stockAdded:direct, stockUnit:item.unit, automatic:true };
+  if (direct !== null) return { stockAdded:direct, stockUnit:item.unit, automatic:true, stockPerPresentation:qty ? direct/qty : null };
 
-  return { stockAdded:null, stockUnit:item.unit, automatic:false };
+  return { stockAdded:null, stockUnit:item.unit, automatic:false, stockPerPresentation:null };
 }
 
 export function registerPurchase(payload = {}) {
@@ -109,20 +119,32 @@ export function registerPurchase(payload = {}) {
   const quantity = Number(payload.quantity || 0);
   const unitPrice = Number(payload.unitPrice || 0);
   const unit = String(payload.unit || item.purchaseUnit || '').trim();
+  const contentQty = payload.contentQty === null || payload.contentQty === undefined || payload.contentQty === ''
+    ? Number(item.contentQty || 1)
+    : Number(payload.contentQty);
+  const contentUnit = String(payload.contentUnit || item.contentUnit || item.unit || '').trim();
+
   if (!Number.isFinite(quantity) || quantity <= 0) return { ok:false, error:'Cantidad inválida' };
   if (!Number.isFinite(unitPrice) || unitPrice < 0) return { ok:false, error:'Precio inválido' };
-  if (!unit) return { ok:false, error:'Falta la unidad de compra' };
+  if (!unit) return { ok:false, error:'Falta la presentación de compra' };
+  if (!Number.isFinite(contentQty) || contentQty <= 0) return { ok:false, error:'Falta cuánto trae cada presentación' };
+  if (!contentUnit) return { ok:false, error:'Falta la unidad del contenido' };
 
-  const preview = purchasePreview(item, quantity, unit);
+  const preview = purchasePreview(item, quantity, unit, contentQty, contentUnit);
+  if (!preview.automatic || !Number.isFinite(preview.stockAdded)) return { ok:false, error:`No se puede convertir ${contentUnit} a ${item.unit}` };
+
   const before = Number(item.qty || 0);
-  let after = before;
+  const after = before + preview.stockAdded;
+  const stockPerPresentation = Number(preview.stockPerPresentation || 0);
+  const unitCost = stockPerPresentation > 0 ? unitPrice / stockPerPresentation : 0;
 
-  if (preview.automatic && Number.isFinite(preview.stockAdded)) {
-    after = before + preview.stockAdded;
-    const patch = { qty:after };
-    if (unit === item.purchaseUnit) patch.purchasePrice = unitPrice;
-    InventoryStore.update(item.id, patch);
-  }
+  InventoryStore.update(item.id, {
+    qty:after,
+    purchaseUnit:unit,
+    contentQty,
+    contentUnit,
+    purchasePrice:unitPrice
+  });
 
   const rows = readPurchases();
   const created = normalizePurchase({
@@ -131,6 +153,8 @@ export function registerPurchase(payload = {}) {
     productName:item.name,
     quantity,
     unit,
+    contentQty,
+    contentUnit,
     unitPrice,
     total:quantity * unitPrice,
     store:payload.store,
@@ -138,14 +162,15 @@ export function registerPurchase(payload = {}) {
     createdAt:Date.now(),
     inventoryBefore:before,
     inventoryAfter:after,
-    stockAdded:preview.automatic ? preview.stockAdded : 0,
+    stockAdded:preview.stockAdded,
     stockUnit:item.unit,
-    autoStock:preview.automatic,
+    unitCost,
+    autoStock:true,
     expenseStatus:'pending-dinero'
   });
   rows.unshift(created);
   writePurchases(rows);
-  return { ok:true, purchase:created, item:InventoryStore.get(item.id), autoStock:preview.automatic };
+  return { ok:true, purchase:created, item:InventoryStore.get(item.id), autoStock:true };
 }
 
 export const PurchaseStore = {
