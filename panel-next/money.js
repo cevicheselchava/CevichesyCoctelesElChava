@@ -7,9 +7,19 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const money = new Intl.NumberFormat(BUSINESS.locale,{style:'currency',currency:BUSINESS.currency});
 const EXPENSE_CATEGORIES = ['Insumos','Gasolina / transporte','Renta','Servicios','Mantenimiento','Comisiones','Otros'];
+const MONEY_RESET_AT = Date.parse('2026-09-09T19:47:18Z');
+const MONEY_RESET_KEY = 'panel-next-money-reset-20260909-v2';
 let moneyFilter = 'all';
 let selectedCategory = 'Otros';
 let selectedPayment = PAYMENT_METHODS[0] || 'Efectivo';
+
+function clearOldMoneyOnce() {
+  try {
+    if (localStorage.getItem(MONEY_RESET_KEY) === 'done') return;
+    ManualExpenseStore.reset();
+    localStorage.setItem(MONEY_RESET_KEY,'done');
+  } catch (_) {}
+}
 
 function deliveredToday(order) {
   if (order.status !== 'delivered') return false;
@@ -18,15 +28,19 @@ function deliveredToday(order) {
 }
 
 function salesToday() {
-  return OrdersStore.list().filter(deliveredToday);
+  return OrdersStore.list().filter(order => {
+    if (!deliveredToday(order)) return false;
+    const at = Number(order.deliveredAt || order.updatedAt || order.createdAt || 0);
+    return at > MONEY_RESET_AT;
+  });
 }
 
 function automaticExpensesToday() {
-  return PurchaseStore.today();
+  return PurchaseStore.today().filter(row=>Number(row.createdAt || 0) > MONEY_RESET_AT);
 }
 
 function manualExpensesToday() {
-  return ManualExpenseStore.today();
+  return ManualExpenseStore.today().filter(row=>Number(row.createdAt || 0) > MONEY_RESET_AT);
 }
 
 function totals() {
@@ -243,6 +257,7 @@ function saveExpense(event) {
   showMoneyToast('Gasto guardado');
 }
 
+clearOldMoneyOnce();
 ensureAssets();
 
 document.addEventListener('click',event=>{
