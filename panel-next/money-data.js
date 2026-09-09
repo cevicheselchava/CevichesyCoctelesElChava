@@ -73,9 +73,8 @@ export const ManualExpenseStore = {
   }
 };
 
-// Pedidos: filtro local visible HOY / MAÑANA y fecha real de entrega.
-// Este parche usa la fecha local del teléfono (San Antonio) y evita que UTC
-// haga aparecer un pedido de mañana como si fuera de hoy después de las 7 p.m.
+// Pedidos: filtro local visible HOY / MAÑANA, fecha real de entrega
+// y orden cronológico por hora de entrega.
 (() => {
   let selectedDay = 'today';
   let applying = false;
@@ -97,8 +96,6 @@ export const ManualExpenseStore = {
     if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
     const es = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (es) return `${es[3]}-${es[2]}-${es[1]}`;
-    // app.js llama “Hoy” a la fecha UTC; recuperamos esa fecha real y luego
-    // la comparamos contra la fecha LOCAL del teléfono.
     if (raw.toLowerCase() === 'hoy') return new Date().toISOString().slice(0,10);
     return '';
   }
@@ -120,12 +117,34 @@ export const ManualExpenseStore = {
     if (!iso) return '';
 
     card.dataset.deliveryDate = iso;
+    card.dataset.deliveryTime = timePart || card.dataset.deliveryTime || '';
     block.classList.add('delivery-date-highlight');
     const label = block.querySelector('small');
     if (label && label.textContent !== 'FECHA DE ENTREGA') label.textContent = 'FECHA DE ENTREGA';
     const nextText = `${formatDate(iso)}${timePart ? ` · ${timePart}` : ''}`;
     if (strong.textContent !== nextText) strong.textContent = nextText;
     return iso;
+  }
+
+  function timeMinutes(value) {
+    const raw = String(value || '').trim();
+    const m = raw.match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return 24 * 60 + 1;
+    return Number(m[1]) * 60 + Number(m[2]);
+  }
+
+  function sortCardsChronologically(cards, list) {
+    const sorted = [...cards].sort((a,b) => {
+      const dateA = a.dataset.deliveryDate || normalizeCardDate(a);
+      const dateB = b.dataset.deliveryDate || normalizeCardDate(b);
+      if (dateA !== dateB) return String(dateA).localeCompare(String(dateB));
+      return timeMinutes(a.dataset.deliveryTime) - timeMinutes(b.dataset.deliveryTime);
+    });
+
+    const current = [...list.querySelectorAll('.order-card')];
+    const changed = sorted.some((card,index) => card !== current[index]);
+    if (changed) sorted.forEach(card => list.appendChild(card));
+    return sorted;
   }
 
   function targetISO() {
@@ -149,12 +168,15 @@ export const ManualExpenseStore = {
       const list = document.querySelector('#ordersList');
       if (!list) return;
       const target = targetISO();
-      const cards = [...list.querySelectorAll('.order-card')];
+      let cards = [...list.querySelectorAll('.order-card')];
       let visible = 0;
 
       list.querySelector('#localDayEmpty')?.remove();
+      cards.forEach(card => normalizeCardDate(card));
+      cards = sortCardsChronologically(cards, list);
+
       cards.forEach(card => {
-        const iso = normalizeCardDate(card);
+        const iso = card.dataset.deliveryDate || normalizeCardDate(card);
         const show = iso === target;
         card.hidden = !show;
         if (show) visible += 1;
@@ -217,8 +239,6 @@ export const ManualExpenseStore = {
     const select = document.querySelector('#orderDayFilter');
     if (!toolbar || !select) return false;
 
-    // Dejamos el filtro interno en “Todos” para que app.js entregue todas las
-    // tarjetas; este control aplica HOY / MAÑANA usando la fecha local correcta.
     if (select.value !== 'all') {
       select.value = 'all';
       select.dispatchEvent(new Event('change',{bubbles:true}));
