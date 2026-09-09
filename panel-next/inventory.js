@@ -9,7 +9,7 @@ const INVENTORY_UNITS = ['lb','oz','kg','g','pieza','unidad','ml','L','fl oz','g
 const PURCHASE_UNITS = ['bolsa','caja','paquete','pieza','unidad','botella','lata','galón','cubeta','rollo','costal','charola','otro'];
 
 let inventoryFilter = 'all';
-let inventoryCategory = 'all';
+let inventoryCategory = null;
 let inventoryQuery = '';
 let expandedInventoryId = null;
 let editingInventoryId = null;
@@ -161,7 +161,7 @@ function renderCategoryButtons() {
   const host = $('#inventoryCategoryNav');
   if (!host) return;
   const categories = availableCategories();
-  if (inventoryCategory !== 'all' && !categories.includes(inventoryCategory)) inventoryCategory = 'all';
+  if (inventoryCategory && inventoryCategory !== 'all' && !categories.includes(inventoryCategory)) inventoryCategory = null;
   host.innerHTML = [
     `<button type="button" class="inventory-category-button ${inventoryCategory === 'all' ? 'active' : ''}" data-inventory-category="all">Todos</button>`,
     ...categories.map(category=>`
@@ -170,6 +170,7 @@ function renderCategoryButtons() {
 }
 
 function inventoryRows() {
+  if (!inventoryCategory) return [];
   const q = inventoryQuery.trim().toLowerCase();
   return InventoryStore.list().filter(item => {
     const qty = Number(item.qty || 0);
@@ -197,6 +198,12 @@ function renderInventory() {
   ].map(([label,value,tone])=>`<article class="inventory-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
 
   renderCategoryButtons();
+  if (!inventoryCategory) {
+    expandedInventoryId = null;
+    $('#inventoryList').innerHTML = '';
+    return;
+  }
+
   const rows = inventoryRows();
   if (expandedInventoryId && !rows.some(item=>item.id === expandedInventoryId)) expandedInventoryId = null;
 
@@ -237,6 +244,8 @@ function renderInventory() {
 
 function openInventory() {
   ensureInventoryAssets();
+  inventoryCategory = null;
+  expandedInventoryId = null;
   $$('.view').forEach(view => view.classList.toggle('active', view.id === 'inventoryView'));
   $('#hero')?.classList.remove('compact');
   $('#bottomNav')?.classList.add('hidden');
