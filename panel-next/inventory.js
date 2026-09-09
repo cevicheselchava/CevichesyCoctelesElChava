@@ -140,7 +140,13 @@ function statusFor(item) {
 }
 
 function productCategory(item) {
-  return String(item.category || 'Otros').trim() || 'Otros';
+  const stored = String(item.category || '').trim();
+  const name = String(item.name || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase();
+  if (/\b(camaron|pescado|filete|pulpo|calamar|tilapia|salmon|atun|ostion|ostiones)\b/.test(name)) return 'Carnes y mariscos';
+  return stored || 'Otros';
 }
 
 function availableCategories() {
@@ -215,7 +221,7 @@ function renderInventory() {
       <article class="inventory-card ${expanded ? 'expanded' : ''}">
         <button class="inventory-card-toggle" data-inventory-toggle="${item.id}" type="button" aria-expanded="${expanded ? 'true' : 'false'}">
           <div class="inventory-card-head">
-            <div><span class="inventory-category">${item.category || 'Sin categoría'}</span><h3>${item.name}</h3></div>
+            <div><span class="inventory-category">${categoryLabel(productCategory(item))}</span><h3>${item.name}</h3></div>
             <span class="inventory-status ${statusClass}">${statusLabel}</span>
           </div>
           <div class="inventory-card-summary">
@@ -364,9 +370,10 @@ document.addEventListener('click', event => {
   const categoryButton = event.target.closest('[data-inventory-category]');
   if (categoryButton) {
     event.preventDefault();
-    inventoryCategory = categoryButton.dataset.inventoryCategory === 'all'
+    const nextCategory = categoryButton.dataset.inventoryCategory === 'all'
       ? 'all'
       : decodeURIComponent(categoryButton.dataset.inventoryCategory);
+    inventoryCategory = inventoryCategory === nextCategory ? null : nextCategory;
     expandedInventoryId = null;
     renderInventory();
     return;
