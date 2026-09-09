@@ -1,3 +1,5 @@
+import './local-day-ui-fix.js';
+
 const MONEY_EXPENSE_KEY = 'panel-next-money-expenses-v1';
 
 export function localDateISO(value = new Date()) {
