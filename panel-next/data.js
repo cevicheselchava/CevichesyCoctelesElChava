@@ -55,28 +55,50 @@ function writeMenu(items) {
   return items;
 }
 
+function inventorySeedItem({ id, name, unit, category='Ingrediente', qty=0, minimum=0, purchaseUnit=null, contentQty=1, contentUnit=null, purchasePrice=0, updatedAt=Date.now() }) {
+  return {
+    id, name, category, qty, unit, minimum,
+    purchaseUnit:purchaseUnit || unit,
+    contentQty,
+    contentUnit:contentUnit || unit,
+    purchasePrice,
+    updatedAt
+  };
+}
+
 function seedInventory() {
   return [
-    {
-      id:'I-1004', name:'Filete de pescado', category:'Ingrediente', qty:6.5, unit:'lb', minimum:4,
+    inventorySeedItem({
+      id:'I-1004', name:'Filete de pescado', unit:'lb', qty:6.5, minimum:4,
       purchaseUnit:'bolsa', contentQty:2, contentUnit:'lb', purchasePrice:9.50,
       updatedAt:Date.now()-3600000
-    },
-    {
-      id:'I-1003', name:'Camarón', category:'Ingrediente', qty:2, unit:'lb', minimum:4,
+    }),
+    inventorySeedItem({
+      id:'I-1003', name:'Camarón', unit:'lb', qty:2, minimum:4,
       purchaseUnit:'bolsa', contentQty:0.75, contentUnit:'lb', purchasePrice:6.47,
       updatedAt:Date.now()-7200000
-    },
-    {
-      id:'I-1002', name:'Tomate', category:'Ingrediente', qty:3, unit:'lb', minimum:2,
+    }),
+    inventorySeedItem({
+      id:'I-1002', name:'Tomate', unit:'lb', qty:3, minimum:2,
       purchaseUnit:'lb', contentQty:1, contentUnit:'lb', purchasePrice:1.25,
       updatedAt:Date.now()-9500000
-    },
-    {
-      id:'I-1001', name:'Contenedores', category:'Empaque', qty:0, unit:'pieza', minimum:12,
+    }),
+    inventorySeedItem({
+      id:'I-1001', name:'Contenedores', category:'Empaque', unit:'pieza', qty:0, minimum:12,
       purchaseUnit:'paquete', contentQty:25, contentUnit:'pieza', purchasePrice:10.50,
       updatedAt:Date.now()-13000000
-    }
+    }),
+    inventorySeedItem({ id:'I-1005', name:'Pepino', unit:'lb' }),
+    inventorySeedItem({ id:'I-1006', name:'Cebolla morada', unit:'lb' }),
+    inventorySeedItem({ id:'I-1007', name:'Cilantro', unit:'oz' }),
+    inventorySeedItem({ id:'I-1008', name:'Jugo de limón', unit:'fl oz' }),
+    inventorySeedItem({ id:'I-1009', name:'Clamato', unit:'fl oz' }),
+    inventorySeedItem({ id:'I-1010', name:'Pulpo', unit:'lb' }),
+    inventorySeedItem({ id:'I-1011', name:'Salsa catsup', unit:'ml' }),
+    inventorySeedItem({ id:'I-1012', name:'Puré de tomate', unit:'ml' }),
+    inventorySeedItem({ id:'I-1013', name:'Salsa inglesa', unit:'ml' }),
+    inventorySeedItem({ id:'I-1014', name:'Salsa Maggi', unit:'ml' }),
+    inventorySeedItem({ id:'I-1015', name:'Pimienta', unit:'pizca' })
   ];
 }
 
@@ -96,6 +118,26 @@ function normalizeInventoryItem(item) {
   };
 }
 
+function inventoryNameKey(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .trim()
+    .toLowerCase();
+}
+
+function mergeMissingInventory(items) {
+  const current = Array.isArray(items) ? items.map(normalizeInventoryItem) : [];
+  const names = new Set(current.map(item => inventoryNameKey(item.name)));
+  const missing = seedInventory()
+    .map(normalizeInventoryItem)
+    .filter(item => !names.has(inventoryNameKey(item.name)));
+  if (!missing.length) return current;
+  const merged = [...current, ...missing];
+  localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(merged));
+  return merged;
+}
+
 function readInventory() {
   try {
     const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
@@ -104,7 +146,7 @@ function readInventory() {
       localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(seeded));
       return seeded;
     }
-    return JSON.parse(raw).map(normalizeInventoryItem);
+    return mergeMissingInventory(JSON.parse(raw));
   } catch {
     return seedInventory();
   }
@@ -195,6 +237,11 @@ export const InventoryStore = {
     if (row.contentUnit === row.unit && row.contentQty > 0) return row.purchasePrice / row.contentQty;
     return Number(item?.cost || 0);
   },
-  low() { return readInventory().filter(item => Number(item.qty || 0) <= Number(item.minimum || 0)); },
+  low() {
+    return readInventory().filter(item => {
+      const minimum = Number(item.minimum || 0);
+      return minimum > 0 && Number(item.qty || 0) <= minimum;
+    });
+  },
   resetDemo() { return writeInventory(seedInventory()); }
 };
