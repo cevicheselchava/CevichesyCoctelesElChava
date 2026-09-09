@@ -11,6 +11,12 @@ function todayRows() {
   return OrdersStore.list().filter(order => String(order.date || '') === today);
 }
 
+function deliveredToday(order) {
+  if (order.status !== 'delivered') return false;
+  if (order.deliveredAt) return localDateISO(order.deliveredAt) === localDateISO();
+  return String(order.date || '') === localDateISO();
+}
+
 function money(value) {
   return new Intl.NumberFormat('en-US', { style:'currency', currency:'USD' }).format(Number(value || 0));
 }
@@ -22,8 +28,8 @@ function patchOrderKpis() {
   const rows = todayRows();
   const pending = rows.filter(order => order.status === 'pending').length;
   const ready = rows.filter(order => order.status === 'ready').length;
-  const sales = rows
-    .filter(order => order.status === 'delivered')
+  const sales = OrdersStore.list()
+    .filter(deliveredToday)
     .reduce((sum, order) => sum + Number(order.total || 0), 0);
   const values = [String(pending), String(rows.length), String(ready), money(sales)];
 
@@ -37,18 +43,22 @@ function patchHomeSummary() {
   const cards = [...document.querySelectorAll('#summaryGrid .summary-card')];
   if (cards.length < 4) return;
 
-  const rows = todayRows();
-  const preparing = rows.filter(order => ['pending','preparing'].includes(order.status)).length;
-  const sales = rows
-    .filter(order => order.status === 'delivered')
+  const all = OrdersStore.list();
+  const active = all.filter(order => !['delivered','cancelled'].includes(order.status));
+  const preparing = all.filter(order => ['pending','preparing'].includes(order.status));
+  const sales = all
+    .filter(deliveredToday)
     .reduce((sum, order) => sum + Number(order.total || 0), 0);
-  const values = [String(rows.length), `${preparing} ${preparing === 1 ? 'pedido' : 'pedidos'}`, null, money(sales)];
+  const values = [String(active.length), `${preparing.length} ${preparing.length === 1 ? 'pedido' : 'pedidos'}`, null, money(sales)];
 
   cards.forEach((card,index) => {
     if (values[index] === null) return;
     const strong = card.querySelector('strong');
     if (strong && strong.textContent !== values[index]) strong.textContent = values[index];
   });
+
+  const firstNote = cards[0]?.querySelector('small');
+  if (firstNote) firstNote.textContent = 'Activos';
 }
 
 function patchLocalDayUi() {
