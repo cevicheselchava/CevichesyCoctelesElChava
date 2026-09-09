@@ -26,12 +26,12 @@ const db = getFirestore(app);
 let initialSnapshotReceived = false;
 let lastCloudIds = new Set();
 
-const PRICE_MIGRATION_KEY = 'panel-next-price-migration-20260909-v1';
+const PRICE_MIGRATION_KEY = 'panel-next-price-migration-20260909-v2';
 const FLOZ_TO_ML = 29.5735295625;
 
 const LEGACY_PRICE_ITEMS = {
   fish:{ name:'Filete de pescado', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
-  shrimp:{ name:'Camarón', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
+  shrimp:{ name:'Camarón', unit:'lb', purchaseUnit:'bolsa', contentQty:12, contentUnit:'oz' },
   octopus:{ name:'Pulpo', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
   tomato:{ name:'Tomate', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
   onion:{ name:'Cebolla morada', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
@@ -48,7 +48,7 @@ const LEGACY_PRICE_ITEMS = {
 
 const TICKET_PRICE_OVERRIDES = {
   fish:{ name:'Filete de pescado', unit:'lb', purchaseUnit:'bolsa', contentQty:2, contentUnit:'lb', purchasePrice:8.87 },
-  shrimp:{ name:'Camarón', unit:'lb', purchaseUnit:'bolsa', contentQty:1.5, contentUnit:'lb', purchasePrice:14.84 },
+  shrimp:{ name:'Camarón', unit:'lb', purchaseUnit:'bolsa', contentQty:12, contentUnit:'oz', purchasePrice:14.84 },
   tomato:{ name:'Tomate', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb', purchasePrice:0.97 },
   onion:{ name:'Cebolla morada', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb', purchasePrice:1.43 },
   cucumber:{ name:'Pepino', unit:'lb', purchaseUnit:'pieza', contentQty:0.6, contentUnit:'lb', purchasePrice:0.76 },
@@ -302,3 +302,7 @@ window.addEventListener('panel:order-updated',event=>{
 });
 
 export { db };
+
+// Carga al final para reemplazar la pantalla de compras vieja sin tocar el resto del panel.
+import('./purchase-system-fix.js');
+import('./legacy-disposable-prices.js');
