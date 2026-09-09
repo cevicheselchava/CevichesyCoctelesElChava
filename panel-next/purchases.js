@@ -1,3 +1,5 @@
+import './photo-inventory.js';
+
 // Entrada única al módulo de Compras.
 // La pantalla vieja fue retirada: este archivo solo crea el contenedor,
 // abre el módulo y carga la versión definitiva una sola vez.
