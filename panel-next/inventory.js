@@ -11,6 +11,7 @@ const PURCHASE_UNITS = ['bolsa','caja','paquete','pieza','unidad','botella','lat
 let inventoryFilter = 'all';
 let inventoryCategory = 'all';
 let inventoryQuery = '';
+let expandedInventoryId = null;
 let editingInventoryId = null;
 let adjustingInventoryId = null;
 
@@ -197,27 +198,38 @@ function renderInventory() {
 
   renderCategoryButtons();
   const rows = inventoryRows();
+  if (expandedInventoryId && !rows.some(item=>item.id === expandedInventoryId)) expandedInventoryId = null;
+
   $('#inventoryList').innerHTML = rows.length ? rows.map(item => {
     const [statusLabel,statusClass] = statusFor(item);
     const unitCost = InventoryStore.unitCost(item);
+    const expanded = expandedInventoryId === item.id;
     return `
-      <article class="inventory-card">
-        <div class="inventory-card-head">
-          <div><span class="inventory-category">${item.category || 'Sin categoría'}</span><h3>${item.name}</h3></div>
-          <span class="inventory-status ${statusClass}">${statusLabel}</span>
-        </div>
-        <div class="inventory-stock">
-          <div><small>Existencia</small><strong>${Number(item.qty || 0)} ${item.unit || ''}</strong></div>
-          <div><small>Mínimo</small><strong>${Number(item.minimum || 0)} ${item.unit || ''}</strong></div>
-          <div><small>Costo real</small><strong>${money.format(unitCost)} / ${item.unit || 'unidad'}</strong></div>
-        </div>
-        <div class="purchase-strip">
-          <div><small>Se compra por</small><strong>${presentationText(item)}</strong></div>
-          <div><small>Precio de compra</small><strong>${money.format(Number(item.purchasePrice || 0))} / ${item.purchaseUnit || item.unit || 'unidad'}</strong></div>
-        </div>
-        <div class="inventory-card-actions">
-          <button class="inventory-action edit" data-inventory-action="edit" data-id="${item.id}" type="button">Editar</button>
-          <button class="inventory-action adjust" data-inventory-action="adjust" data-id="${item.id}" type="button">Ajustar</button>
+      <article class="inventory-card ${expanded ? 'expanded' : ''}">
+        <button class="inventory-card-toggle" data-inventory-toggle="${item.id}" type="button" aria-expanded="${expanded ? 'true' : 'false'}">
+          <div class="inventory-card-head">
+            <div><span class="inventory-category">${item.category || 'Sin categoría'}</span><h3>${item.name}</h3></div>
+            <span class="inventory-status ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="inventory-card-summary">
+            <span><small>Existencia</small><strong>${Number(item.qty || 0)} ${item.unit || ''}</strong></span>
+            <span class="inventory-chevron" aria-hidden="true">⌄</span>
+          </div>
+        </button>
+        <div class="inventory-card-details" ${expanded ? '' : 'hidden'}>
+          <div class="inventory-stock">
+            <div><small>Existencia</small><strong>${Number(item.qty || 0)} ${item.unit || ''}</strong></div>
+            <div><small>Mínimo</small><strong>${Number(item.minimum || 0)} ${item.unit || ''}</strong></div>
+            <div><small>Costo real</small><strong>${money.format(unitCost)} / ${item.unit || 'unidad'}</strong></div>
+          </div>
+          <div class="purchase-strip">
+            <div><small>Se compra por</small><strong>${presentationText(item)}</strong></div>
+            <div><small>Precio de compra</small><strong>${money.format(Number(item.purchasePrice || 0))} / ${item.purchaseUnit || item.unit || 'unidad'}</strong></div>
+          </div>
+          <div class="inventory-card-actions">
+            <button class="inventory-action edit" data-inventory-action="edit" data-id="${item.id}" type="button">Editar</button>
+            <button class="inventory-action adjust" data-inventory-action="adjust" data-id="${item.id}" type="button">Ajustar</button>
+          </div>
         </div>
       </article>`;
   }).join('') : `<div class="inventory-empty"><span>📦</span><h3>No hay productos aquí</h3><p>Agrega un producto o cambia el filtro.</p></div>`;
@@ -346,6 +358,16 @@ document.addEventListener('click', event => {
     inventoryCategory = categoryButton.dataset.inventoryCategory === 'all'
       ? 'all'
       : decodeURIComponent(categoryButton.dataset.inventoryCategory);
+    expandedInventoryId = null;
+    renderInventory();
+    return;
+  }
+
+  const toggle = event.target.closest('[data-inventory-toggle]');
+  if (toggle) {
+    event.preventDefault();
+    const id = toggle.dataset.inventoryToggle;
+    expandedInventoryId = expandedInventoryId === id ? null : id;
     renderInventory();
     return;
   }
@@ -367,7 +389,7 @@ $('#cancelAdjustInventory')?.addEventListener('click',closeAdjustModal);
 $('#adjustInventoryModal')?.addEventListener('click',event=>{ if (event.target === $('#adjustInventoryModal')) closeAdjustModal(); });
 
 $('#inventorySearch')?.addEventListener('input',event=>{ inventoryQuery = event.target.value; renderInventory(); });
-$('#inventoryFilter')?.addEventListener('change',event=>{ inventoryFilter = event.target.value; renderInventory(); });
+$('#inventoryFilter')?.addEventListener('change',event=>{ inventoryFilter = event.target.value; expandedInventoryId = null; renderInventory(); });
 $('#inventoryUnit')?.addEventListener('change',syncContentUnit);
 ['inventoryPurchaseUnit','inventoryContentQty','inventoryContentUnit','inventoryPurchasePrice'].forEach(id => {
   $(`#${id}`)?.addEventListener('input',updatePurchaseCalculation);
