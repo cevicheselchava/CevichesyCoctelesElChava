@@ -3,7 +3,7 @@ import { OrdersStore } from './data.js';
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-let deliveryFilter = 'active';
+let deliveryFilter = 'ready';
 
 function localDateISO(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
@@ -48,11 +48,9 @@ function ensureAssets() {
       </div>
       <div class="delivery-kpis" id="deliveryKpis"></div>
       <div class="delivery-tabs" id="deliveryTabs">
-        <button class="active" data-delivery-filter="active">Activos</button>
-        <button data-delivery-filter="ready">Por salir</button>
+        <button class="active" data-delivery-filter="ready">Listos</button>
         <button data-delivery-filter="delivery">En ruta</button>
         <button data-delivery-filter="delivered">Entregados</button>
-        <button data-delivery-filter="all">Todos</button>
       </div>
       <div class="delivery-list" id="deliveryList"></div>`;
     document.querySelector('main.content')?.appendChild(section);
@@ -60,7 +58,7 @@ function ensureAssets() {
 }
 
 function statusLabel(order) {
-  if (order.status === 'ready') return 'POR SALIR';
+  if (order.status === 'ready') return 'LISTO';
   if (order.status === 'delivery') return 'EN RUTA';
   return 'ENTREGADO';
 }
@@ -68,15 +66,13 @@ function statusLabel(order) {
 function deliveryKpis() {
   const rows = deliveryOrders();
   return [
-    ['Por salir', rows.filter(order=>order.status === 'ready').length, 'ready'],
+    ['Listos', rows.filter(order=>order.status === 'ready').length, 'ready'],
     ['En ruta', rows.filter(order=>order.status === 'delivery').length, 'route'],
     ['Entregados hoy', rows.filter(deliveredToday).length, 'done']
   ];
 }
 
 function matchesFilter(order) {
-  if (deliveryFilter === 'active') return ['ready','delivery'].includes(order.status);
-  if (deliveryFilter === 'all') return true;
   return order.status === deliveryFilter;
 }
 
