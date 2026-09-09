@@ -1,10 +1,11 @@
 import './admin-shell.js';
-import { OrdersStore } from './data.js';
+import { OrdersStore, InventoryStore } from './data.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import {
   getFirestore,
   collection,
   doc,
+  getDoc,
   onSnapshot,
   updateDoc,
   serverTimestamp
@@ -24,6 +25,98 @@ const app = initializeApp(firebaseConfig,'panel-operativo');
 const db = getFirestore(app);
 let initialSnapshotReceived = false;
 let lastCloudIds = new Set();
+
+const PRICE_MIGRATION_KEY = 'panel-next-price-migration-20260909-v1';
+const FLOZ_TO_ML = 29.5735295625;
+
+const LEGACY_PRICE_ITEMS = {
+  fish:{ name:'Filete de pescado', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
+  shrimp:{ name:'Camarón', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
+  octopus:{ name:'Pulpo', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
+  tomato:{ name:'Tomate', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
+  onion:{ name:'Cebolla morada', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' },
+  cucumber:{ name:'Pepino', unit:'lb', purchaseUnit:'pieza', contentQty:0.6, contentUnit:'lb' },
+  cilantro:{ name:'Cilantro', unit:'oz', purchaseUnit:'manojo', contentQty:2, contentUnit:'oz' },
+  avocado:{ name:'Aguacate', unit:'pieza', purchaseUnit:'pieza', contentQty:1, contentUnit:'pieza' },
+  lemonJuice:{ name:'Jugo de limón', unit:'fl oz', purchaseUnit:'botella', contentQty:32, contentUnit:'fl oz' },
+  clamato:{ name:'Clamato', unit:'fl oz', purchaseUnit:'botella', contentQty:32, contentUnit:'fl oz' },
+  ketchup:{ name:'Salsa catsup', unit:'ml', purchaseUnit:'botella', contentQty:20 * FLOZ_TO_ML, contentUnit:'ml' },
+  tomatoPuree:{ name:'Puré de tomate', unit:'ml', purchaseUnit:'fl oz', contentQty:FLOZ_TO_ML, contentUnit:'ml' },
+  english:{ name:'Salsa inglesa', unit:'ml', purchaseUnit:'botella', contentQty:5 * FLOZ_TO_ML, contentUnit:'ml' },
+  maggi:{ name:'Salsa Maggi', unit:'ml', purchaseUnit:'botella', contentQty:3.38 * FLOZ_TO_ML, contentUnit:'ml' }
+};
+
+const TICKET_PRICE_OVERRIDES = {
+  fish:{ name:'Filete de pescado', unit:'lb', purchaseUnit:'bolsa', contentQty:2, contentUnit:'lb', purchasePrice:8.87 },
+  shrimp:{ name:'Camarón', unit:'lb', purchaseUnit:'bolsa', contentQty:1.5, contentUnit:'lb', purchasePrice:14.84 },
+  tomato:{ name:'Tomate', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb', purchasePrice:0.97 },
+  onion:{ name:'Cebolla morada', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb', purchasePrice:1.43 },
+  cucumber:{ name:'Pepino', unit:'lb', purchaseUnit:'pieza', contentQty:0.6, contentUnit:'lb', purchasePrice:0.76 },
+  avocado:{ name:'Aguacate', unit:'pieza', purchaseUnit:'pieza', contentQty:1, contentUnit:'pieza', purchasePrice:0.56 }
+};
+
+function inventoryNameKey(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .trim()
+    .toLowerCase();
+}
+
+function inventoryItemByName(name) {
+  const key = inventoryNameKey(name);
+  return InventoryStore.list().find(item=>inventoryNameKey(item.name) === key) || null;
+}
+
+function upsertInventoryPrice(meta, purchasePrice) {
+  const price = Number(purchasePrice || 0);
+  if (!(price > 0)) return false;
+  const current = inventoryItemByName(meta.name);
+  const patch = {
+    unit:meta.unit,
+    purchaseUnit:meta.purchaseUnit,
+    contentQty:Number(meta.contentQty || 1),
+    contentUnit:meta.contentUnit || meta.unit,
+    purchasePrice:price
+  };
+  if (current) {
+    InventoryStore.update(current.id,patch);
+  } else {
+    InventoryStore.create({
+      name:meta.name,
+      category:'Ingrediente',
+      qty:0,
+      minimum:0,
+      ...patch
+    });
+  }
+  return true;
+}
+
+async function migrateLegacyPurchasePrices() {
+  if (localStorage.getItem(PRICE_MIGRATION_KEY) === 'done') return;
+  try {
+    const snapshot = await getDoc(doc(db,'inventario','principal'));
+    const legacy = snapshot.exists() ? (snapshot.data() || {}) : {};
+    const prices = legacy.purchasePrices || {};
+    let changed = false;
+
+    Object.entries(LEGACY_PRICE_ITEMS).forEach(([legacyKey,meta])=>{
+      const price = Number(prices[legacyKey] || 0);
+      if (price > 0) changed = upsertInventoryPrice(meta,price) || changed;
+    });
+
+    Object.values(TICKET_PRICE_OVERRIDES).forEach(meta=>{
+      changed = upsertInventoryPrice(meta,meta.purchasePrice) || changed;
+    });
+
+    localStorage.setItem(PRICE_MIGRATION_KEY,'done');
+    window.dispatchEvent(new CustomEvent('panel:inventory-changed',{ detail:{ source:'legacy-price-migration' } }));
+    if (changed) window.location.reload();
+  } catch (error) {
+    console.warn('No se pudieron migrar precios del panel anterior:',error);
+  }
+}
 
 const STATUS_MAP = {
   nuevo:'pending',
@@ -128,6 +221,8 @@ function dispatch(name, detail = {}) {
 function showConnectionState(state, message = '') {
   dispatch('panel:firebase-state',{ state, message });
 }
+
+migrateLegacyPurchasePrices();
 
 onSnapshot(collection(db,'pedidos'),snapshot=>{
   const remote = [];
