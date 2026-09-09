@@ -1,4 +1,5 @@
-import { InventoryStore } from './data.js';
+import { InventoryStore, MenuStore } from './data.js';
+import { RecipeStore } from './recipes-data.js';
 import { recipePlanForItem } from './recipe-engine.js';
 
 const PLAN_KEY = 'panel-preparation-plan-v1';
@@ -28,6 +29,14 @@ const UNIT_META = {
   pieza:{group:'count',factor:1}, orden:{group:'serving',factor:1}, vaso:{group:'glass',factor:1}, pizca:{group:'pinch',factor:1}
 };
 
+function normalize(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .trim()
+    .toLowerCase();
+}
+
 function localDateISO() {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,10);
@@ -56,6 +65,10 @@ function convertQty(qty, fromUnit, toUnit) {
   return Number(qty || 0) * fromMeta.factor / toMeta.factor;
 }
 
+function productKey(name, unit) {
+  return `${String(name || '').trim().toLowerCase()}__${String(unit || '').trim().toLowerCase()}`;
+}
+
 function parsePlanKey(key) {
   const value = String(key || '');
   const cut = value.lastIndexOf('__');
@@ -70,6 +83,33 @@ function readPlan() {
   } catch (_) {
     return {};
   }
+}
+
+function writePlan(plan) {
+  localStorage.setItem(PLAN_KEY,JSON.stringify(plan));
+  window.dispatchEvent(new CustomEvent('panel:preparation-plan-changed'));
+}
+
+function catalogProducts() {
+  const map = new Map();
+
+  RecipeStore.list()
+    .filter(recipe => String(recipe?.type || '').trim().toLowerCase() === 'producto final')
+    .forEach(recipe => {
+      const name = String(recipe?.menuItem || recipe?.name || '').trim();
+      if (!name) return;
+      const unit = String(recipe?.yieldUnit || 'unidad').trim() || 'unidad';
+      map.set(normalize(name),{ name, unit, key:productKey(name,unit) });
+    });
+
+  MenuStore.list().forEach(item => {
+    const name = String(item?.name || '').trim();
+    if (!name) return;
+    const unit = String(item?.unit || 'unidad').trim() || 'unidad';
+    if (!map.has(normalize(name))) map.set(normalize(name),{ name, unit, key:productKey(name,unit) });
+  });
+
+  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'es'));
 }
 
 function plannedProducts() {
@@ -123,37 +163,15 @@ function requirements() {
 
   const rows = [...map.values()].map(row => {
     const current = InventoryStore.get(row.item.id) || row.item;
-    const needed = Math.round(row.needed * 100) / 100;
-    const have = Number(current.qty || 0);
-    const missing = Math.max(0,Math.round((needed - have) * 100) / 100);
-    return { item:current, needed, have, missing };
-  }).sort((a,b)=>{
-    if ((a.missing > 0) !== (b.missing > 0)) return a.missing > 0 ? -1 : 1;
-    return String(a.item.name || '').localeCompare(String(b.item.name || ''),'es');
-  });
+    return {
+      item:current,
+      needed:Math.round(row.needed * 100) / 100,
+      have:Number(current.qty || 0),
+      minimum:Number(current.minimum || 0)
+    };
+  }).sort((a,b)=>String(a.item.name || '').localeCompare(String(b.item.name || ''),'es'));
 
   return { products, rows, warnings:[...new Set(warnings)] };
-}
-
-function purchaseUnitLabel(unit, qty) {
-  if (Number(qty) === 1) return unit || 'unidad';
-  const plurals = {
-    bolsa:'bolsas', caja:'cajas', paquete:'paquetes', pieza:'piezas', unidad:'unidades', botella:'botellas', lata:'latas',
-    galón:'galones', cubeta:'cubetas', rollo:'rollos', costal:'costales', charola:'charolas'
-  };
-  return plurals[unit] || unit || 'unidades';
-}
-
-function buyText(row) {
-  if (!(row.missing > 0)) return 'No necesitas comprar';
-  const item = row.item;
-  const perPurchase = convertQty(Number(item.contentQty || 1),item.contentUnit || item.unit,item.unit);
-  if (!(perPurchase > 0)) return `Comprar ${cleanNumber(row.missing)} ${item.unit}`;
-  const raw = row.missing / perPurchase;
-  const purchaseUnit = item.purchaseUnit || item.unit;
-  const fractional = String(purchaseUnit).toLowerCase() === String(item.unit).toLowerCase();
-  const qty = fractional ? Math.ceil(raw * 100) / 100 : Math.ceil(raw - 1e-9);
-  return `Comprar ${cleanNumber(qty)} ${purchaseUnitLabel(purchaseUnit,qty)}`;
 }
 
 function ensureStyles() {
@@ -162,9 +180,13 @@ function ensureStyles() {
   style.id = 'purchasePlanStyles';
   style.textContent = `
     .purchase-plan-summary{display:grid;gap:12px}.purchase-plan-products{display:flex;gap:8px;flex-wrap:wrap}.purchase-plan-pill{background:#fff7d8;border:1px solid #eadb8a;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:900;color:#625a2d}
-    .purchase-plan-card{background:#fff;border:1px solid #dfe6e2;border-radius:18px;padding:14px}.purchase-plan-card.need{border-color:#f0c0b6;background:#fffafa}.purchase-plan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.purchase-plan-head h4{margin:0;font-size:19px}.purchase-plan-head small{display:block;margin-top:4px;color:#6f7b75;font-size:12px;font-weight:800}.purchase-plan-buy{border:0;border-radius:12px;background:#078844;color:#fff;padding:10px 13px;font-size:14px;font-weight:1000;white-space:nowrap}
-    .purchase-plan-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}.purchase-plan-metrics div{background:#f3f6f4;border-radius:12px;padding:10px}.purchase-plan-metrics small{display:block;color:#6e7974;font-size:10px;font-weight:900;text-transform:uppercase}.purchase-plan-metrics strong{display:block;margin-top:4px;font-size:16px}.purchase-plan-metrics .missing{background:#fff1e8}.purchase-plan-metrics .ok{background:#eaf7ef;color:#08713a}.purchase-plan-warning{padding:12px 13px;border-radius:13px;background:#fff0dc;color:#6d5129;font-size:13px;font-weight:800}.purchase-plan-empty{padding:16px;border:1px dashed #cad7d1;border-radius:15px;color:#66736c;text-align:center;font-weight:700}
-    @media(max-width:720px){.purchase-plan-metrics{grid-template-columns:1fr}.purchase-plan-head h4{font-size:18px}}
+    .purchase-plan-editor{display:grid;grid-template-columns:1.6fr .8fr auto;gap:9px;align-items:end;background:#fff;border:1px solid #dfe6e2;border-radius:18px;padding:14px}.purchase-plan-editor label{font-size:10px;font-weight:1000;color:#68756e;text-transform:uppercase}.purchase-plan-editor select,.purchase-plan-editor input{display:block;width:100%;min-height:48px;margin-top:6px;border:1px solid #d7e0db;border-radius:12px;background:#fff;padding:0 11px;font-size:17px;color:#17211c}.purchase-plan-editor button{min-height:48px;border:0;border-radius:12px;background:#078844;color:#fff;padding:0 15px;font-size:14px;font-weight:1000}
+    .purchase-plan-card{background:#fff;border:1px solid #dfe6e2;border-radius:18px;padding:14px}.purchase-plan-head h4{margin:0;font-size:19px}.purchase-plan-head small{display:block;margin-top:4px;color:#6f7b75;font-size:12px;font-weight:800}
+    .purchase-plan-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}.purchase-plan-metrics div{background:#f3f6f4;border-radius:12px;padding:10px}.purchase-plan-metrics small{display:block;color:#6e7974;font-size:10px;font-weight:900;text-transform:uppercase}.purchase-plan-metrics strong{display:block;margin-top:4px;font-size:16px}
+    .purchase-plan-action{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:11px}.purchase-plan-action label{font-size:10px;font-weight:1000;color:#68756e;text-transform:uppercase}.purchase-plan-action-field{display:flex;align-items:center;gap:7px;margin-top:6px}.purchase-plan-action input{width:100%;min-height:46px;border:1px solid #d7e0db;border-radius:12px;padding:0 11px;font-size:18px;font-weight:900}.purchase-plan-action span{white-space:nowrap;font-size:13px;font-weight:900;color:#65716b}.purchase-plan-buy{min-height:46px;border:0;border-radius:12px;background:#078844;color:#fff;padding:0 14px;font-size:14px;font-weight:1000;white-space:nowrap}
+    .purchase-plan-warning{padding:12px 13px;border-radius:13px;background:#fff0dc;color:#6d5129;font-size:13px;font-weight:800}.purchase-plan-empty{padding:16px;border:1px dashed #cad7d1;border-radius:15px;color:#66736c;text-align:center;font-weight:700}
+    .prep-dish-metrics{display:none!important}
+    @media(max-width:720px){.purchase-plan-editor{grid-template-columns:1fr}.purchase-plan-metrics{grid-template-columns:1fr}.purchase-plan-action{grid-template-columns:1fr}.purchase-plan-head h4{font-size:18px}}
   `;
   document.head.appendChild(style);
 }
@@ -181,27 +203,58 @@ function ensureSection() {
   section.id = 'purchasePlanSection';
   section.innerHTML = `
     <div class="purchase-section-title">
-      <div><h3>Para preparar hoy</h3><small>Sale de Cantidad por preparar · Recetas · Inventario</small></div>
+      <div><h3>Para preparar hoy</h3><small>Define cuánto vas a preparar y revisa lo necesario para comprar</small></div>
     </div>
     <div class="purchase-plan-summary" id="purchasePlanSummary"></div>`;
   kpis.insertAdjacentElement('afterend',section);
   return section;
 }
 
-function requirementCard(row) {
-  const need = row.missing > 0;
+function planEditor(products) {
+  const catalog = catalogProducts();
+  const selectedKey = catalog[0]?.key || '';
+  const options = catalog.map(item=>`<option value="${encodeURIComponent(item.key)}">${item.name} · ${item.unit}</option>`).join('');
   return `
-    <article class="purchase-plan-card ${need ? 'need' : ''}">
-      <div class="purchase-plan-head">
-        <div><h4>${row.item.name}</h4><small>${buyText(row)}</small></div>
-        ${need ? `<button class="purchase-plan-buy" data-buy-product="${row.item.id}" type="button">Comprar</button>` : ''}
-      </div>
+    <div class="purchase-plan-editor">
+      <label>Platillo<select id="purchasePlanProduct">${options || '<option value="">No hay platillos configurados</option>'}</select></label>
+      <label>Cantidad a preparar<input id="purchasePlanQty" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Cantidad"></label>
+      <button id="savePurchasePlanQty" type="button" ${selectedKey ? '' : 'disabled'}>Guardar</button>
+    </div>
+    ${products.length ? `<div class="purchase-plan-products">${products.map(product=>`<span class="purchase-plan-pill">${cleanNumber(product.qty)} ${product.unit} · ${product.name}</span>`).join('')}</div>` : ''}`;
+}
+
+function requirementCard(row) {
+  const purchaseUnit = row.item.purchaseUnit || row.item.unit || 'unidad';
+  return `
+    <article class="purchase-plan-card" data-purchase-plan-card="${row.item.id}">
+      <div class="purchase-plan-head"><h4>${row.item.name}</h4></div>
       <div class="purchase-plan-metrics">
-        <div><small>Necesitas</small><strong>${cleanNumber(row.needed)} ${row.item.unit}</strong></div>
-        <div><small>Tienes</small><strong>${cleanNumber(row.have)} ${row.item.unit}</strong></div>
-        <div class="${need ? 'missing' : 'ok'}"><small>${need ? 'Te falta' : 'Cubierto'}</small><strong>${need ? `${cleanNumber(row.missing)} ${row.item.unit}` : '✓ Completo'}</strong></div>
+        <div><small>Para preparar</small><strong>${cleanNumber(row.needed)} ${row.item.unit}</strong></div>
+        <div><small>Inventario actual</small><strong>${cleanNumber(row.have)} ${row.item.unit}</strong></div>
+        <div><small>Stock mínimo</small><strong>${cleanNumber(row.minimum)} ${row.item.unit}</strong></div>
+      </div>
+      <div class="purchase-plan-action">
+        <label>Cantidad a comprar<div class="purchase-plan-action-field"><input type="number" min="0.01" step="0.01" inputmode="decimal" data-purchase-qty="${row.item.id}" placeholder="Cantidad"><span>${purchaseUnit}</span></div></label>
+        <button class="purchase-plan-buy" data-plan-buy-product="${row.item.id}" type="button">Registrar compra</button>
       </div>
     </article>`;
+}
+
+function savePlannedQuantity() {
+  const select = $('#purchasePlanProduct');
+  const input = $('#purchasePlanQty');
+  if (!select || !input || !select.value) return;
+  const key = decodeURIComponent(select.value);
+  const raw = input.value.trim();
+  if (raw === '') return;
+  const qty = Math.max(0,Number(raw) || 0);
+  const date = localDateISO();
+  const plan = readPlan();
+  if (!plan[date]) plan[date] = {};
+  if (qty > 0) plan[date][key] = qty;
+  else delete plan[date][key];
+  writePlan(plan);
+  render();
 }
 
 function render() {
@@ -210,16 +263,16 @@ function render() {
   const host = $('#purchasePlanSummary');
   if (!host) return;
   const info = requirements();
+  const editor = planEditor(info.products);
 
   if (!info.products.length) {
-    host.innerHTML = `<div class="purchase-plan-empty">Hoy todavía no has puesto una <strong>Cantidad por preparar</strong>. En cuanto la pongas en Preparación, aquí salen las cantidades que necesitas y lo que te falta comprar.</div>`;
+    host.innerHTML = `${editor}<div class="purchase-plan-empty">Pon arriba cuántas unidades, libras u órdenes vas a preparar. Con eso salen las cantidades de ingredientes para esta compra.</div>`;
     return;
   }
 
-  const products = info.products.map(product=>`<span class="purchase-plan-pill">${cleanNumber(product.qty)} ${product.unit} · ${product.name}</span>`).join('');
   const warnings = info.warnings.length ? `<div class="purchase-plan-warning">⚠ ${info.warnings.join(' · ')}</div>` : '';
   const rows = info.rows.length ? info.rows.map(requirementCard).join('') : `<div class="purchase-plan-empty">No hay ingredientes calculables todavía. Revisa la receta y su vínculo con Inventario.</div>`;
-  host.innerHTML = `<div class="purchase-plan-products">${products}</div>${warnings}${rows}`;
+  host.innerHTML = `${editor}${warnings}${rows}`;
 }
 
 function init() {
@@ -244,5 +297,25 @@ function init() {
   };
   findView();
 }
+
+document.addEventListener('click',event=>{
+  if (event.target.closest('#savePurchasePlanQty')) {
+    event.preventDefault();
+    savePlannedQuantity();
+    return;
+  }
+
+  const buy = event.target.closest('[data-plan-buy-product]');
+  if (buy) {
+    event.preventDefault();
+    const productId = buy.dataset.planBuyProduct;
+    const input = document.querySelector(`[data-purchase-qty="${productId}"]`);
+    const quantity = Number(input?.value || 0);
+    window.dispatchEvent(new CustomEvent('panel:open-purchase',{detail:{productId,quantity:quantity > 0 ? quantity : null}}));
+  }
+});
+
+window.addEventListener('panel:menu-changed',render);
+window.addEventListener('panel:preparation-plan-changed',render);
 
 init();
