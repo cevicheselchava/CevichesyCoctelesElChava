@@ -11,6 +11,28 @@ const todayISO = () => {
   const day = String(now.getDate()).padStart(2,'0');
   return `${year}-${month}-${day}`;
 };
+const tomorrowISO = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2,'0');
+  const day = String(date.getDate()).padStart(2,'0');
+  return `${year}-${month}-${day}`;
+};
+
+const OPERATIONAL_RESET_KEY = 'panel-next-operational-reset-20260909-v1';
+function clearOldOperationalLocalData() {
+  try {
+    if (localStorage.getItem(OPERATIONAL_RESET_KEY) === 'done') return;
+    [
+      'panel-next-money-expenses-v1',
+      'panel-preparation-plan-v1',
+      'panel-preparation-selected-dish-v1'
+    ].forEach(key=>localStorage.removeItem(key));
+    localStorage.setItem(OPERATIONAL_RESET_KEY,'done');
+  } catch (_) {}
+}
+clearOldOperationalLocalData();
 
 const state = {
   view: 'home',
@@ -125,7 +147,6 @@ function matchesFilter(order) {
 
 function orderAction(order) {
   if (order.status === 'pending') return `<button class="order-action primary" data-order-action="prepare" data-id="${order.id}">Enviar a cocina</button>`;
-  if (order.status === 'ready') return `<button class="order-action orange" data-order-action="delivery" data-id="${order.id}">Mandar a entrega</button>`;
   return '';
 }
 
@@ -313,7 +334,12 @@ function showSavedOrder(order) {
 
   renderOrders();
   requestAnimationFrame(()=>{
-    document.querySelector(`[data-order-id="${order.id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+    if (order.date === tomorrowISO()) {
+      document.querySelector('[data-local-order-day="tomorrow"]')?.click();
+    }
+    requestAnimationFrame(()=>{
+      document.querySelector(`[data-order-id="${order.id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+    });
   });
 }
 
@@ -385,9 +411,6 @@ function handleOrderAction(button) {
   if (action === 'prepare') {
     OrdersStore.update(id,{status:'preparing'});
     showToast('Pedido enviado a preparación');
-  } else if (action === 'delivery') {
-    OrdersStore.update(id,{status:'delivery'});
-    showToast('Pedido enviado a entregas');
   } else if (action === 'cancel') {
     OrdersStore.update(id,{status:'cancelled'});
     showToast('Pedido cancelado');
