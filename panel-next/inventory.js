@@ -9,6 +9,7 @@ const INVENTORY_UNITS = ['lb','oz','kg','g','pieza','unidad','ml','L','fl oz','g
 const PURCHASE_UNITS = ['bolsa','caja','paquete','pieza','unidad','botella','lata','galón','cubeta','rollo','costal','charola','otro'];
 
 let inventoryFilter = 'all';
+let inventoryCategory = 'all';
 let inventoryQuery = '';
 let editingInventoryId = null;
 let adjustingInventoryId = null;
@@ -52,6 +53,7 @@ function ensureInventoryAssets() {
           <option value="out">Agotados</option>
         </select>
       </div>
+      <div class="inventory-category-nav" id="inventoryCategoryNav"></div>
       <div class="inventory-list" id="inventoryList"></div>`;
     document.querySelector('main.content')?.appendChild(section);
   }
@@ -136,6 +138,36 @@ function statusFor(item) {
   return ['Disponible','ok'];
 }
 
+function productCategory(item) {
+  return String(item.category || 'Otros').trim() || 'Otros';
+}
+
+function availableCategories() {
+  return [...new Set(InventoryStore.list().map(productCategory))]
+    .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+}
+
+function categoryLabel(category) {
+  const labels = {
+    'Carnes y mariscos':'Mariscos',
+    'Verduras y frutas':'Verduras',
+    'Salsas y condimentos':'Salsas'
+  };
+  return labels[category] || category;
+}
+
+function renderCategoryButtons() {
+  const host = $('#inventoryCategoryNav');
+  if (!host) return;
+  const categories = availableCategories();
+  if (inventoryCategory !== 'all' && !categories.includes(inventoryCategory)) inventoryCategory = 'all';
+  host.innerHTML = [
+    `<button type="button" class="inventory-category-button ${inventoryCategory === 'all' ? 'active' : ''}" data-inventory-category="all">Todos</button>`,
+    ...categories.map(category=>`
+      <button type="button" class="inventory-category-button ${inventoryCategory === category ? 'active' : ''}" data-inventory-category="${encodeURIComponent(category)}">${categoryLabel(category)}</button>`)
+  ].join('');
+}
+
 function inventoryRows() {
   const q = inventoryQuery.trim().toLowerCase();
   return InventoryStore.list().filter(item => {
@@ -143,9 +175,10 @@ function inventoryRows() {
     const min = Number(item.minimum || 0);
     if (inventoryFilter === 'low' && !(qty <= min && qty > 0)) return false;
     if (inventoryFilter === 'out' && qty > 0) return false;
+    if (inventoryCategory !== 'all' && productCategory(item) !== inventoryCategory) return false;
     if (q && !`${item.name} ${item.category || ''} ${item.unit || ''} ${item.purchaseUnit || ''}`.toLowerCase().includes(q)) return false;
     return true;
-  });
+  }).sort((a,b)=>String(a.name || '').localeCompare(String(b.name || ''),'es',{sensitivity:'base'}));
 }
 
 function presentationText(item) {
@@ -162,6 +195,7 @@ function renderInventory() {
     ['Productos',items.length,'total'],['Bajo mínimo',low,'low'],['Agotados',out,'out'],['Valor',money.format(value),'value']
   ].map(([label,value,tone])=>`<article class="inventory-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
 
+  renderCategoryButtons();
   const rows = inventoryRows();
   $('#inventoryList').innerHTML = rows.length ? rows.map(item => {
     const [statusLabel,statusClass] = statusFor(item);
@@ -305,6 +339,17 @@ document.addEventListener('click', event => {
     openInventory();
     return;
   }
+
+  const categoryButton = event.target.closest('[data-inventory-category]');
+  if (categoryButton) {
+    event.preventDefault();
+    inventoryCategory = categoryButton.dataset.inventoryCategory === 'all'
+      ? 'all'
+      : decodeURIComponent(categoryButton.dataset.inventoryCategory);
+    renderInventory();
+    return;
+  }
+
   const action = event.target.closest('[data-inventory-action]');
   if (!action) return;
   event.preventDefault();
