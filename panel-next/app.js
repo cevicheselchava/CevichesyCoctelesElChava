@@ -4,7 +4,13 @@ import { OrdersStore, MenuStore, InventoryStore } from './data.js';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const money = new Intl.NumberFormat(BUSINESS.locale, { style:'currency', currency:BUSINESS.currency });
-const todayISO = () => new Date().toISOString().slice(0,10);
+const todayISO = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2,'0');
+  const day = String(now.getDate()).padStart(2,'0');
+  return `${year}-${month}-${day}`;
+};
 
 const state = {
   view: 'home',
@@ -263,14 +269,63 @@ function lineTotal(item) {
   return 0;
 }
 
-function saveOrder(event) {
-  event.preventDefault();
+function invalidOrderField(selector, message) {
+  const field = $(selector);
+  if (field) {
+    field.focus();
+    if (typeof field.reportValidity === 'function') field.reportValidity();
+  }
+  showToast(message);
+  return false;
+}
+
+function validateOrderForm() {
   const productName = $('#orderProductName').value.trim();
   const unit = $('#orderUnit').value.trim();
   const qty = Number($('#orderQty').value || 0);
   const rawPrice = $('#orderPrice').value;
   const price = rawPrice === '' ? null : Number(rawPrice);
-  if (!productName || !unit || !qty || price === null || !Number.isFinite(price) || !$('#orderCustomer').value.trim()) return;
+  const customer = $('#orderCustomer').value.trim();
+  const date = $('#orderDate').value;
+  const time = $('#orderTime').value;
+
+  if (!productName) return invalidOrderField('#orderProductName','Falta el producto');
+  if (!(qty > 0)) return invalidOrderField('#orderQty','Revisa la cantidad');
+  if (!unit) return invalidOrderField('#orderUnit','Falta la unidad');
+  if (price === null || !Number.isFinite(price) || price < 0) return invalidOrderField('#orderPrice','Revisa el precio');
+  if (!customer) return invalidOrderField('#orderCustomer','Falta el nombre del cliente');
+  if (!date) return invalidOrderField('#orderDate','Falta el día de entrega');
+  if (!time) return invalidOrderField('#orderTime','Falta la hora de entrega');
+  return true;
+}
+
+function showSavedOrder(order) {
+  if (!order) return;
+  state.orders = OrdersStore.list();
+  const statusFilter = ['delivered','cancelled'].includes(order.status) ? 'all' : 'active';
+  state.orderFilter = statusFilter;
+  $$('#statusTabs button').forEach(button=>button.classList.toggle('active',button.dataset.status === statusFilter));
+
+  if (order.date !== todayISO()) {
+    state.dayFilter = 'all';
+    $('#orderDayFilter').value = 'all';
+  }
+
+  renderOrders();
+  requestAnimationFrame(()=>{
+    document.querySelector(`[data-order-id="${order.id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+}
+
+function saveOrder(event) {
+  event.preventDefault();
+  if (!validateOrderForm()) return;
+
+  const wasEditing = Boolean(state.editingOrderId);
+  const productName = $('#orderProductName').value.trim();
+  const unit = $('#orderUnit').value.trim();
+  const qty = Number($('#orderQty').value || 0);
+  const price = Number($('#orderPrice').value);
 
   const existing = state.editingOrderId ? OrdersStore.get(state.editingOrderId) : null;
   const oldItems = Array.isArray(existing?.items) ? existing.items : [];
@@ -300,17 +355,24 @@ function saveOrder(event) {
     total
   };
 
-  if (state.editingOrderId) {
-    OrdersStore.update(state.editingOrderId, payload);
-    showToast('Pedido actualizado');
-  } else {
-    OrdersStore.create(payload);
-    showToast('Pedido guardado');
+  let savedOrder = null;
+  try {
+    if (wasEditing) {
+      savedOrder = OrdersStore.update(state.editingOrderId, payload);
+      if (!savedOrder) throw new Error('No se encontró el pedido para actualizar');
+    } else {
+      savedOrder = OrdersStore.create(payload);
+      if (!savedOrder) throw new Error('No se creó el pedido');
+    }
+  } catch (error) {
+    console.error('No se pudo guardar el pedido:',error);
+    showToast('No se pudo guardar el pedido');
+    return;
   }
 
-  state.orders = OrdersStore.list();
   closeOrderModal();
-  renderOrders();
+  showSavedOrder(savedOrder);
+  showToast(wasEditing ? 'Pedido actualizado' : 'Pedido guardado');
 }
 
 function handleOrderAction(button) {
