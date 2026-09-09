@@ -2,13 +2,13 @@ import { InventoryStore } from './data.js';
 import { db } from './firebase-sync.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
-const KEY='panel-next-legacy-disposables-v1';
+const KEY='panel-next-legacy-disposables-v2';
 const rows={
-  containerHalf:{name:'Contenedor ceviche ½ lb',unit:'pieza',purchaseUnit:'pieza',contentQty:1,contentUnit:'pieza',category:'Empaques'},
-  containerLb:{name:'Contenedor ceviche 1 lb',unit:'pieza',purchaseUnit:'pieza',contentQty:1,contentUnit:'pieza',category:'Empaques'},
-  lidCeviche:{name:'Tapa ceviche · ½ lb / 1 lb',unit:'pieza',purchaseUnit:'pieza',contentQty:1,contentUnit:'pieza',category:'Empaques'},
-  container12:{name:'Contenedor cóctel 12 oz',unit:'pieza',purchaseUnit:'pieza',contentQty:1,contentUnit:'pieza',category:'Empaques'},
-  lid12:{name:'Tapa cóctel 12 oz',unit:'pieza',purchaseUnit:'pieza',contentQty:1,contentUnit:'pieza',category:'Empaques'},
+  containerHalf:{name:'Contenedor ceviche ½ lb',unit:'pieza',purchaseUnit:'paquete',contentQty:25,contentUnit:'pieza',category:'Empaques',legacyPricePerPiece:true},
+  containerLb:{name:'Contenedor ceviche 1 lb',unit:'pieza',purchaseUnit:'paquete',contentQty:25,contentUnit:'pieza',category:'Empaques',legacyPricePerPiece:true},
+  lidCeviche:{name:'Tapa ceviche · ½ lb / 1 lb',unit:'pieza',purchaseUnit:'paquete',contentQty:25,contentUnit:'pieza',category:'Empaques',legacyPricePerPiece:true},
+  container12:{name:'Contenedor cóctel 12 oz',unit:'pieza',purchaseUnit:'paquete',contentQty:25,contentUnit:'pieza',category:'Empaques',legacyPricePerPiece:true},
+  lid12:{name:'Tapa cóctel 12 oz',unit:'pieza',purchaseUnit:'paquete',contentQty:25,contentUnit:'pieza',category:'Empaques',legacyPricePerPiece:true},
   spoon:{name:'Cuchara',unit:'pieza',purchaseUnit:'paquete',contentQty:100,contentUnit:'pieza',category:'Desechables'},
   napkins:{name:'Servilletas',unit:'pieza',purchaseUnit:'paquete',contentQty:120,contentUnit:'pieza',category:'Desechables'},
   tostada:{name:'Tostadas',unit:'pieza',purchaseUnit:'paquete',contentQty:22,contentUnit:'pieza',category:'Desechables'},
@@ -23,10 +23,13 @@ const rows={
 
 const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 function find(name){const k=norm(name);return InventoryStore.list().find(x=>norm(x.name)===k)||null;}
-function upsert(meta,price){
+function upsert(meta,legacyPrice){
   let item=find(meta.name);
   if(!item)item=InventoryStore.create({qty:0,minimum:0,purchasePrice:0,...meta});
-  InventoryStore.update(item.id,{...meta,purchasePrice:Number(price||0)});
+  const purchasePrice=meta.legacyPricePerPiece?Number(legacyPrice||0)*Number(meta.contentQty||1):Number(legacyPrice||0);
+  const cleanMeta={...meta};
+  delete cleanMeta.legacyPricePerPiece;
+  InventoryStore.update(item.id,{...cleanMeta,purchasePrice});
 }
 
 async function run(){
