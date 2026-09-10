@@ -247,6 +247,25 @@ function chooseDay(day) {
   applyDayVisibility();
 }
 
+function toggleOrder(id) {
+  const previousId = expandedOrderId;
+  expandedOrderId = previousId === id ? null : id;
+
+  if (previousId && previousId !== id) {
+    const previous = $(`#ordersList .order-card[data-order-id="${CSS.escape(previousId)}"]`);
+    if (previous) {
+      previous.classList.add('order-collapsed');
+      previous.setAttribute('aria-expanded','false');
+    }
+  }
+
+  const card = $(`#ordersList .order-card[data-order-id="${CSS.escape(id)}"]`);
+  if (!card) return;
+  const expanded = expandedOrderId === id;
+  card.classList.toggle('order-collapsed',!expanded);
+  card.setAttribute('aria-expanded',String(expanded));
+}
+
 document.addEventListener('click',event=>{
   const dayButton = event.target.closest('[data-local-order-day]');
   if (dayButton) {
@@ -257,9 +276,7 @@ document.addEventListener('click',event=>{
 
   const card = event.target.closest('#ordersList .order-card[data-order-id]');
   if (!card || event.target.closest('button,a,input,select,textarea,label')) return;
-  const id = card.dataset.orderId;
-  expandedOrderId = expandedOrderId === id ? null : id;
-  applyDayVisibility();
+  toggleOrder(card.dataset.orderId);
 });
 
 document.addEventListener('keydown',event=>{
@@ -269,9 +286,7 @@ document.addEventListener('keydown',event=>{
   event.preventDefault();
   const card = head.closest('.order-card[data-order-id]');
   if (!card) return;
-  const id = card.dataset.orderId;
-  expandedOrderId = expandedOrderId === id ? null : id;
-  applyDayVisibility();
+  toggleOrder(card.dataset.orderId);
 });
 
 window.addEventListener('panel:orders-changed',event=>{
@@ -282,7 +297,10 @@ window.addEventListener('panel:orders-changed',event=>{
 });
 window.addEventListener('hashchange',()=>requestAnimationFrame(applyOrdersUi));
 
-const observer = new MutationObserver(()=>requestAnimationFrame(applyOrdersUi));
-observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+const ordersList = $('#ordersList');
+if (ordersList) {
+  const observer = new MutationObserver(()=>requestAnimationFrame(applyOrdersUi));
+  observer.observe(ordersList,{childList:true});
+}
 
 requestAnimationFrame(applyOrdersUi);
