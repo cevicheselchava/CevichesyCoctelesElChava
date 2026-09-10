@@ -1,5 +1,6 @@
 import { InventoryStore } from './data.js';
 import { BusinessCore } from './business-core.js';
+import './orders-polish.js?v=20260910-1315';
 
 const SHRIMP_FIX_KEY = 'panel-next-shrimp-operational-fix-v1';
 
