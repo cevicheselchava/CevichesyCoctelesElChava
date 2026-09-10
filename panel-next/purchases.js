@@ -9,7 +9,7 @@ function ensurePurchasesStyles() {
   if (document.querySelector('link[data-purchases-style="1"]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = './purchases.css?v=20260910-0010';
+  link.href = './purchases.css?v=20260910-0617';
   link.dataset.purchasesStyle = '1';
   document.head.appendChild(link);
 }
@@ -47,7 +47,7 @@ document.addEventListener('click',event=>{
   openPurchases();
 },true);
 
-import('./purchase-system-final.js?v=20260910-0010').then(()=>{
+import('./purchase-system-final.js?v=20260910-0617').then(()=>{
   if (location.hash === '#compras') openPurchases();
 }).catch(error=>{
   console.error('Compras:',error);
