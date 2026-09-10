@@ -3,7 +3,7 @@ import { OrdersStore } from './data.js';
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
-let deliveryFilter = 'ready';
+let deliveryFilter = 'today';
 
 function localDateISO(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
@@ -44,11 +44,11 @@ function ensureAssets() {
       <div class="module-topbar">
         <button class="back-button" id="deliveriesBack" type="button">‹</button>
         <div><small>MÓDULO</small><h2>Entregas</h2></div>
-        <div></div>
+        <button class="new-order-button" id="refreshDeliveries" type="button">↻ Actualizar</button>
       </div>
-      <div class="delivery-kpis" id="deliveryKpis"></div>
       <div class="delivery-tabs" id="deliveryTabs">
-        <button class="active" data-delivery-filter="ready">Listos</button>
+        <button class="active" data-delivery-filter="today">Hoy</button>
+        <button data-delivery-filter="ready">Listos</button>
         <button data-delivery-filter="delivery">En ruta</button>
         <button data-delivery-filter="delivered">Entregados</button>
       </div>
@@ -61,19 +61,6 @@ function statusLabel(order) {
   if (order.status === 'ready') return 'LISTO';
   if (order.status === 'delivery') return 'EN RUTA';
   return 'ENTREGADO';
-}
-
-function deliveryKpis() {
-  const rows = deliveryOrders();
-  return [
-    ['Listos', rows.filter(order=>order.status === 'ready').length, 'ready'],
-    ['En ruta', rows.filter(order=>order.status === 'delivery').length, 'route'],
-    ['Entregados hoy', rows.filter(deliveredToday).length, 'done']
-  ];
-}
-
-function matchesFilter(order) {
-  return order.status === deliveryFilter;
 }
 
 function itemText(order) {
@@ -135,17 +122,22 @@ function deliveryCard(order) {
     </article>`;
 }
 
-function renderDeliveries() {
-  if (!$('#deliveryKpis') || !$('#deliveryList')) return;
-  $('#deliveryKpis').innerHTML = deliveryKpis().map(([label,value,tone])=>`
-    <article class="delivery-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
+function matchesFilter(order) {
+  if (deliveryFilter === 'today') {
+    return order.date === localDateISO() || deliveredToday(order);
+  }
+  if (deliveryFilter === 'route') return order.status === 'delivery';
+  return order.status === deliveryFilter;
+}
 
+function renderDeliveries() {
+  if (!$('#deliveryList')) return;
   const rows = deliveryOrders()
     .filter(matchesFilter)
     .sort((a,b)=>deliverySortValue(a).localeCompare(deliverySortValue(b)) || Number(a.createdAt || 0) - Number(b.createdAt || 0));
   $('#deliveryList').innerHTML = rows.length
     ? rows.map(deliveryCard).join('')
-    : `<div class="delivery-empty"><span>🛵</span><h3>No hay entregas aquí</h3><p>Los pedidos listos y en ruta aparecerán automáticamente.</p></div>`;
+    : `<div class="delivery-empty"><span>🛵</span><h3>No hay entregas aquí</h3><p>Los pedidos listos, en ruta y entregados aparecerán automáticamente.</p></div>`;
 }
 
 function openDeliveries() {
@@ -202,22 +194,37 @@ document.addEventListener('click',event=>{
     return;
   }
 
+  const back = event.target.closest('#deliveriesBack,#deliveriesView [data-back-home]');
+  if (back) {
+    event.preventDefault();
+    goHome();
+    return;
+  }
+
+  const refresh = event.target.closest('#refreshDeliveries');
+  if (refresh) {
+    event.preventDefault();
+    renderDeliveries();
+    showDeliveryToast('Entregas actualizadas');
+    return;
+  }
+
+  const tab = event.target.closest('#deliveryTabs [data-delivery-filter]');
+  if (tab) {
+    event.preventDefault();
+    const requested = tab.dataset.deliveryFilter || 'today';
+    deliveryFilter = requested === 'route' ? 'delivery' : requested;
+    $$('#deliveryTabs button').forEach(item=>item.classList.toggle('active',item === tab));
+    renderDeliveries();
+    return;
+  }
+
   const action = event.target.closest('[data-delivery-action]');
   if (action) {
     event.preventDefault();
     handleDeliveryAction(action);
   }
 },true);
-
-$('#deliveriesBack')?.addEventListener('click',goHome);
-$('#deliveriesView [data-back-home]')?.addEventListener('click',goHome);
-$('#deliveryTabs')?.addEventListener('click',event=>{
-  const button = event.target.closest('[data-delivery-filter]');
-  if (!button) return;
-  deliveryFilter = button.dataset.deliveryFilter;
-  $$('#deliveryTabs button').forEach(item=>item.classList.toggle('active',item === button));
-  renderDeliveries();
-});
 
 window.addEventListener('panel:orders-changed',()=>{
   if ($('#deliveriesView')?.classList.contains('active')) renderDeliveries();
