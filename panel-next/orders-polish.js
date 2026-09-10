@@ -32,36 +32,43 @@ function normalizedDayPlan(dateISO) {
   });
   return map;
 }
-function aggregateOrders(dateISO,excludeId=''){
-  const map=new Map();
-  OrdersStore.list().filter(order=>order.date===dateISO&&order.status!=='cancelled'&&order.id!==excludeId).forEach(order=>{
-    (Array.isArray(order.items)?order.items:[]).forEach(item=>{
-      const key=productKey(item.name,item.unit);
-      map.set(key,(map.get(key)||0)+Number(item.qty||0));
-    });
-  });
-  return map;
-}
-function fitsPreparedProduction(order){
-  if(!order||order.status!=='pending'||order.date!==localDateISO()) return false;
-  const dayPlan=normalizedDayPlan(order.date);
-  const existing=aggregateOrders(order.date,order.id);
-  const items=Array.isArray(order.items)?order.items:[];
-  if(!items.length)return false;
-  return items.every(item=>{
+function orderRequirements(order){
+  const required=new Map();
+  (Array.isArray(order?.items)?order.items:[]).forEach(item=>{
     const key=productKey(item.name,item.unit);
-    const planned=Number(dayPlan.get(key)||0);
-    const qty=Number(item.qty||0);
-    return planned>0&&qty>0&&(Number(existing.get(key)||0)+qty)<=planned+.0001;
+    required.set(key,(required.get(key)||0)+Number(item.qty||0));
   });
+  return required;
+}
+function canAllocate(capacity,required){
+  if(!required.size)return false;
+  return [...required.entries()].every(([key,qty])=>qty>0&&Number(capacity.get(key)||0)+.0001>=qty);
+}
+function allocate(capacity,required){
+  required.forEach((qty,key)=>capacity.set(key,Math.max(0,Number(capacity.get(key)||0)-qty)));
 }
 function reconcilePreparedOrders(){
   if(readying)return;
   readying=true;
   try{
-    OrdersStore.list().filter(order=>order.date===localDateISO()&&order.status==='pending').sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0)).forEach(order=>{
-      const fresh=OrdersStore.get(order.id);
-      if(fitsPreparedProduction(fresh)) OrdersStore.update(order.id,{status:'ready',fulfilledFromExtra:true,fulfilledFromExtraAt:Date.now()});
+    const date=localDateISO();
+    const capacity=normalizedDayPlan(date);
+    if(!capacity.size)return;
+    const orders=OrdersStore.list().filter(order=>order.date===date&&order.status!=='cancelled');
+
+    // Lo que ya salió de pendiente (listo, en ruta o entregado) ya consumió producción.
+    orders.filter(order=>order.status!=='pending').sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0)).forEach(order=>{
+      const required=orderRequirements(order);
+      if(canAllocate(capacity,required)) allocate(capacity,required);
+      else required.forEach((qty,key)=>capacity.set(key,Math.max(0,Number(capacity.get(key)||0)-qty)));
+    });
+
+    // La producción restante se asigna a los pendientes en el orden en que entraron.
+    orders.filter(order=>order.status==='pending').sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0)).forEach(order=>{
+      const required=orderRequirements(order);
+      if(!canAllocate(capacity,required))return;
+      allocate(capacity,required);
+      OrdersStore.update(order.id,{status:'ready',fulfilledFromProduction:true,fulfilledFromProductionAt:Date.now()});
     });
   } finally { readying=false; }
 }
