@@ -1,9 +1,6 @@
 import './photo-inventory.js';
 
 // Entrada única al módulo de Compras.
-// La pantalla vieja fue retirada: este archivo solo crea el contenedor,
-// abre el módulo y carga la versión definitiva una sola vez.
-
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 
@@ -12,7 +9,7 @@ function ensurePurchasesStyles() {
   if (document.querySelector('link[data-purchases-style="1"]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = './purchases.css?v=20260909-0200';
+  link.href = './purchases.css?v=20260909-2000';
   link.dataset.purchasesStyle = '1';
   document.head.appendChild(link);
 }
@@ -42,7 +39,6 @@ function openPurchases() {
 ensurePurchasesStyles();
 ensurePurchasesView();
 
-// Evita que app.js muestre la pantalla/mensaje genérico antes de Compras.
 document.addEventListener('click', event => {
   const module = event.target.closest('[data-module="compras"]');
   if (!module) return;
@@ -51,7 +47,6 @@ document.addEventListener('click', event => {
   openPurchases();
 }, true);
 
-// Carga únicamente la pantalla definitiva de Compras.
-import('./purchase-system-fix.js').then(() => {
+import('./purchase-system-v4.js?v=20260909-2000').then(() => {
   if (location.hash === '#compras') openPurchases();
 });
