@@ -263,7 +263,7 @@ document.addEventListener('click',event=>{
     return;
   }
 
-  const ready = event.target.closest('[data-core-ready]');
+  const ready = event.target.closest('.core-ready-button[data-core-ready]');
   if (ready) {
     event.preventDefault();
     event.stopPropagation();
