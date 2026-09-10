@@ -47,6 +47,6 @@ document.addEventListener('click', event => {
   openPurchases();
 }, true);
 
-import('./purchase-system-v4.js?v=20260909-2000').then(() => import('./purchase-ui-cleanup.js?v=20260909-2340')).then(() => {
+import('./purchase-system-v4.js?v=20260909-2000').then(() => import('./purchase-ui-cleanup.js?v=20260909-2355')).then(() => {
   if (location.hash === '#compras') openPurchases();
 });
