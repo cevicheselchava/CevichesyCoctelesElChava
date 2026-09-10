@@ -28,182 +28,41 @@
     .modal-head h2{font-size:36px}
     .modal-head small{font-size:13px}
     .order-preview{font-size:18px}
-    .primary-action,.secondary-action{font-size:17px;min-height:52px}
-    .hero.compact{padding:14px 16px 12px}
-    .hero.compact .brand-logo{max-width:142px}
-    .hero.compact .hero-row{grid-template-columns:44px minmax(112px,150px) 1fr 46px}
-    .hero.compact .panel-title{font-size:clamp(27px,5vw,48px)}
-    .hero.compact .side-slogan{font-size:clamp(14px,2vw,19px)}
-    .prep-view{max-width:900px;margin:0 auto}
-    .prep-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-    .prep-kpi{background:#fff;border:1px solid #e1e7e4;border-radius:18px;padding:14px 13px;min-height:92px;box-shadow:0 7px 18px rgba(29,49,40,.05)}
-    .prep-kpi small{display:block;color:#738079;font-size:12px;font-weight:900;text-transform:uppercase}
-    .prep-kpi strong{display:block;margin-top:8px;font-size:29px}
-    .prep-kpi.kitchen{border-top:5px solid var(--yellow)}
-    .prep-kpi.ready{border-top:5px solid var(--green)}
-    .prep-kpi.total{border-top:5px solid var(--orange)}
-    .prep-tabs{display:flex;gap:8px;overflow:auto;padding:2px 1px 10px;scrollbar-width:none}
-    .prep-tabs::-webkit-scrollbar{display:none}
-    .prep-tabs button{border:1px solid #dce4e1;background:#fff;color:#5b6861;border-radius:999px;padding:10px 15px;font-size:16px;font-weight:900;white-space:nowrap}
-    .prep-tabs button.active{background:#111;color:#fff;border-color:#111}
-    .prep-list{display:grid;gap:14px}
-    .prep-card{background:rgba(255,255,255,.97);border:1px solid #dfe6e2;border-radius:22px;padding:18px;box-shadow:0 8px 22px rgba(25,46,37,.055)}
-    .prep-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-    .prep-card .folio{font-size:13px}
-    .prep-card h3{margin:3px 0 0;font-size:25px}
-    .prep-order-meta{margin-top:5px;color:#637069;font-size:15px;font-weight:700}
-    .prep-product{margin-top:14px;border-radius:16px;background:#fff8d8;padding:15px 16px}
-    .prep-product strong{display:block;font-size:21px}
-    .prep-product small{display:block;margin-top:4px;color:#655c39;font-size:14px;font-weight:800}
-    .prep-steps{margin-top:14px;border:1px solid #e2e8e4;border-radius:16px;padding:15px;background:#fafcfb}
-    .prep-steps h4{margin:0 0 10px;font-size:18px}
-    .prep-step{display:grid;grid-template-columns:31px 1fr;gap:10px;align-items:start;margin-top:9px;font-size:16px;font-weight:700;line-height:1.3}
-    .prep-step span{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;font-weight:1000}
-    .prep-no-recipe{padding:11px;border-radius:12px;background:#eef4f1;color:#526159;font-size:15px;line-height:1.35;font-weight:700}
-    .prep-note{margin-top:12px;border-radius:13px;background:#fff0dc;padding:11px 13px;font-size:15px;font-weight:800}
-    .prep-actions{display:flex;justify-content:flex-end;margin-top:14px}
-    .prep-ready-button{border:0;border-radius:14px;background:var(--green);color:#fff;padding:13px 18px;min-height:48px;font-size:16px;font-weight:1000}
-    .prep-ready-label{border-radius:14px;background:#dff5e8;color:#08713a;padding:12px 16px;font-size:15px;font-weight:1000}
-    .prep-empty{text-align:center;padding:50px 20px;background:#fff;border:1px dashed #cad7d1;border-radius:22px;color:#65716b}
-    .prep-empty span{font-size:42px}.prep-empty h3{margin:10px 0 4px;font-size:24px;color:#222}.prep-empty p{margin:0;font-size:15px}
-    @media(max-width:720px){
-      .module-topbar h2{font-size:38px}
-      .new-order-button{font-size:18px}
-      .order-kpi small{font-size:12px}
-      .order-kpi strong{font-size:29px}
-      .order-card{padding:18px}
-      .order-card-actions{flex-wrap:wrap}
-      .hero.compact{padding:10px 10px 8px}
-      .hero.compact .hero-row{grid-template-columns:34px 92px 1fr 34px;gap:7px}
-      .hero.compact .brand-logo{max-width:92px}
-      .hero.compact .panel-title{font-size:24px}
-      .hero.compact .side-slogan{font-size:10px}
-      .prep-kpis{gap:7px}
-      .prep-kpi{min-height:84px;padding:12px 9px}
-      .prep-kpi small{font-size:10px}.prep-kpi strong{font-size:25px}
-      .prep-card{padding:16px}.prep-card h3{font-size:23px}
-      .prep-product strong{font-size:19px}.prep-step{font-size:15px}
-    }
   </style>
 </head>
 <body>
   <div class="app">
     <header class="hero" id="hero">
       <div class="hero-row">
-        <button class="icon-button" id="menuButton" type="button" aria-label="Abrir menú">☰</button>
-        <div class="logo-wrap"><img id="brandLogo" class="brand-logo" src="../logo.png?v=20260910-0015" alt="Logo del negocio"></div>
-        <div class="title-wrap">
-          <h1 class="panel-title" id="panelTitle">PANEL <span>OPERATIVO</span></h1>
-          <div class="side-slogan" id="sideSlogan">Good Food<br>Good Vibes</div>
-        </div>
-        <button class="icon-button bell" id="bellButton" type="button" aria-label="Notificaciones">♧<span class="badge-notify">0</span></button>
+        <button class="icon-button" id="menuButton" type="button">☰</button>
+        <div class="logo-wrap"><img class="brand-logo" id="brandLogo" alt="Ceviches & Cócteles"></div>
+        <div class="title-wrap"><h1 class="panel-title" id="panelTitle">PANEL <span>OPERATIVO</span></h1><div class="side-slogan" id="sideSlogan"></div></div>
+        <button class="icon-button bell" id="bellButton" type="button">♨<span class="badge-notify" hidden>0</span></button>
       </div>
     </header>
-
     <main class="content">
       <section class="view active" id="homeView" data-view="home">
-        <section class="module-grid" id="moduleGrid" aria-label="Módulos del sistema"></section>
-        <section class="summary-section">
-          <div class="summary-title-row">
-            <h2 class="summary-title"><span class="bars">▂▅▇</span> Resumen de hoy</h2>
-            <div class="date-pill">▣ <span id="todayDate">Hoy</span></div>
-          </div>
-          <div class="summary-grid" id="summaryGrid"></div>
-        </section>
-        <footer class="footer-brand">
-          <div class="footer-slogan" id="footerSlogan">Ceviches, Cócteles<br>y Buena Vibra</div>
-          <div class="footer-tag" id="footerTag">ONE<br>LOVE</div>
-        </footer>
+        <div class="module-grid" id="moduleGrid"></div>
+        <section class="summary-section"><div class="summary-title-row"><h2 class="summary-title"><span class="bars">≡</span> Resumen del Día</h2><span class="date-pill" id="todayDate"></span></div><div class="summary-grid" id="summaryGrid"></div></section>
+        <section class="footer-brand"><div class="footer-slogan" id="footerSlogan"></div><div class="footer-tag" id="footerTag"></div></section>
       </section>
-
-      <section class="view orders-view" id="ordersView" data-view="pedidos">
-        <div class="module-topbar">
-          <button class="back-button" id="ordersBack" type="button">‹</button>
-          <div><small>MÓDULO</small><h2>Pedidos</h2></div>
-          <button class="new-order-button" id="newOrderButton" type="button">＋ Pedido</button>
-        </div>
+      <section class="view" id="ordersView" data-view="pedidos">
+        <div class="module-topbar"><button class="back-button" id="ordersBack" type="button">‹</button><div><small>MÓDULO</small><h2>Pedidos</h2></div><button class="new-order-button" id="newOrderButton" type="button">＋ Pedido</button></div>
         <div class="order-kpis" id="orderKpis"></div>
-        <div class="orders-toolbar">
-          <label class="orders-search">⌕ <input id="orderSearch" type="search" placeholder="Buscar cliente, folio o teléfono"></label>
-          <select id="orderDayFilter" class="orders-select" aria-label="Día"><option value="today">Hoy</option><option value="all">Todos</option></select>
-        </div>
-        <div class="status-tabs" id="statusTabs">
-          <button class="active" data-status="active">Activos</button><button data-status="pending">Pendientes</button><button data-status="ready">Listos</button><button data-status="delivered">Entregados</button><button data-status="all">Todos</button>
-        </div>
+        <div class="orders-toolbar"><label class="orders-search">⌕<input id="orderSearch" placeholder="Buscar cliente, folio o teléfono"></label><select class="orders-select" id="orderDayFilter"><option value="today">Pedidos hoy</option><option value="all">Todos los días</option></select></div>
+        <div class="status-tabs" id="statusTabs"><button class="active" data-status="active">Activos</button><button data-status="pending">Pendientes</button><button data-status="ready">Listos</button><button data-status="delivered">Entregados</button><button data-status="all">Todos</button></div>
         <div class="orders-list" id="ordersList"></div>
       </section>
-
-      <section class="view prep-view" id="preparationView" data-view="preparacion">
-        <div class="module-topbar">
-          <button class="back-button" id="prepBack" type="button">‹</button>
-          <div><small>MÓDULO</small><h2>Preparación</h2></div>
-          <div></div>
-        </div>
-        <div class="prep-kpis" id="prepKpis"></div>
-        <div class="prep-tabs" id="prepTabs">
-          <button class="active" data-prep-filter="preparing">En cocina</button>
-          <button data-prep-filter="ready">Listos</button>
-          <button data-prep-filter="all">Todos</button>
-        </div>
-        <div class="prep-list" id="prepList"></div>
-      </section>
+      <section class="view" id="purchasesView" data-view="compras"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Compras</h2></div><button class="new-order-button" id="simpleNewPurchase" type="button">＋ Compra</button></div><div class="purchase-kpis" id="purchaseKpis"></div><div id="purchaseSimple"></div><div class="purchase-history" id="purchaseHistory"></div></section>
+      <section class="view" id="inventoryView" data-view="inventario"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Inventario</h2></div><button class="new-order-button" id="newInventoryItem" type="button">＋ Producto</button></div><div class="inventory-toolbar"><label class="inventory-search">⌕<input id="inventorySearch" placeholder="Buscar producto"></label></div><div class="inventory-category-nav" id="inventoryCategoryNav"></div><div class="inventory-list" id="inventoryList"></div></section>
+      <section class="view" id="moneyView" data-view="dinero"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Dinero</h2></div><button class="new-order-button" id="newExpenseButton" type="button">＋ Gasto</button></div><div class="money-tabs" id="moneyTabs"><button class="active" data-money-tab="summary">Resumen</button><button data-money-tab="sales">Ventas</button><button data-money-tab="expenses">Gastos</button></div><div id="moneyContent"></div></section>
+      <section class="view" id="recipesView" data-view="recetas"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Recetas</h2></div><button class="new-order-button" id="newRecipeButton" type="button">＋ Receta</button></div><div class="recipe-kpis" id="recipeKpis"></div><div class="recipes-list" id="recipesList"></div></section>
+      <section class="view" id="deliveriesView" data-view="entregas"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Entregas</h2></div><button class="new-order-button" id="refreshDeliveries" type="button">↻ Actualizar</button></div><div class="delivery-tabs" id="deliveryTabs"><button class="active" data-delivery-filter="today">Hoy</button><button data-delivery-filter="ready">Listos</button><button data-delivery-filter="route">En ruta</button><button data-delivery-filter="delivered">Entregados</button></div><div class="delivery-list" id="deliveryList"></div></section>
+      <section class="view" id="preparationView" data-view="preparacion"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Preparación</h2></div><button class="new-order-button" id="refreshPreparation" type="button">↻ Actualizar</button></div><div class="prep-kpis" id="prepKpis"></div><div class="prep-dish-panel" id="prepDishPanel"></div><div class="prep-tabs" id="prepTabs"><button class="active" data-prep-filter="pending">Pendientes</button><button data-prep-filter="preparing">Preparando</button><button data-prep-filter="ready">Listos</button><button data-prep-filter="all">Todos</button></div><div class="prep-list" id="prepList"></div></section>
     </main>
   </div>
-
-  <nav class="bottom-nav" id="bottomNav" aria-label="Navegación principal">
-    <button class="active" type="button" data-nav="inicio"><span class="nav-icon">⌂</span><span>Inicio</span></button>
-    <button type="button" data-nav="reportes"><span class="nav-icon">▥</span><span>Reportes</span></button>
-    <button type="button" data-nav="configuracion"><span class="nav-icon">⚙</span><span>Configuración</span></button>
-    <button type="button" data-nav="perfil"><span class="nav-icon">●</span><span>Perfil</span></button>
-  </nav>
-
-  <div class="modal" id="orderModal" hidden>
-    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
-      <div class="modal-head">
-        <div><small id="orderModalEyebrow">NUEVO</small><h2 id="orderModalTitle">Pedido</h2></div>
-        <button class="modal-close" id="closeOrderModal" type="button">×</button>
-      </div>
-      <form id="orderForm">
-        <div class="form-section">
-          <h3>Producto</h3>
-          <div class="form-grid two">
-            <label class="full">Producto<input id="orderProductName" list="productOptions" placeholder="Nombre del producto" required></label>
-            <datalist id="productOptions"></datalist>
-            <label>Cantidad<input id="orderQty" type="number" min="0.01" step="0.01" value="1" required></label>
-            <label>Unidad<input id="orderUnit" list="unitOptions" placeholder="orden, lb, pieza..." required></label>
-            <datalist id="unitOptions"></datalist>
-            <label class="full">Precio unitario<input id="orderPrice" type="number" min="0" step="0.01" placeholder="Escribe el precio" required></label>
-          </div>
-        </div>
-        <div class="form-section">
-          <h3>Cliente</h3>
-          <div class="form-grid two">
-            <label>Nombre<input id="orderCustomer" autocomplete="name" required></label>
-            <label>Teléfono<input id="orderPhone" type="tel" autocomplete="tel"></label>
-            <label class="full">Dirección<input id="orderAddress" autocomplete="street-address"></label>
-            <label>ZIP<input id="orderZip" inputmode="numeric"></label>
-            <label>Origen<select id="orderSource"></select></label>
-          </div>
-        </div>
-        <div class="form-section">
-          <h3>Entrega y pago</h3>
-          <div class="form-grid two">
-            <label>Día<input id="orderDate" type="date" required></label>
-            <label>Hora<input id="orderTime" type="time" required></label>
-            <label>Pago<select id="orderPayment"></select></label>
-            <label>Estado<select id="orderPaymentStatus"><option value="pending">Pendiente</option><option value="paid">Pagado</option></select></label>
-            <label class="full">Notas<input id="orderNotes" placeholder="Sin cebolla, llamar al llegar, etc."></label>
-          </div>
-        </div>
-        <div class="order-preview" id="orderPreview"></div>
-        <div class="modal-actions">
-          <button class="secondary-action" id="cancelOrder" type="button">Cancelar</button>
-          <button class="primary-action" id="saveOrderButton" type="submit">Guardar pedido</button>
-        </div>
-      </form>
-    </section>
-  </div>
-
+  <nav class="bottom-nav" id="bottomNav" aria-label="Navegación principal"><button class="active" type="button" data-nav="inicio"><span class="nav-icon">⌂</span><span>Inicio</span></button><button type="button" data-nav="reportes"><span class="nav-icon">▥</span><span>Reportes</span></button><button type="button" data-nav="configuracion"><span class="nav-icon">⚙</span><span>Configuración</span></button><button type="button" data-nav="perfil"><span class="nav-icon">●</span><span>Perfil</span></button></nav>
+  <div class="modal" id="orderModal" hidden><section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle"><div class="modal-head"><div><small id="orderModalEyebrow">NUEVO</small><h2 id="orderModalTitle">Pedido</h2></div><button class="modal-close" id="closeOrderModal" type="button">×</button></div><form id="orderForm"><div class="form-section"><h3>Producto</h3><div class="form-grid two"><label class="full">Producto<input id="orderProductName" list="productOptions" placeholder="Nombre del producto" required></label><datalist id="productOptions"></datalist><label>Cantidad<input id="orderQty" type="number" min="0.01" step="0.01" value="1" required></label><label>Unidad<input id="orderUnit" list="unitOptions" placeholder="orden, lb, pieza..." required></label><datalist id="unitOptions"></datalist><label class="full">Precio unitario<input id="orderPrice" type="number" min="0" step="0.01" placeholder="Escribe el precio" required></label></div></div><div class="form-section"><h3>Cliente</h3><div class="form-grid two"><label>Nombre<input id="orderCustomer" autocomplete="name" required></label><label>Teléfono<input id="orderPhone" type="tel" autocomplete="tel"></label><label class="full">Dirección<input id="orderAddress" autocomplete="street-address"></label><label>ZIP<input id="orderZip" inputmode="numeric"></label><label>Origen<select id="orderSource"></select></label></div></div><div class="form-section"><h3>Entrega y pago</h3><div class="form-grid two"><label>Día<input id="orderDate" type="date" required></label><label>Hora<input id="orderTime" type="time" required></label><label>Pago<select id="orderPayment"></select></label><label>Estado<select id="orderPaymentStatus"><option value="pending">Pendiente</option><option value="paid">Pagado</option></select></label><label class="full">Notas<input id="orderNotes" placeholder="Sin cebolla, llamar al llegar, etc."></label></div></div><div class="order-preview" id="orderPreview"></div><div class="modal-actions"><button class="secondary-action" id="cancelOrder" type="button">Cancelar</button><button class="primary-action" id="saveOrderButton" type="submit">Guardar pedido</button></div></form></section></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./business-core-ui.js?v=20260910-0016"></script>
   <script type="module" src="./app.js?v=20260910-0015"></script>
@@ -216,5 +75,6 @@
   <script type="module" src="./admin-shell.js?v=20260910-0015"></script>
   <script type="module" src="./firebase-sync.js?v=20260910-0015"></script>
   <script type="module" src="./orders-ui.js?v=20260910-1015"></script>
+  <script type="module" src="./orders-polish.js?v=20260910-1338"></script>
 </body>
 </html>
