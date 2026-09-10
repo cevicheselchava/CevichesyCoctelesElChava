@@ -47,7 +47,7 @@ document.addEventListener('click',event=>{
   openPurchases();
 },true);
 
-import('./purchase-system-final.js?v=20260910-0617').then(()=>{
+import('./purchase-system-final.js?v=20260910-0617').then(()=>import('./purchase-stock-reference.js?v=20260910-0630')).then(()=>{
   if (location.hash === '#compras') openPurchases();
 }).catch(error=>{
   console.error('Compras:',error);
