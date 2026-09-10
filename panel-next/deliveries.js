@@ -210,6 +210,7 @@ document.addEventListener('click',event=>{
 },true);
 
 $('#deliveriesBack')?.addEventListener('click',goHome);
+$('#deliveriesView [data-back-home]')?.addEventListener('click',goHome);
 $('#deliveryTabs')?.addEventListener('click',event=>{
   const button = event.target.closest('[data-delivery-filter]');
   if (!button) return;
