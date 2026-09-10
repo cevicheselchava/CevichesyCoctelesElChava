@@ -9,12 +9,62 @@ let modalTimer = null;
 function normalize(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 }
+function canonicalUnit(value) {
+  const unit = normalize(value);
+  if (['lb','lbs','libra','libras'].includes(unit)) return 'lb';
+  if (['oz','onza','onzas'].includes(unit)) return 'oz';
+  if (['pieza','piezas','pza','pzas'].includes(unit)) return 'pieza';
+  if (['orden','ordenes'].includes(unit)) return 'orden';
+  return unit;
+}
 function localDateISO() { const now=new Date(); return new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10); }
-function productKey(name,unit){ return `${String(name||'').trim().toLowerCase()}__${String(unit||'').trim().toLowerCase()}`; }
+function productKey(name,unit){ return `${normalize(name)}__${canonicalUnit(unit)}`; }
 function readPlan(){ try { const value=JSON.parse(localStorage.getItem(PLAN_KEY)||'{}'); return value&&typeof value==='object'?value:{}; } catch(_){ return {}; } }
-function aggregateOrders(dateISO,excludeId=''){ const map=new Map(); OrdersStore.list().filter(order=>order.date===dateISO&&order.status!=='cancelled'&&order.id!==excludeId).forEach(order=>(Array.isArray(order.items)?order.items:[]).forEach(item=>{const key=productKey(item.name,item.unit);map.set(key,(map.get(key)||0)+Number(item.qty||0));})); return map; }
-function fitsPreparedProduction(order){ if(!order||order.status!=='pending'||order.date!==localDateISO()) return false; const dayPlan=readPlan()[order.date]||{}; const existing=aggregateOrders(order.date,order.id); const items=Array.isArray(order.items)?order.items:[]; if(!items.length)return false; return items.every(item=>{const key=productKey(item.name,item.unit);const planned=Number(dayPlan[key]||0);const qty=Number(item.qty||0);return planned>0&&qty>0&&(Number(existing.get(key)||0)+qty)<=planned+.0001;}); }
-function reconcilePreparedOrders(){ if(readying)return; readying=true; try{OrdersStore.list().filter(order=>order.date===localDateISO()&&order.status==='pending').sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0)).forEach(order=>{const fresh=OrdersStore.get(order.id);if(fitsPreparedProduction(fresh))OrdersStore.update(order.id,{status:'ready',fulfilledFromExtra:true,fulfilledFromExtraAt:Date.now()});});}finally{readying=false;} }
+function normalizedDayPlan(dateISO) {
+  const raw = readPlan()[dateISO] || {};
+  const map = new Map();
+  Object.entries(raw).forEach(([key,value])=>{
+    const split = String(key).lastIndexOf('__');
+    const name = split >= 0 ? key.slice(0,split) : key;
+    const unit = split >= 0 ? key.slice(split+2) : '';
+    const normalizedKey = productKey(name,unit);
+    map.set(normalizedKey,(map.get(normalizedKey)||0)+Number(value||0));
+  });
+  return map;
+}
+function aggregateOrders(dateISO,excludeId=''){
+  const map=new Map();
+  OrdersStore.list().filter(order=>order.date===dateISO&&order.status!=='cancelled'&&order.id!==excludeId).forEach(order=>{
+    (Array.isArray(order.items)?order.items:[]).forEach(item=>{
+      const key=productKey(item.name,item.unit);
+      map.set(key,(map.get(key)||0)+Number(item.qty||0));
+    });
+  });
+  return map;
+}
+function fitsPreparedProduction(order){
+  if(!order||order.status!=='pending'||order.date!==localDateISO()) return false;
+  const dayPlan=normalizedDayPlan(order.date);
+  const existing=aggregateOrders(order.date,order.id);
+  const items=Array.isArray(order.items)?order.items:[];
+  if(!items.length)return false;
+  return items.every(item=>{
+    const key=productKey(item.name,item.unit);
+    const planned=Number(dayPlan.get(key)||0);
+    const qty=Number(item.qty||0);
+    return planned>0&&qty>0&&(Number(existing.get(key)||0)+qty)<=planned+.0001;
+  });
+}
+function reconcilePreparedOrders(){
+  if(readying)return;
+  readying=true;
+  try{
+    OrdersStore.list().filter(order=>order.date===localDateISO()&&order.status==='pending').sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0)).forEach(order=>{
+      const fresh=OrdersStore.get(order.id);
+      if(fitsPreparedProduction(fresh)) OrdersStore.update(order.id,{status:'ready',fulfilledFromExtra:true,fulfilledFromExtraAt:Date.now()});
+    });
+  } finally { readying=false; }
+}
 
 function installStyles(){
   if($('#ordersFinalPolishStyles')) return;
@@ -36,6 +86,7 @@ function renderProductButtons(){
   const modal=$('#orderModal'),field=$('#orderProductName'); if(!modal||modal.hidden||!field)return false;
   const originalLabel=field.closest('label'),grid=originalLabel?.parentElement;if(!originalLabel||!grid)return false;
   originalLabel.classList.add('order-product-original');originalLabel.hidden=true;originalLabel.style.setProperty('display','none','important');
+  field.removeAttribute('list');
   let wrap=$('#orderProductButtonsWrap');if(!wrap){wrap=document.createElement('div');wrap.id='orderProductButtonsWrap';wrap.className='order-product-buttons-wrap';grid.insertBefore(wrap,originalLabel);}
   const selected=normalize(field.value),products=productChoices();wrap.innerHTML=`<div class="order-product-buttons-title">Producto</div><div class="order-product-buttons">${products.map(item=>`<button type="button" class="order-product-choice ${normalize(item.name)===selected?'active':''}" data-order-product-choice="${encodeURIComponent(item.name)}">${item.name}</button>`).join('')}</div>`;
   let info=$('#orderFixedInfo');if(!info){info=document.createElement('div');info.id='orderFixedInfo';info.className='order-fixed-info';const qtyLabel=$('#orderQty')?.closest('label');qtyLabel?.insertAdjacentElement('afterend',info);}updateFixedInfo();return true;
@@ -46,6 +97,7 @@ function applyPolish(){installStyles();hideDuplicateDayButtons();if(!$('#orderMo
 
 document.addEventListener('click',event=>{const productButton=event.target.closest('[data-order-product-choice]');if(productButton){event.preventDefault();event.stopPropagation();selectProduct(decodeURIComponent(productButton.dataset.orderProductChoice||''));return;}if(event.target.closest('#newOrderButton,[data-order-action="edit"]'))forceModalButtons();});
 document.addEventListener('pointerdown',event=>{if(event.target.id!=='orderProductName')return;if(renderProductButtons()){event.preventDefault();event.stopPropagation();}},true);
-window.addEventListener('panel:orders-changed',event=>{const source=event.detail?.source||'';if(!readying&&source!=='local-update'){setTimeout(reconcilePreparedOrders,0);setTimeout(reconcilePreparedOrders,300);}setTimeout(applyPolish,0);});window.addEventListener('panel:menu-changed',forceModalButtons);
+window.addEventListener('panel:orders-changed',event=>{const source=event.detail?.source||'';if(!readying&&source!=='local-update'){setTimeout(reconcilePreparedOrders,0);setTimeout(reconcilePreparedOrders,120);setTimeout(reconcilePreparedOrders,400);}setTimeout(applyPolish,0);});window.addEventListener('panel:menu-changed',forceModalButtons);
+window.addEventListener('storage',event=>{if(event.key===PLAN_KEY)setTimeout(reconcilePreparedOrders,0);});
 const modal=$('#orderModal');if(modal)new MutationObserver(()=>{if(!modal.hidden)forceModalButtons();}).observe(modal,{attributes:true,attributeFilter:['hidden']});
-new MutationObserver(()=>requestAnimationFrame(applyPolish)).observe(document.body,{childList:true,subtree:true});applyPolish();setTimeout(reconcilePreparedOrders,80);setTimeout(applyPolish,150);
+new MutationObserver(()=>requestAnimationFrame(applyPolish)).observe(document.body,{childList:true,subtree:true});applyPolish();setTimeout(reconcilePreparedOrders,80);setTimeout(reconcilePreparedOrders,500);setTimeout(applyPolish,150);
