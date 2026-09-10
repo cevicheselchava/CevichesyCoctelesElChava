@@ -85,19 +85,21 @@ function updateFixedInfo(){const host=$('#orderFixedInfo'),unitField=$('#orderUn
 function renderProductButtons(){
   const modal=$('#orderModal'),field=$('#orderProductName'); if(!modal||modal.hidden||!field)return false;
   const originalLabel=field.closest('label'),grid=originalLabel?.parentElement;if(!originalLabel||!grid)return false;
-  originalLabel.classList.add('order-product-original');originalLabel.hidden=true;originalLabel.style.setProperty('display','none','important');
-  field.removeAttribute('list');
+  originalLabel.classList.add('order-product-original');originalLabel.hidden=true;originalLabel.style.setProperty('display','none','important');field.removeAttribute('list');
   let wrap=$('#orderProductButtonsWrap');if(!wrap){wrap=document.createElement('div');wrap.id='orderProductButtonsWrap';wrap.className='order-product-buttons-wrap';grid.insertBefore(wrap,originalLabel);}
-  const selected=normalize(field.value),products=productChoices();wrap.innerHTML=`<div class="order-product-buttons-title">Producto</div><div class="order-product-buttons">${products.map(item=>`<button type="button" class="order-product-choice ${normalize(item.name)===selected?'active':''}" data-order-product-choice="${encodeURIComponent(item.name)}">${item.name}</button>`).join('')}</div>`;
+  const selected=normalize(field.value),products=productChoices();
+  const signature=products.map(item=>`${normalize(item.name)}:${normalize(item.name)===selected?'1':'0'}`).join('|');
+  if(wrap.dataset.signature!==signature){wrap.innerHTML=`<div class="order-product-buttons-title">Producto</div><div class="order-product-buttons">${products.map(item=>`<button type="button" class="order-product-choice ${normalize(item.name)===selected?'active':''}" data-order-product-choice="${encodeURIComponent(item.name)}">${item.name}</button>`).join('')}</div>`;wrap.dataset.signature=signature;}
   let info=$('#orderFixedInfo');if(!info){info=document.createElement('div');info.id='orderFixedInfo';info.className='order-fixed-info';const qtyLabel=$('#orderQty')?.closest('label');qtyLabel?.insertAdjacentElement('afterend',info);}updateFixedInfo();return true;
 }
 function selectProduct(name){const field=$('#orderProductName'),unit=$('#orderUnit'),price=$('#orderPrice');if(!field||!unit||!price)return;const item=configuredProduct(name)||{name};field.value=item.name||name;if(item.unit)unit.value=item.unit;if(item.price!==null&&item.price!==undefined&&item.price!=='')price.value=item.price;field.dispatchEvent(new Event('change',{bubbles:true}));field.dispatchEvent(new Event('input',{bubbles:true}));unit.dispatchEvent(new Event('input',{bubbles:true}));price.dispatchEvent(new Event('input',{bubbles:true}));renderProductButtons();$('#orderQty')?.focus();}
-function forceModalButtons(){clearTimeout(modalTimer);[0,20,60,140,300,600].forEach(delay=>setTimeout(renderProductButtons,delay));modalTimer=setTimeout(renderProductButtons,900);}
+function forceModalButtons(){clearTimeout(modalTimer);[0,20,60,140,300].forEach(delay=>setTimeout(renderProductButtons,delay));modalTimer=setTimeout(renderProductButtons,600);}
 function applyPolish(){installStyles();hideDuplicateDayButtons();if(!$('#orderModal')?.hidden)renderProductButtons();}
 
 document.addEventListener('click',event=>{const productButton=event.target.closest('[data-order-product-choice]');if(productButton){event.preventDefault();event.stopPropagation();selectProduct(decodeURIComponent(productButton.dataset.orderProductChoice||''));return;}if(event.target.closest('#newOrderButton,[data-order-action="edit"]'))forceModalButtons();});
 document.addEventListener('pointerdown',event=>{if(event.target.id!=='orderProductName')return;if(renderProductButtons()){event.preventDefault();event.stopPropagation();}},true);
-window.addEventListener('panel:orders-changed',event=>{const source=event.detail?.source||'';if(!readying&&source!=='local-update'){setTimeout(reconcilePreparedOrders,0);setTimeout(reconcilePreparedOrders,120);setTimeout(reconcilePreparedOrders,400);}setTimeout(applyPolish,0);});window.addEventListener('panel:menu-changed',forceModalButtons);
+window.addEventListener('panel:orders-changed',event=>{const source=event.detail?.source||'';if(!readying&&source!=='local-update'){setTimeout(reconcilePreparedOrders,0);setTimeout(reconcilePreparedOrders,120);}setTimeout(applyPolish,0);});
+window.addEventListener('panel:menu-changed',forceModalButtons);
 window.addEventListener('storage',event=>{if(event.key===PLAN_KEY)setTimeout(reconcilePreparedOrders,0);});
 const modal=$('#orderModal');if(modal)new MutationObserver(()=>{if(!modal.hidden)forceModalButtons();}).observe(modal,{attributes:true,attributeFilter:['hidden']});
-new MutationObserver(()=>requestAnimationFrame(applyPolish)).observe(document.body,{childList:true,subtree:true});applyPolish();setTimeout(reconcilePreparedOrders,80);setTimeout(reconcilePreparedOrders,500);setTimeout(applyPolish,150);
+applyPolish();setTimeout(reconcilePreparedOrders,80);setTimeout(reconcilePreparedOrders,500);setTimeout(applyPolish,150);
