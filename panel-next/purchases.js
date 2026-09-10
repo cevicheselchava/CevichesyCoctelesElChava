@@ -47,15 +47,18 @@ document.addEventListener('click',event=>{
   openPurchases();
 },true);
 
-import('./purchase-system-final.js?v=20260910-0617').then(()=>import('./purchase-stock-reference.js?v=20260910-0630')).then(()=>{
-  if (location.hash === '#compras') openPurchases();
-}).catch(error=>{
-  console.error('Compras:',error);
-  const toast = $('#toast');
-  if (toast) {
-    toast.textContent = 'No se pudo cargar Compras';
-    toast.classList.add('show');
-  }
-});
+import('./purchase-system-final.js?v=20260910-0617')
+  .then(()=>import('./purchase-stock-reference.js?v=20260910-0630'))
+  .then(()=>import('./purchase-dish-buttons.js?v=20260910-0828'))
+  .then(()=>{
+    if (location.hash === '#compras') openPurchases();
+  }).catch(error=>{
+    console.error('Compras:',error);
+    const toast = $('#toast');
+    if (toast) {
+      toast.textContent = 'No se pudo cargar Compras';
+      toast.classList.add('show');
+    }
+  });
 
 import('./panel-finalize.js?v=20260910-0020').catch(error=>console.error('Ajustes finales del panel:',error));
