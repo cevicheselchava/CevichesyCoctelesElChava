@@ -1,6 +1,7 @@
 const RECIPE_STORAGE_KEY = 'panel-next-recipes-v1';
 const MEASURED_MIXED_MIGRATION_KEY = 'panel-next-recipes-measured-mixed-v1';
 const MIXED_SHRIMP_3OZ_MIGRATION_KEY = 'panel-next-recipes-mixed-shrimp-3oz-v1';
+const FIXED_MIXED_RECIPE_MIGRATION_KEY = 'panel-next-recipes-fixed-mixed-v2';
 
 function seedRecipes() {
   const cevicheBase = [
@@ -20,6 +21,20 @@ function seedRecipes() {
     { name:'Clamato', qty:4/3, unit:'fl oz', fixed:true },
     { name:'Jugo de limón', qty:1, unit:'fl oz', fixed:true },
     { name:'Cilantro', qty:1/3, unit:'oz', fixed:true },
+    { name:'Salsa negra', qty:1/3, unit:'oz', fixed:true },
+    { name:'Salsa picante', qty:1/3, unit:'oz', fixed:true }
+  ];
+
+  // Receta fija del ceviche mixto. La verdura suma 6 oz por libra.
+  // El aguacate entra en la libra; el jugo final de servicio se agrega aparte.
+  const fixedMixedBase = [
+    { name:'Tomate', qty:3, unit:'oz', fixed:true },
+    { name:'Pepino', qty:2, unit:'oz', fixed:true },
+    { name:'Cebolla morada', qty:0.75, unit:'oz', fixed:true },
+    { name:'Cilantro', qty:0.25, unit:'oz', fixed:true },
+    { name:'Aguacate', qty:2, unit:'oz', fixed:true },
+    { name:'Clamato', qty:4/3, unit:'fl oz', fixed:true },
+    { name:'Jugo de limón', qty:1, unit:'fl oz', fixed:true },
     { name:'Salsa negra', qty:1/3, unit:'oz', fixed:true },
     { name:'Salsa picante', qty:1/3, unit:'oz', fixed:true }
   ];
@@ -78,12 +93,12 @@ function seedRecipes() {
       id:'R-CV-MIXED',
       name:'Ceviche mixto',
       menuItem:'Ceviche mixto',
-      notes:'Receta medida de 1 lb',
+      notes:'Receta fija de 1 lb',
       seafood:[
-        { name:'Filete de pescado', qty:11/3, unit:'oz', fixed:true },
+        { name:'Filete de pescado', qty:4, unit:'oz', fixed:true },
         { name:'Camarón', qty:3, unit:'oz', fixed:true }
       ],
-      base:measuredMixedBase
+      base:fixedMixedBase
     }),
     cevicheRecipe({
       id:'R-CV-OCT-FISH',
@@ -222,6 +237,29 @@ function migrateMixedShrimpThreeOz(recipes) {
   return next;
 }
 
+function migrateFixedMixedRecipe(recipes) {
+  if (localStorage.getItem(FIXED_MIXED_RECIPE_MIGRATION_KEY) === 'done') return recipes;
+
+  const replacement = seedRecipes()
+    .map(normalizeRecipe)
+    .find(recipe => recipeNameKey(recipe.name) === recipeNameKey('Ceviche mixto'));
+  let changed = false;
+  const next = recipes.map(recipe => {
+    if (recipeNameKey(recipe.name) !== recipeNameKey('Ceviche mixto') || !replacement) return recipe;
+    changed = true;
+    return normalizeRecipe({
+      ...recipe,
+      ingredients:replacement.ingredients.map(item=>({ ...item })),
+      notes:'Receta fija de 1 lb',
+      updatedAt:Date.now()
+    });
+  });
+
+  if (changed) localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(next));
+  localStorage.setItem(FIXED_MIXED_RECIPE_MIGRATION_KEY,'done');
+  return next;
+}
+
 function mergeMissingSeedRecipes(recipes) {
   const current = Array.isArray(recipes) ? recipes.map(normalizeRecipe) : [];
   const names = new Set(current.map(recipe => recipeNameKey(recipe.name)));
@@ -242,11 +280,13 @@ function readRecipes() {
       localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(seeded));
       localStorage.setItem(MEASURED_MIXED_MIGRATION_KEY,'done');
       localStorage.setItem(MIXED_SHRIMP_3OZ_MIGRATION_KEY,'done');
+      localStorage.setItem(FIXED_MIXED_RECIPE_MIGRATION_KEY,'done');
       return seeded;
     }
     const merged = mergeMissingSeedRecipes(JSON.parse(raw));
     const measured = migrateMeasuredMixedRecipes(merged);
-    return migrateMixedShrimpThreeOz(measured);
+    const shrimpAdjusted = migrateMixedShrimpThreeOz(measured);
+    return migrateFixedMixedRecipe(shrimpAdjusted);
   } catch {
     return seedRecipes();
   }
@@ -289,6 +329,7 @@ export const RecipeStore = {
   resetDemo() {
     localStorage.setItem(MEASURED_MIXED_MIGRATION_KEY,'done');
     localStorage.setItem(MIXED_SHRIMP_3OZ_MIGRATION_KEY,'done');
+    localStorage.setItem(FIXED_MIXED_RECIPE_MIGRATION_KEY,'done');
     return writeRecipes(seedRecipes());
   }
 };
