@@ -32,27 +32,10 @@
 </head>
 <body>
   <div class="app">
-    <header class="hero" id="hero">
-      <div class="hero-row">
-        <button class="icon-button" id="menuButton" type="button">☰</button>
-        <div class="logo-wrap"><img class="brand-logo" id="brandLogo" alt="Ceviches & Cócteles"></div>
-        <div class="title-wrap"><h1 class="panel-title" id="panelTitle">PANEL <span>OPERATIVO</span></h1><div class="side-slogan" id="sideSlogan"></div></div>
-        <button class="icon-button bell" id="bellButton" type="button">♨<span class="badge-notify" hidden>0</span></button>
-      </div>
-    </header>
+    <header class="hero" id="hero"><div class="hero-row"><button class="icon-button" id="menuButton" type="button">☰</button><div class="logo-wrap"><img class="brand-logo" id="brandLogo" alt="Ceviches & Cócteles"></div><div class="title-wrap"><h1 class="panel-title" id="panelTitle">PANEL <span>OPERATIVO</span></h1><div class="side-slogan" id="sideSlogan"></div></div><button class="icon-button bell" id="bellButton" type="button">♨<span class="badge-notify" hidden>0</span></button></div></header>
     <main class="content">
-      <section class="view active" id="homeView" data-view="home">
-        <div class="module-grid" id="moduleGrid"></div>
-        <section class="summary-section"><div class="summary-title-row"><h2 class="summary-title"><span class="bars">≡</span> Resumen del Día</h2><span class="date-pill" id="todayDate"></span></div><div class="summary-grid" id="summaryGrid"></div></section>
-        <section class="footer-brand"><div class="footer-slogan" id="footerSlogan"></div><div class="footer-tag" id="footerTag"></div></section>
-      </section>
-      <section class="view" id="ordersView" data-view="pedidos">
-        <div class="module-topbar"><button class="back-button" id="ordersBack" type="button">‹</button><div><small>MÓDULO</small><h2>Pedidos</h2></div><button class="new-order-button" id="newOrderButton" type="button">＋ Pedido</button></div>
-        <div class="order-kpis" id="orderKpis"></div>
-        <div class="orders-toolbar"><label class="orders-search">⌕<input id="orderSearch" placeholder="Buscar cliente, folio o teléfono"></label><select class="orders-select" id="orderDayFilter"><option value="today">Pedidos hoy</option><option value="all">Todos los días</option></select></div>
-        <div class="status-tabs" id="statusTabs"><button class="active" data-status="active">Activos</button><button data-status="pending">Pendientes</button><button data-status="ready">Listos</button><button data-status="delivered">Entregados</button><button data-status="all">Todos</button></div>
-        <div class="orders-list" id="ordersList"></div>
-      </section>
+      <section class="view active" id="homeView" data-view="home"><div class="module-grid" id="moduleGrid"></div><section class="summary-section"><div class="summary-title-row"><h2 class="summary-title"><span class="bars">≡</span> Resumen del Día</h2><span class="date-pill" id="todayDate"></span></div><div class="summary-grid" id="summaryGrid"></div></section><section class="footer-brand"><div class="footer-slogan" id="footerSlogan"></div><div class="footer-tag" id="footerTag"></div></section></section>
+      <section class="view" id="ordersView" data-view="pedidos"><div class="module-topbar"><button class="back-button" id="ordersBack" type="button">‹</button><div><small>MÓDULO</small><h2>Pedidos</h2></div><button class="new-order-button" id="newOrderButton" type="button">＋ Pedido</button></div><div class="order-kpis" id="orderKpis"></div><div class="orders-toolbar"><label class="orders-search">⌕<input id="orderSearch" placeholder="Buscar cliente, folio o teléfono"></label><select class="orders-select" id="orderDayFilter"><option value="today">Pedidos hoy</option><option value="all">Todos los días</option></select></div><div class="status-tabs" id="statusTabs"><button class="active" data-status="active">Activos</button><button data-status="pending">Pendientes</button><button data-status="ready">Listos</button><button data-status="delivered">Entregados</button><button data-status="all">Todos</button></div><div class="orders-list" id="ordersList"></div></section>
       <section class="view" id="purchasesView" data-view="compras"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Compras</h2></div><button class="new-order-button" id="simpleNewPurchase" type="button">＋ Compra</button></div><div class="purchase-kpis" id="purchaseKpis"></div><div id="purchaseSimple"></div><div class="purchase-history" id="purchaseHistory"></div></section>
       <section class="view" id="inventoryView" data-view="inventario"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Inventario</h2></div><button class="new-order-button" id="newInventoryItem" type="button">＋ Producto</button></div><div class="inventory-toolbar"><label class="inventory-search">⌕<input id="inventorySearch" placeholder="Buscar producto"></label></div><div class="inventory-category-nav" id="inventoryCategoryNav"></div><div class="inventory-list" id="inventoryList"></div></section>
       <section class="view" id="moneyView" data-view="dinero"><div class="module-topbar"><button class="back-button" data-back-home type="button">‹</button><div><small>MÓDULO</small><h2>Dinero</h2></div><button class="new-order-button" id="newExpenseButton" type="button">＋ Gasto</button></div><div class="money-tabs" id="moneyTabs"><button class="active" data-money-tab="summary">Resumen</button><button data-money-tab="sales">Ventas</button><button data-money-tab="expenses">Gastos</button></div><div id="moneyContent"></div></section>
@@ -75,6 +58,6 @@
   <script type="module" src="./admin-shell.js?v=20260910-0015"></script>
   <script type="module" src="./firebase-sync.js?v=20260910-0015"></script>
   <script type="module" src="./orders-ui.js?v=20260910-1015"></script>
-  <script type="module" src="./orders-polish.js?v=20260910-1645"></script>
+  <script type="module" src="./orders-polish.js?v=20260910-1825"></script>
 </body>
 </html>
