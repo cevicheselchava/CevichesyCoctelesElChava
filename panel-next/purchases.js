@@ -1,4 +1,5 @@
 import './photo-inventory.js';
+import './business-core-ui.js?v=20260909-2315';
 
 // Entrada única al módulo de Compras.
 const $ = selector => document.querySelector(selector);
