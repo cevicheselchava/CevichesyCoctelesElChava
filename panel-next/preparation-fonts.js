@@ -22,6 +22,12 @@ if (typeof document !== 'undefined' && !document.getElementById('prepReadableTex
     .prep-dish-option span{font-size:20px!important}
     .prep-dish-option small{font-size:17px!important}
 
+    /* La cantidad de Preparación la decide cocina. Los pedidos no la calculan ni la limitan. */
+    #prepKpis{display:none!important}
+    .prep-dish-metrics{grid-template-columns:1fr!important}
+    .prep-dish-metrics>.prep-dish-stat{display:none!important}
+    .prep-dish-workspace.shortage{border-color:#dfe6e2!important}
+
     @media(max-width:720px){
       .prep-dish-section-title h4{font-size:28px!important}
       .prep-dish-section-title small{font-size:18px!important}
