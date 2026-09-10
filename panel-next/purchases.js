@@ -1,5 +1,4 @@
 import './photo-inventory.js';
-import './business-core-ui.js?v=20260909-2315';
 
 // Entrada única al módulo de Compras.
 const $ = selector => document.querySelector(selector);
@@ -48,6 +47,6 @@ document.addEventListener('click', event => {
   openPurchases();
 }, true);
 
-import('./purchase-system-v4.js?v=20260909-2000').then(() => import('./purchase-ui-cleanup.js?v=20260909-2035')).then(() => {
+import('./purchase-system-v4.js?v=20260909-2000').then(() => import('./purchase-ui-cleanup.js?v=20260909-2340')).then(() => {
   if (location.hash === '#compras') openPurchases();
 });
