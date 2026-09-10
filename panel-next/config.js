@@ -1,7 +1,6 @@
 if (typeof window !== 'undefined') {
   setTimeout(() => import('./whatsapp-ops.js?v=20260908-0730').catch(error => console.error('Operación WhatsApp:', error)), 0);
-  setTimeout(() => import('./purchase-plan.js?v=20260908-1900').catch(error => console.error('Planeación de compras:', error)), 0);
-  setTimeout(() => import('./preparation-fonts.js?v=20260908-1537').catch(error => console.error('Legibilidad de Preparación:', error)), 0);
+  setTimeout(() => import('./preparation-fonts.js?v=20260909-2010').catch(error => console.error('Legibilidad de Preparación:', error)), 0);
   setTimeout(() => import('./order-product-picker.js?v=20260908-1703').catch(error => console.error('Selector de productos:', error)), 0);
 }
 
@@ -29,10 +28,10 @@ export const BUSINESS = {
 
 export const MODULES = [
   { id: 'pedidos', label: 'Pedidos', subtitle: 'Gestiona y consulta los pedidos', icon: '📋', color: 'green' },
-  { id: 'preparacion', label: 'Preparación', subtitle: 'Controla la cocina y tiempos', icon: '👨‍🍳', color: 'yellow' },
-  { id: 'inventario', label: 'Inventario', subtitle: 'Revisa existencias en tiempo real', icon: '📦', color: 'red' },
   { id: 'compras', label: 'Compras', subtitle: 'Genera y da seguimiento a tus compras', icon: '🛒', color: 'blue' },
+  { id: 'preparacion', label: 'Preparación', subtitle: 'Controla la cocina y tiempos', icon: '👨‍🍳', color: 'yellow' },
   { id: 'entregas', label: 'Entregas', subtitle: 'Controla repartos y envíos', icon: '🛵', color: 'orange' },
+  { id: 'inventario', label: 'Inventario', subtitle: 'Revisa existencias en tiempo real', icon: '📦', color: 'red' },
   { id: 'dinero', label: 'Dinero', subtitle: 'Ventas, gastos y utilidades', icon: '🪙', color: 'green' },
   { id: 'recetas', label: 'Recetas', subtitle: 'Administra tus recetas y porciones', icon: '📖', color: 'purple', wide: true }
 ];
