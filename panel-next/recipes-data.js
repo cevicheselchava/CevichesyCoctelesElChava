@@ -1,4 +1,5 @@
 const RECIPE_STORAGE_KEY = 'panel-next-recipes-v1';
+const MEASURED_MIXED_MIGRATION_KEY = 'panel-next-recipes-measured-mixed-v1';
 
 function seedRecipes() {
   const cevicheBase = [
@@ -10,15 +11,27 @@ function seedRecipes() {
     { name:'Clamato', qty:0.67, unit:'fl oz', fixed:true }
   ];
 
-  const cevicheRecipe = ({ id, name, menuItem, seafood }) => ({
+  // Cantidades medidas en una preparación real de 3 lb de ceviche mixto.
+  const measuredMixedBase = [
+    { name:'Tomate', qty:8/3, unit:'oz', fixed:true },
+    { name:'Cebolla morada', qty:1, unit:'oz', fixed:true },
+    { name:'Pepino', qty:5/3, unit:'oz', fixed:true },
+    { name:'Clamato', qty:4/3, unit:'fl oz', fixed:true },
+    { name:'Jugo de limón', qty:1, unit:'fl oz', fixed:true },
+    { name:'Cilantro', qty:1/3, unit:'oz', fixed:true },
+    { name:'Salsa negra', qty:1/3, unit:'oz', fixed:true },
+    { name:'Salsa picante', qty:1/3, unit:'oz', fixed:true }
+  ];
+
+  const cevicheRecipe = ({ id, name, menuItem, seafood, base=cevicheBase, notes='Receta de 1 lb' }) => ({
     id,
     name,
     type:'Producto final',
     yieldQty:1,
     yieldUnit:'lb',
     menuItem,
-    notes:'Receta de 1 lb',
-    ingredients:[...seafood.map(item => ({ ...item })), ...cevicheBase.map(item => ({ ...item }))],
+    notes,
+    ingredients:[...seafood.map(item => ({ ...item })), ...base.map(item => ({ ...item }))],
     createdAt:Date.now(),
     updatedAt:Date.now()
   });
@@ -64,28 +77,34 @@ function seedRecipes() {
       id:'R-CV-MIXED',
       name:'Ceviche mixto',
       menuItem:'Ceviche mixto',
+      notes:'Receta medida de 1 lb',
       seafood:[
-        { name:'Filete de pescado', qty:4, unit:'oz', fixed:true },
+        { name:'Filete de pescado', qty:11/3, unit:'oz', fixed:true },
         { name:'Camarón', qty:4, unit:'oz', fixed:true }
-      ]
+      ],
+      base:measuredMixedBase
     }),
     cevicheRecipe({
       id:'R-CV-OCT-FISH',
       name:'Ceviche pulpo y pescado',
       menuItem:'Ceviche pulpo y pescado',
+      notes:'Receta medida de 1 lb',
       seafood:[
         { name:'Pulpo', qty:4, unit:'oz', fixed:true },
-        { name:'Filete de pescado', qty:4, unit:'oz', fixed:true }
-      ]
+        { name:'Filete de pescado', qty:11/3, unit:'oz', fixed:true }
+      ],
+      base:measuredMixedBase
     }),
     cevicheRecipe({
       id:'R-CV-OCT-SHRIMP',
       name:'Ceviche pulpo y camarón',
       menuItem:'Ceviche pulpo y camarón',
+      notes:'Receta medida de 1 lb',
       seafood:[
-        { name:'Pulpo', qty:4, unit:'oz', fixed:true },
+        { name:'Pulpo', qty:11/3, unit:'oz', fixed:true },
         { name:'Camarón', qty:4, unit:'oz', fixed:true }
-      ]
+      ],
+      base:measuredMixedBase
     })
   ];
 }
@@ -121,6 +140,67 @@ function recipeNameKey(value) {
     .toLowerCase();
 }
 
+function ingredientKey(value) {
+  return recipeNameKey(value);
+}
+
+function ingredientMatches(recipe, name, qty, unit) {
+  const row = (recipe.ingredients || []).find(item => ingredientKey(item.name) === ingredientKey(name));
+  if (!row) return false;
+  return Math.abs(Number(row.qty || 0) - Number(qty || 0)) < 0.0001 && String(row.unit || '') === unit;
+}
+
+function isLegacyMeasuredTarget(recipe) {
+  const key = recipeNameKey(recipe.name);
+  const targets = new Set([
+    recipeNameKey('Ceviche mixto'),
+    recipeNameKey('Ceviche pulpo y pescado'),
+    recipeNameKey('Ceviche pulpo y camarón')
+  ]);
+  if (!targets.has(key)) return false;
+
+  const common = [
+    ['Tomate',1.6,'oz'],
+    ['Pepino',1.6,'oz'],
+    ['Cebolla morada',0.8,'oz'],
+    ['Cilantro',0.2,'oz'],
+    ['Jugo de limón',1,'fl oz'],
+    ['Clamato',0.67,'fl oz']
+  ];
+  if (!common.every(([name,qty,unit])=>ingredientMatches(recipe,name,qty,unit))) return false;
+
+  if (key === recipeNameKey('Ceviche mixto')) {
+    return ingredientMatches(recipe,'Filete de pescado',4,'oz') && ingredientMatches(recipe,'Camarón',4,'oz');
+  }
+  if (key === recipeNameKey('Ceviche pulpo y pescado')) {
+    return ingredientMatches(recipe,'Pulpo',4,'oz') && ingredientMatches(recipe,'Filete de pescado',4,'oz');
+  }
+  return ingredientMatches(recipe,'Pulpo',4,'oz') && ingredientMatches(recipe,'Camarón',4,'oz');
+}
+
+function migrateMeasuredMixedRecipes(recipes) {
+  if (localStorage.getItem(MEASURED_MIXED_MIGRATION_KEY) === 'done') return recipes;
+
+  const defaults = new Map(seedRecipes().map(recipe => [recipeNameKey(recipe.name),normalizeRecipe(recipe)]));
+  let changed = false;
+  const next = recipes.map(recipe => {
+    if (!isLegacyMeasuredTarget(recipe)) return recipe;
+    const replacement = defaults.get(recipeNameKey(recipe.name));
+    if (!replacement) return recipe;
+    changed = true;
+    return normalizeRecipe({
+      ...recipe,
+      ingredients:replacement.ingredients.map(item=>({ ...item })),
+      notes:'Receta medida de 1 lb',
+      updatedAt:Date.now()
+    });
+  });
+
+  if (changed) localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(next));
+  localStorage.setItem(MEASURED_MIXED_MIGRATION_KEY,'done');
+  return next;
+}
+
 function mergeMissingSeedRecipes(recipes) {
   const current = Array.isArray(recipes) ? recipes.map(normalizeRecipe) : [];
   const names = new Set(current.map(recipe => recipeNameKey(recipe.name)));
@@ -139,9 +219,11 @@ function readRecipes() {
     if (!raw) {
       const seeded = seedRecipes();
       localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(seeded));
+      localStorage.setItem(MEASURED_MIXED_MIGRATION_KEY,'done');
       return seeded;
     }
-    return mergeMissingSeedRecipes(JSON.parse(raw));
+    const merged = mergeMissingSeedRecipes(JSON.parse(raw));
+    return migrateMeasuredMixedRecipes(merged);
   } catch {
     return seedRecipes();
   }
@@ -182,6 +264,7 @@ export const RecipeStore = {
     return recipes;
   },
   resetDemo() {
+    localStorage.setItem(MEASURED_MIXED_MIGRATION_KEY,'done');
     return writeRecipes(seedRecipes());
   }
 };
