@@ -96,22 +96,28 @@ function cleanView() {
   rewritePreview();
 }
 
-let scheduled = false;
-function scheduleClean() {
-  if (scheduled) return;
-  scheduled = true;
-  queueMicrotask(() => {
-    scheduled = false;
-    cleanView();
-  });
+// Solo observa el contenido de Compras y se desconecta mientras limpia.
+// Así los cambios hechos por la propia limpieza no vuelven a disparar el observer.
+const purchaseObserver = new MutationObserver(() => {
+  purchaseObserver.disconnect();
+  cleanView();
+  observePurchases();
+});
+
+function observePurchases() {
+  const view = $('#purchasesView');
+  if (view) purchaseObserver.observe(view,{childList:true,subtree:true});
 }
 
-new MutationObserver(scheduleClean).observe(document.documentElement,{childList:true,subtree:true});
 document.addEventListener('input',event => {
   if (event.target.closest('#simplePurchaseModal')) setTimeout(rewritePreview,0);
 },true);
 document.addEventListener('change',event => {
   if (event.target.closest('#simplePurchaseModal')) setTimeout(rewritePreview,0);
 },true);
+document.addEventListener('click',event => {
+  if (event.target.closest('#simpleNewPurchase,[data-buy-product],[data-plan-buy-product]')) setTimeout(rewritePreview,0);
+},true);
 
 cleanView();
+observePurchases();
