@@ -57,3 +57,5 @@ import('./purchase-system-final.js?v=20260910-0010').then(()=>{
     toast.classList.add('show');
   }
 });
+
+import('./panel-finalize.js?v=20260910-0020').catch(error=>console.error('Ajustes finales del panel:',error));
