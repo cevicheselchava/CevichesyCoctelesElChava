@@ -11,9 +11,6 @@ const UNIT_META = {
   pieza:{group:'count',factor:1}, unidad:{group:'count',factor:1}, pzas:{group:'count',factor:1}
 };
 
-let needsOpen = false;
-let historyOpen = false;
-
 function cleanNumber(value) {
   const n = Number(value || 0);
   if (!Number.isFinite(n)) return '0';
@@ -62,18 +59,18 @@ function purchaseSuggestion(name, needText) {
 
   if (DIRECT_UNITS.has(purchaseUnit)) {
     const directQty = convertQty(need.qty, need.unit, purchaseUnit);
-    if (directQty !== null) return `Compra ${cleanNumber(directQty)} ${pluralUnit(purchaseUnit,directQty)}`;
+    if (directQty !== null) return `${cleanNumber(directQty)} ${pluralUnit(purchaseUnit,directQty)}`;
   }
 
   if (PACKAGE_UNITS.has(purchaseUnit) && contentQty > 0 && contentUnit) {
     const neededInContentUnit = convertQty(need.qty, need.unit, contentUnit);
     if (neededInContentUnit !== null) {
       const packages = Math.max(1,Math.ceil((neededInContentUnit / contentQty) - 1e-9));
-      return `Compra ${packages} ${pluralUnit(purchaseUnit,packages)} de ${cleanNumber(contentQty)} ${contentUnit}`;
+      return `${packages} ${pluralUnit(purchaseUnit,packages)} de ${cleanNumber(contentQty)} ${contentUnit}`;
     }
   }
 
-  return purchaseUnit ? `Compra según presentación (${purchaseUnit})` : '';
+  return needText;
 }
 
 function simplifyCalculator() {
@@ -81,8 +78,18 @@ function simplifyCalculator() {
   const result = $('#purchaseCalculatorResult');
   if (!view || !result) return;
 
-  const subtitle = view.querySelector('.purchase-calculator-section .purchase-section-title small');
-  if (subtitle) subtitle.textContent = 'Elige el platillo y cuánto quieres comprar.';
+  const kpis = view.querySelector('.purchase-kpis');
+  if (kpis) kpis.hidden = true;
+
+  const sectionTitle = view.querySelector('.purchase-calculator-section .purchase-section-title');
+  if (sectionTitle) sectionTitle.hidden = true;
+
+  const labels = [...view.querySelectorAll('.purchase-calc-controls > label')];
+  if (labels[0] && labels[0].firstChild?.nodeType === Node.TEXT_NODE) labels[0].firstChild.nodeValue = 'Platillo';
+  if (labels[1] && labels[1].firstChild?.nodeType === Node.TEXT_NODE) labels[1].firstChild.nodeValue = 'Cantidad';
+
+  const newPurchase = $('#simpleNewPurchase');
+  if (newPurchase) newPurchase.textContent = 'Registrar compra';
 
   const sourceRows = [...result.querySelectorAll('.purchase-calc-row')];
   if (!sourceRows.length) return;
@@ -93,44 +100,18 @@ function simplifyCalculator() {
     return { name, need, buy:purchaseSuggestion(name,need) };
   });
 
-  result.innerHTML = `
-    <button class="purchase-collapse-button" data-purchase-toggle="needs" type="button" aria-expanded="${needsOpen}">
-      <span>${needsOpen ? '▼' : '▶'} Compra necesaria</span><b>${rows.length}</b>
-    </button>
-    <div class="purchase-needs-list" ${needsOpen ? '' : 'hidden'}>
-      ${rows.map(row=>`<div class="purchase-need-row"><div><strong>${row.name}</strong><small>Necesitas ${row.need}</small></div><b>${row.buy || row.need}</b></div>`).join('')}
-    </div>`;
+  result.innerHTML = `<div class="purchase-direct-list">${rows.map(row=>`
+    <div class="purchase-direct-row">
+      <div><strong>${row.name}</strong><small>${row.need === 'Al gusto' ? 'Al gusto' : `Receta: ${row.need}`}</small></div>
+      <b>${row.need === 'Al gusto' ? 'Al gusto' : row.buy}</b>
+    </div>`).join('')}</div>`;
 }
 
-function simplifyHistory() {
+function hideHistory() {
   const view = $('#purchasesView');
   if (!view) return;
-
-  const sections = [...view.querySelectorAll('.purchase-section')];
-  const historySection = sections.find(section => section.querySelector('.purchase-history'));
-  if (!historySection) return;
-
-  const history = historySection.querySelector('.purchase-history');
-  const cards = [...historySection.querySelectorAll('.purchase-history-card')];
-  historySection.querySelector('.purchase-section-title')?.remove();
-
-  let toggle = historySection.querySelector('[data-purchase-toggle="history"]');
-  if (!toggle) {
-    toggle = document.createElement('button');
-    toggle.className = 'purchase-collapse-button history';
-    toggle.dataset.purchaseToggle = 'history';
-    toggle.type = 'button';
-    historySection.insertBefore(toggle,history);
-  }
-  toggle.setAttribute('aria-expanded',String(historyOpen));
-  toggle.innerHTML = `<span>${historyOpen ? '▼' : '▶'} Compras recientes</span><b>${cards.length}</b>`;
-  if (history) history.hidden = !historyOpen;
-
-  cards.forEach(card => {
-    card.querySelector('.purchase-stock-ok')?.remove();
-    const meta = card.querySelector('.purchase-meta');
-    if (meta) [...meta.children].slice(2).forEach(node => node.remove());
-  });
+  const historySection = [...view.querySelectorAll('.purchase-section')].find(section => section.querySelector('.purchase-history'));
+  if (historySection) historySection.hidden = true;
 }
 
 function rewritePreview() {
@@ -166,10 +147,25 @@ function injectStyles() {
   const style = document.createElement('style');
   style.id = 'purchaseCleanupStyles';
   style.textContent = `
-    .purchase-collapse-button{width:100%;margin-top:12px;border:1px solid #dce5e0;border-radius:15px;background:#fff;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#203129;font:inherit;font-weight:1000;text-align:left}.purchase-collapse-button span{font-size:18px}.purchase-collapse-button b{min-width:31px;height:31px;border-radius:999px;background:#eef7f2;color:#078844;display:grid;place-items:center;font-size:14px}.purchase-collapse-button.history{margin-top:0}
-    .purchase-needs-list{display:grid;gap:7px;margin-top:8px}.purchase-needs-list[hidden],.purchase-history[hidden]{display:none!important}.purchase-need-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;background:#f6f8f7;border:1px solid #e2e8e5;border-radius:12px;padding:10px 12px}.purchase-need-row>div{display:grid;gap:2px}.purchase-need-row strong{font-size:15px}.purchase-need-row small{font-size:12px;color:#6e7b74;font-weight:800}.purchase-need-row>b{font-size:14px;text-align:right;max-width:210px;color:#078844}
-    .purchase-history-card .purchase-meta{grid-template-columns:1fr 1fr!important}.purchase-history-card .purchase-stock-ok{display:none!important}
-    @media(max-width:720px){.purchase-need-row{grid-template-columns:minmax(0,1fr) auto}.purchase-need-row>b{max-width:145px;font-size:13px}.purchase-history-card .purchase-meta{grid-template-columns:1fr 1fr!important}}
+    #purchasesView .purchase-kpis[hidden],#purchasesView .purchase-section[hidden],#purchasesView .purchase-section-title[hidden]{display:none!important}
+    #purchasesView .purchase-calculator-section{margin-top:8px;padding:0;background:transparent;border:0;box-shadow:none}
+    #purchasesView .purchase-calc-controls{grid-template-columns:minmax(0,1.35fr) minmax(150px,.65fr);gap:12px;margin-bottom:12px}
+    #purchasesView .purchase-calc-controls label{font-size:14px;color:#26362e}
+    #purchasesView .purchase-calc-controls select,#purchasesView .purchase-calc-controls input{min-height:54px;border:2px solid #d7e1dc;border-radius:12px;background:#fff;font-size:18px}
+    #purchasesView .purchase-calc-qty span{font-size:18px;min-width:45px}
+    .purchase-direct-list{display:grid;gap:8px;margin-top:10px}
+    .purchase-direct-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;background:#fff;border:1px solid #dfe6e2;border-radius:12px;padding:12px 14px}
+    .purchase-direct-row>div{display:grid;gap:3px;min-width:0}
+    .purchase-direct-row strong{font-size:16px;color:#1f2d26}
+    .purchase-direct-row small{font-size:12px;color:#718078;font-weight:700}
+    .purchase-direct-row>b{font-size:16px;text-align:right;color:#078844;max-width:220px}
+    #simpleNewPurchase{font-size:15px;white-space:nowrap}
+    @media(max-width:720px){
+      #purchasesView .purchase-calc-controls{grid-template-columns:1fr}
+      .purchase-direct-row{grid-template-columns:minmax(0,1fr) auto;padding:11px 12px}
+      .purchase-direct-row>b{font-size:14px;max-width:150px}
+      #simpleNewPurchase{font-size:13px;padding-left:10px;padding-right:10px}
+    }
   `;
   document.head.appendChild(style);
 }
@@ -177,7 +173,7 @@ function injectStyles() {
 function cleanView() {
   injectStyles();
   simplifyCalculator();
-  simplifyHistory();
+  hideHistory();
   rewritePreview();
 }
 
@@ -193,20 +189,7 @@ function observePurchases() {
 }
 
 document.addEventListener('click',event => {
-  const toggle = event.target.closest('[data-purchase-toggle]');
-  if (toggle) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (toggle.dataset.purchaseToggle === 'needs') needsOpen = !needsOpen;
-    if (toggle.dataset.purchaseToggle === 'history') historyOpen = !historyOpen;
-    purchaseObserver.disconnect();
-    cleanView();
-    observePurchases();
-    return;
-  }
   if (event.target.closest('[data-module="compras"]')) {
-    needsOpen = false;
-    historyOpen = false;
     setTimeout(()=>{ purchaseObserver.disconnect(); cleanView(); observePurchases(); },20);
   }
   if (event.target.closest('#simpleNewPurchase,[data-buy-product],[data-plan-buy-product]')) setTimeout(rewritePreview,0);
