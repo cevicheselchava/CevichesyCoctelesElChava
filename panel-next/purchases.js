@@ -9,7 +9,7 @@ function ensurePurchasesStyles() {
   if (document.querySelector('link[data-purchases-style="1"]')) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = './purchases.css?v=20260909-2000';
+  link.href = './purchases.css?v=20260910-0010';
   link.dataset.purchasesStyle = '1';
   document.head.appendChild(link);
 }
@@ -29,7 +29,7 @@ function ensurePurchasesView() {
 function openPurchases() {
   ensurePurchasesStyles();
   const view = ensurePurchasesView();
-  $$('.view').forEach(node => node.classList.toggle('active', node === view));
+  $$('.view').forEach(node=>node.classList.toggle('active',node===view));
   $('#hero')?.classList.remove('compact');
   $('#bottomNav')?.classList.add('hidden');
   if (location.hash !== '#compras') history.replaceState(null,'','#compras');
@@ -39,14 +39,21 @@ function openPurchases() {
 ensurePurchasesStyles();
 ensurePurchasesView();
 
-document.addEventListener('click', event => {
+document.addEventListener('click',event=>{
   const module = event.target.closest('[data-module="compras"]');
   if (!module) return;
   event.preventDefault();
   event.stopImmediatePropagation();
   openPurchases();
-}, true);
+},true);
 
-import('./purchase-system-v4.js?v=20260909-2000').then(() => import('./purchase-ui-cleanup.js?v=20260909-2355')).then(() => {
+import('./purchase-system-final.js?v=20260910-0010').then(()=>{
   if (location.hash === '#compras') openPurchases();
+}).catch(error=>{
+  console.error('Compras:',error);
+  const toast = $('#toast');
+  if (toast) {
+    toast.textContent = 'No se pudo cargar Compras';
+    toast.classList.add('show');
+  }
 });
