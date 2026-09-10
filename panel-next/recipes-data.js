@@ -1,5 +1,6 @@
 const RECIPE_STORAGE_KEY = 'panel-next-recipes-v1';
 const MEASURED_MIXED_MIGRATION_KEY = 'panel-next-recipes-measured-mixed-v1';
+const MIXED_SHRIMP_3OZ_MIGRATION_KEY = 'panel-next-recipes-mixed-shrimp-3oz-v1';
 
 function seedRecipes() {
   const cevicheBase = [
@@ -80,7 +81,7 @@ function seedRecipes() {
       notes:'Receta medida de 1 lb',
       seafood:[
         { name:'Filete de pescado', qty:11/3, unit:'oz', fixed:true },
-        { name:'Camarón', qty:4, unit:'oz', fixed:true }
+        { name:'Camarón', qty:3, unit:'oz', fixed:true }
       ],
       base:measuredMixedBase
     }),
@@ -201,6 +202,26 @@ function migrateMeasuredMixedRecipes(recipes) {
   return next;
 }
 
+function migrateMixedShrimpThreeOz(recipes) {
+  if (localStorage.getItem(MIXED_SHRIMP_3OZ_MIGRATION_KEY) === 'done') return recipes;
+
+  let changed = false;
+  const next = recipes.map(recipe => {
+    if (recipeNameKey(recipe.name) !== recipeNameKey('Ceviche mixto')) return recipe;
+    const ingredients = (recipe.ingredients || []).map(item => {
+      if (ingredientKey(item.name) !== ingredientKey('Camarón')) return item;
+      if (String(item.unit || '') !== 'oz' || Math.abs(Number(item.qty || 0) - 4) >= 0.0001) return item;
+      changed = true;
+      return { ...item, qty:3 };
+    });
+    return changed ? normalizeRecipe({ ...recipe, ingredients, updatedAt:Date.now() }) : recipe;
+  });
+
+  if (changed) localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(next));
+  localStorage.setItem(MIXED_SHRIMP_3OZ_MIGRATION_KEY,'done');
+  return next;
+}
+
 function mergeMissingSeedRecipes(recipes) {
   const current = Array.isArray(recipes) ? recipes.map(normalizeRecipe) : [];
   const names = new Set(current.map(recipe => recipeNameKey(recipe.name)));
@@ -220,10 +241,12 @@ function readRecipes() {
       const seeded = seedRecipes();
       localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(seeded));
       localStorage.setItem(MEASURED_MIXED_MIGRATION_KEY,'done');
+      localStorage.setItem(MIXED_SHRIMP_3OZ_MIGRATION_KEY,'done');
       return seeded;
     }
     const merged = mergeMissingSeedRecipes(JSON.parse(raw));
-    return migrateMeasuredMixedRecipes(merged);
+    const measured = migrateMeasuredMixedRecipes(merged);
+    return migrateMixedShrimpThreeOz(measured);
   } catch {
     return seedRecipes();
   }
@@ -265,6 +288,7 @@ export const RecipeStore = {
   },
   resetDemo() {
     localStorage.setItem(MEASURED_MIXED_MIGRATION_KEY,'done');
+    localStorage.setItem(MIXED_SHRIMP_3OZ_MIGRATION_KEY,'done');
     return writeRecipes(seedRecipes());
   }
 };
