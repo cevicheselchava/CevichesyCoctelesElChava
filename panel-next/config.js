@@ -3,6 +3,7 @@ if (typeof window !== 'undefined') {
   setTimeout(() => import('./preparation-fonts.js?v=20260909-2010').catch(error => console.error('Legibilidad de Preparación:', error)), 0);
   setTimeout(() => import('./order-product-picker.js?v=20260908-1703').catch(error => console.error('Selector de productos:', error)), 0);
   setTimeout(() => import('./direct-sales.js?v=20260911-0618').catch(error => console.error('Venta directa:', error)), 0);
+  setTimeout(() => import('./preparation-ui-fix.js?v=20260911-0633').catch(error => console.error('Ajuste de Preparación:', error)), 0);
 }
 
 export const BUSINESS = {
