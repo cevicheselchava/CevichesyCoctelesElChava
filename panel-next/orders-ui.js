@@ -8,7 +8,6 @@ let selectedDay = null;
 let expandedOrderId = null;
 let wasOrdersActive = false;
 let rendering = false;
-let autoReadyLock = false;
 
 function localDateISO(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
@@ -54,10 +53,10 @@ function readPlan() {
   }
 }
 
-function aggregateOrders(dateISO, excludeOrderId = null) {
+function aggregateOrders(dateISO) {
   const map = new Map();
   OrdersStore.list()
-    .filter(order => order.date === dateISO && order.status !== 'cancelled' && order.id !== excludeOrderId)
+    .filter(order => order.date === dateISO && order.status !== 'cancelled')
     .forEach(order => {
       (Array.isArray(order.items) ? order.items : []).forEach(item => {
         const name = String(item.name || 'Producto').trim() || 'Producto';
@@ -97,36 +96,6 @@ function extrasForDay(dateISO) {
     });
   });
   return rows;
-}
-
-function orderFitsPreparedExtra(order) {
-  if (!order || order.date !== dayISO(0) || order.status !== 'pending') return false;
-  const dayPlan = readPlan()[order.date] || {};
-  const existing = aggregateOrders(order.date, order.id);
-  const items = Array.isArray(order.items) ? order.items : [];
-  if (!items.length) return false;
-
-  return items.every(item=>{
-    const key = productKey(item.name,item.unit);
-    const planned = Number(dayPlan[key]);
-    if (!(planned > 0)) return false;
-    const alreadyOrdered = Number(existing.get(key)?.qty || 0);
-    return alreadyOrdered + Number(item.qty || 0) <= planned + 0.0001;
-  });
-}
-
-function maybeSendNewOrderToDeliveries(order) {
-  if (autoReadyLock || !orderFitsPreparedExtra(order)) return;
-  autoReadyLock = true;
-  try {
-    OrdersStore.update(order.id,{
-      status:'ready',
-      fulfilledFromExtra:true,
-      fulfilledFromExtraAt:Date.now()
-    });
-  } finally {
-    autoReadyLock = false;
-  }
 }
 
 function countForDay(value) {
@@ -390,23 +359,10 @@ document.addEventListener('change',event=>{
 
 window.addEventListener('panel:orders-changed',event=>{
   const created = event.detail?.source === 'local-create' ? event.detail?.order : null;
-  if (created) maybeSendNewOrderToDeliveries(created);
   if (created?.date === dayISO(0)) selectedDay = 'today';
   if (created?.date === dayISO(1)) selectedDay = 'tomorrow';
   requestAnimationFrame(applyOrdersUi);
 });
 window.addEventListener('hashchange',()=>requestAnimationFrame(applyOrdersUi));
-
-const ordersList = $('#ordersList');
-if (ordersList) {
-  const observer = new MutationObserver(()=>requestAnimationFrame(applyOrdersUi));
-  observer.observe(ordersList,{childList:true});
-}
-
-const prepPlan = $('#prepDailyPlan');
-if (prepPlan) {
-  const prepObserver = new MutationObserver(()=>requestAnimationFrame(renderMorningSummary));
-  prepObserver.observe(prepPlan,{childList:true,subtree:true});
-}
 
 requestAnimationFrame(applyOrdersUi);
