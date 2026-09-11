@@ -2,6 +2,18 @@ if (typeof window !== 'undefined') {
   setTimeout(() => import('./whatsapp-ops.js?v=20260908-0730').catch(error => console.error('Operación WhatsApp:', error)), 0);
   setTimeout(() => import('./order-product-picker.js?v=20260908-1703').catch(error => console.error('Selector de productos:', error)), 0);
   setTimeout(() => import('./direct-sales.js?v=20260911-0618').catch(error => console.error('Venta directa:', error)), 0);
+
+  // El botón visible de Inventario usa data-back-home en app.html.
+  // Lo resolvemos aquí en captura para que siempre regrese al panel principal,
+  // aunque otro módulo intercepte el clic después.
+  document.addEventListener('click', event => {
+    const back = event.target.closest('#inventoryView [data-back-home],#inventoryBack');
+    if (!back) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const clean = location.pathname + location.search;
+    location.href = clean;
+  }, true);
 }
 
 export const BUSINESS = {
