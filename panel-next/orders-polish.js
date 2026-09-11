@@ -5,6 +5,7 @@ const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
 const PLAN_KEY = 'panel-preparation-plan-v1';
 let readying = false;
 let modalTimer = null;
+let reconcileTimer = null;
 
 function normalize(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
@@ -56,21 +57,29 @@ function reconcilePreparedOrders(){
     if(!capacity.size)return;
     const orders=OrdersStore.list().filter(order=>order.date===date&&order.status!=='cancelled');
 
-    // Lo que ya salió de pendiente (listo, en ruta o entregado) ya consumió producción.
-    orders.filter(order=>order.status!=='pending').sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0)).forEach(order=>{
-      const required=orderRequirements(order);
-      if(canAllocate(capacity,required)) allocate(capacity,required);
-      else required.forEach((qty,key)=>capacity.set(key,Math.max(0,Number(capacity.get(key)||0)-qty)));
-    });
+    orders
+      .filter(order=>order.status!=='pending')
+      .sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0))
+      .forEach(order=>allocate(capacity,orderRequirements(order)));
 
-    // La producción restante se asigna a los pendientes en el orden en que entraron.
-    orders.filter(order=>order.status==='pending').sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0)).forEach(order=>{
-      const required=orderRequirements(order);
-      if(!canAllocate(capacity,required))return;
-      allocate(capacity,required);
-      OrdersStore.update(order.id,{status:'ready',fulfilledFromProduction:true,fulfilledFromProductionAt:Date.now()});
-    });
+    orders
+      .filter(order=>order.status==='pending')
+      .sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0))
+      .forEach(order=>{
+        const required=orderRequirements(order);
+        if(!canAllocate(capacity,required))return;
+        allocate(capacity,required);
+        OrdersStore.update(order.id,{
+          status:'ready',
+          fulfilledFromProduction:true,
+          fulfilledFromProductionAt:Date.now()
+        });
+      });
   } finally { readying=false; }
+}
+function scheduleReconcile(delay=40){
+  clearTimeout(reconcileTimer);
+  reconcileTimer=setTimeout(reconcilePreparedOrders,delay);
 }
 
 function installStyles(){
@@ -100,13 +109,14 @@ function renderProductButtons(){
   let info=$('#orderFixedInfo');if(!info){info=document.createElement('div');info.id='orderFixedInfo';info.className='order-fixed-info';const qtyLabel=$('#orderQty')?.closest('label');qtyLabel?.insertAdjacentElement('afterend',info);}updateFixedInfo();return true;
 }
 function selectProduct(name){const field=$('#orderProductName'),unit=$('#orderUnit'),price=$('#orderPrice');if(!field||!unit||!price)return;const item=configuredProduct(name)||{name};field.value=item.name||name;if(item.unit)unit.value=item.unit;if(item.price!==null&&item.price!==undefined&&item.price!=='')price.value=item.price;field.dispatchEvent(new Event('change',{bubbles:true}));field.dispatchEvent(new Event('input',{bubbles:true}));unit.dispatchEvent(new Event('input',{bubbles:true}));price.dispatchEvent(new Event('input',{bubbles:true}));renderProductButtons();$('#orderQty')?.focus();}
-function forceModalButtons(){clearTimeout(modalTimer);[0,20,60,140,300].forEach(delay=>setTimeout(renderProductButtons,delay));modalTimer=setTimeout(renderProductButtons,600);}
+function forceModalButtons(){clearTimeout(modalTimer);[0,40,120].forEach(delay=>setTimeout(renderProductButtons,delay));modalTimer=setTimeout(renderProductButtons,300);}
 function applyPolish(){installStyles();hideDuplicateDayButtons();if(!$('#orderModal')?.hidden)renderProductButtons();}
 
 document.addEventListener('click',event=>{const productButton=event.target.closest('[data-order-product-choice]');if(productButton){event.preventDefault();event.stopPropagation();selectProduct(decodeURIComponent(productButton.dataset.orderProductChoice||''));return;}if(event.target.closest('#newOrderButton,[data-order-action="edit"]'))forceModalButtons();});
 document.addEventListener('pointerdown',event=>{if(event.target.id!=='orderProductName')return;if(renderProductButtons()){event.preventDefault();event.stopPropagation();}},true);
-window.addEventListener('panel:orders-changed',event=>{const source=event.detail?.source||'';if(!readying&&source!=='local-update'){setTimeout(reconcilePreparedOrders,0);setTimeout(reconcilePreparedOrders,120);}setTimeout(applyPolish,0);});
+document.addEventListener('change',event=>{if(event.target.closest?.('[data-prep-plan-key]'))scheduleReconcile(0);});
+window.addEventListener('panel:orders-changed',event=>{const source=event.detail?.source||'';if(!readying&&source!=='local-update')scheduleReconcile();setTimeout(applyPolish,0);});
 window.addEventListener('panel:menu-changed',forceModalButtons);
-window.addEventListener('storage',event=>{if(event.key===PLAN_KEY)setTimeout(reconcilePreparedOrders,0);});
+window.addEventListener('storage',event=>{if(event.key===PLAN_KEY)scheduleReconcile(0);});
 const modal=$('#orderModal');if(modal)new MutationObserver(()=>{if(!modal.hidden)forceModalButtons();}).observe(modal,{attributes:true,attributeFilter:['hidden']});
-applyPolish();setTimeout(reconcilePreparedOrders,80);setTimeout(reconcilePreparedOrders,500);setTimeout(applyPolish,150);
+applyPolish();scheduleReconcile(80);setTimeout(applyPolish,150);
