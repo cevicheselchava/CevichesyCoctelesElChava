@@ -194,26 +194,30 @@ function presentationText(item) {
 }
 
 function renderInventory() {
-  if (!$('#inventoryKpis') || !$('#inventoryList')) return;
+  const list = $('#inventoryList');
+  if (!list) return;
   const items = InventoryStore.list();
-  const low = items.filter(item => Number(item.qty || 0) > 0 && Number(item.qty || 0) <= Number(item.minimum || 0)).length;
-  const out = items.filter(item => Number(item.qty || 0) <= 0).length;
-  const value = items.reduce((sum,item)=>sum + Number(item.qty || 0) * InventoryStore.unitCost(item),0);
-  $('#inventoryKpis').innerHTML = [
-    ['Productos',items.length,'total'],['Bajo mínimo',low,'low'],['Agotados',out,'out'],['Valor',money.format(value),'value']
-  ].map(([label,value,tone])=>`<article class="inventory-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
+  const kpis = $('#inventoryKpis');
+  if (kpis) {
+    const low = items.filter(item => Number(item.qty || 0) > 0 && Number(item.qty || 0) <= Number(item.minimum || 0)).length;
+    const out = items.filter(item => Number(item.qty || 0) <= 0).length;
+    const value = items.reduce((sum,item)=>sum + Number(item.qty || 0) * InventoryStore.unitCost(item),0);
+    kpis.innerHTML = [
+      ['Productos',items.length,'total'],['Bajo mínimo',low,'low'],['Agotados',out,'out'],['Valor',money.format(value),'value']
+    ].map(([label,value,tone])=>`<article class="inventory-kpi ${tone}"><small>${label}</small><strong>${value}</strong></article>`).join('');
+  }
 
   renderCategoryButtons();
   if (!inventoryCategory) {
     expandedInventoryId = null;
-    $('#inventoryList').innerHTML = '';
+    list.innerHTML = '';
     return;
   }
 
   const rows = inventoryRows();
   if (expandedInventoryId && !rows.some(item=>item.id === expandedInventoryId)) expandedInventoryId = null;
 
-  $('#inventoryList').innerHTML = rows.length ? rows.map(item => {
+  list.innerHTML = rows.length ? rows.map(item => {
     const [statusLabel,statusClass] = statusFor(item);
     const unitCost = InventoryStore.unitCost(item);
     const expanded = expandedInventoryId === item.id;
@@ -293,8 +297,9 @@ function syncContentUnit() {
 }
 
 function openInventoryModal(id = null) {
+  ensureInventoryAssets();
   editingInventoryId = id;
-  $('#inventoryForm').reset();
+  $('#inventoryForm')?.reset();
   if (id) {
     const item = InventoryStore.get(id);
     if (!item) return;
@@ -326,7 +331,7 @@ function openInventoryModal(id = null) {
 }
 
 function closeInventoryModal() {
-  $('#inventoryModal').hidden = true;
+  if ($('#inventoryModal')) $('#inventoryModal').hidden = true;
   editingInventoryId = null;
   document.body.classList.remove('modal-open');
 }
@@ -343,7 +348,7 @@ function openAdjustModal(id) {
 }
 
 function closeAdjustModal() {
-  $('#adjustInventoryModal').hidden = true;
+  if ($('#adjustInventoryModal')) $('#adjustInventoryModal').hidden = true;
   adjustingInventoryId = null;
   document.body.classList.remove('modal-open');
 }
@@ -364,6 +369,14 @@ document.addEventListener('click', event => {
     event.preventDefault();
     event.stopImmediatePropagation();
     openInventory();
+    return;
+  }
+
+  const addProduct = event.target.closest('#newInventoryItem,#newInventoryButton');
+  if (addProduct) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    openInventoryModal();
     return;
   }
 
@@ -396,7 +409,6 @@ document.addEventListener('click', event => {
 }, true);
 
 $('#inventoryBack')?.addEventListener('click',goHome);
-$('#newInventoryButton')?.addEventListener('click',()=>openInventoryModal());
 $('#closeInventoryModal')?.addEventListener('click',closeInventoryModal);
 $('#cancelInventory')?.addEventListener('click',closeInventoryModal);
 $('#inventoryModal')?.addEventListener('click',event=>{ if (event.target === $('#inventoryModal')) closeInventoryModal(); });
