@@ -29,7 +29,6 @@ function installStyles() {
   const style = document.createElement('style');
   style.id = 'businessCoreUiStyles';
   style.textContent = `
-    /* Pantalla principal tipo software de restaurante: botones grandes y directos. */
     #homeView .summary-section,#homeView .footer-brand{display:none!important}
     body.core-home #bottomNav{display:none!important}
     body.core-home{padding-bottom:0!important}
@@ -41,16 +40,12 @@ function installStyles() {
     #homeView .recipe-tagline{display:none!important}
     #homeView .module-badge{position:static!important;grid-column:3!important;grid-row:1!important;min-width:34px!important;height:34px!important;border-width:2px!important;font-size:14px!important}
     #homeView{padding-bottom:8px}
-
-    /* Controles operativos más parecidos a botones de software que a tarjetas de app. */
     .module-topbar{margin-bottom:14px!important}
     .module-topbar h2{font-size:34px!important}
     .back-button,.new-order-button,.order-action,.inventory-action,.recipe-action,.delivery-action,.money-tabs button,.delivery-tabs button,.status-tabs button,.inventory-category-button{border-radius:10px!important}
     .new-order-button{min-height:50px!important;font-size:16px!important}
     .status-tabs,.delivery-tabs,.money-tabs{gap:8px!important}
     .status-tabs button,.delivery-tabs button,.money-tabs button{min-height:42px!important;padding:9px 14px!important}
-
-    /* Preparación es independiente de Pedidos. */
     #preparationView #prepKpis,#preparationView #prepTabs,#preparationView #prepList{display:none!important}
     #preparationView .prep-dish-panel{margin-top:4px}
     #preparationView .prep-dish-workspace{border-radius:14px!important;box-shadow:none!important}
@@ -60,16 +55,10 @@ function installStyles() {
     .core-production-actions{display:grid;gap:8px;margin-top:14px}
     .core-production-button{width:100%;border:0;border-radius:10px;background:#078844;color:#fff;min-height:54px;padding:12px 16px;font-size:18px;font-weight:1000}
     .core-production-note{font-size:12px;font-weight:800;color:#6b7770;text-align:center}
-
-    /* Pedidos conserva el flujo que ya funciona; sólo se agrega el paso Listo. */
     .core-ready-button{border:0;border-radius:10px;background:#078844;color:#fff;padding:11px 14px;min-height:44px;font-size:15px;font-weight:1000}
-
-    /* Inventario: categorías -> productos -> detalle. */
     #inventoryView .inventory-category-nav{gap:8px!important}
     #inventoryView .inventory-category-button{min-height:44px!important;padding:9px 14px!important}
     #inventoryView .inventory-card{border-radius:12px!important;box-shadow:none!important}
-
-    /* Recetas: la lista se consulta con botón; el detalle no ocupa toda la pantalla. */
     #recipesView .recipe-kpis{display:none!important}
     #recipesView .recipe-card{border-radius:12px!important;box-shadow:none!important;padding:0!important;overflow:hidden!important}
     #recipesView .recipe-card-head{padding:14px 15px!important;cursor:pointer!important}
@@ -81,10 +70,7 @@ function installStyles() {
     #recipesView .recipe-card.core-recipe-open .recipe-card-actions{margin-left:14px!important;margin-right:14px!important}
     #recipesView .recipe-card.core-recipe-open .recipe-card-actions{margin-bottom:14px!important}
     .core-recipe-chevron{font-size:25px;font-weight:1000;margin-left:10px;color:#078844}
-
-    /* Compras debe ser una sola decisión: platillo + cantidad -> qué comprar. */
     #purchasesView .purchase-kpis,#purchasesView .purchase-history{display:none!important}
-
     @media(max-width:720px){
       #homeView .module-grid{grid-template-columns:1fr 1fr!important;gap:9px!important}
       #homeView .module-card,#homeView .module-card.wide{min-height:94px!important;grid-template-columns:40px minmax(0,1fr) auto!important;padding:12px 11px!important;gap:8px!important}
@@ -109,14 +95,11 @@ function enhanceHome() {
 function enhancePreparation() {
   const view = $('#preparationView');
   if (!view) return;
-
   const workspace = view.querySelector('.prep-dish-workspace');
   const input = workspace?.querySelector('[data-prep-plan-key]');
   if (!workspace || !input) return;
-
   const inputLabel = input.closest('.prep-dish-input')?.querySelector('small');
   if (inputLabel) inputLabel.textContent = 'Cantidad a preparar';
-
   let actions = workspace.querySelector('.core-production-actions');
   if (!actions) {
     actions = document.createElement('div');
@@ -134,7 +117,6 @@ function enhanceOrders() {
     const order = id ? OrdersStore.get(id) : null;
     const actions = card.querySelector('.order-card-actions');
     if (!order || !actions) return;
-
     const existing = actions.querySelector('[data-core-ready]');
     if (order.status === 'preparing') {
       if (!existing) {
@@ -198,6 +180,11 @@ function scheduleUI() {
   });
 }
 
+function goHome() {
+  const clean = location.pathname + location.search;
+  location.href = clean;
+}
+
 function registerPreparation(button) {
   const workspace = button.closest('.prep-dish-workspace');
   const input = workspace?.querySelector('[data-prep-plan-key]');
@@ -206,19 +193,16 @@ function registerPreparation(button) {
     || workspace?.querySelector('.prep-dish-head > span')?.textContent?.trim()
     || '';
   const qty = Number(input?.value || 0);
-
   if (!(qty > 0)) {
     toast('Escribe cuánto preparaste');
     input?.focus();
     return;
   }
-
   const result = BusinessCore.registerProduction({productName:name,qty,unit});
   if (!result.ok) {
     toast(result.error || 'No se pudo registrar la preparación');
     return;
   }
-
   if (input) {
     input.value = '';
     input.dispatchEvent(new Event('change',{bubbles:true}));
@@ -255,6 +239,13 @@ function toggleRecipe(card) {
 }
 
 document.addEventListener('click',event=>{
+  const prepBack = event.target.closest('#preparationView [data-back-home], #preparationView #prepBack');
+  if (prepBack) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    goHome();
+    return;
+  }
   const produce = event.target.closest('[data-core-production]');
   if (produce) {
     event.preventDefault();
@@ -262,7 +253,6 @@ document.addEventListener('click',event=>{
     registerPreparation(produce);
     return;
   }
-
   const ready = event.target.closest('.core-ready-button[data-core-ready]');
   if (ready) {
     event.preventDefault();
@@ -270,7 +260,6 @@ document.addEventListener('click',event=>{
     markOrderReady(ready);
     return;
   }
-
   const recipeHead = event.target.closest('#recipesView .recipe-card-head');
   if (recipeHead && !event.target.closest('[data-recipe-action]')) {
     event.preventDefault();
@@ -306,8 +295,10 @@ window.addEventListener('panel:inventory-changed',event=>{
 window.addEventListener('panel:orders-changed',scheduleUI);
 window.addEventListener('panel:production-changed',scheduleUI);
 window.addEventListener('panel:menu-changed',scheduleUI);
-
-new MutationObserver(scheduleUI).observe(document.documentElement,{childList:true,subtree:true});
+window.addEventListener('hashchange',scheduleUI);
+document.addEventListener('change',event=>{
+  if (event.target.closest?.('[data-prep-plan-key]')) requestAnimationFrame(scheduleUI);
+});
 
 applyUI();
 setTimeout(()=>{ applyUI(); moduleHealth(); },250);
