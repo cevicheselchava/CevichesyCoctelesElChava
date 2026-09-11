@@ -92,6 +92,10 @@ function ensureStyles() {
   document.head.appendChild(style);
 }
 
+function setReady(ready) {
+  $('#preparationView')?.classList.toggle('prep-ui-ready',ready);
+}
+
 function renderTopSummary() {
   ensureStyles();
   const picker = $('#prepDishPicker');
@@ -117,15 +121,17 @@ function renderTopSummary() {
     </div>
     ${rows.length ? `<div class="prep-confirmed-items">${rows.map(row=>`<span class="prep-confirmed-chip">${escapeHtml(row.name)}: ${formatQty(row.qty)} ${escapeHtml(row.unit)}</span>`).join('')}</div>` : ''}
   `;
+  setReady(true);
 }
 
 ensureStyles();
 renderTopSummary();
-window.addEventListener('panel:orders-changed',renderTopSummary);
-window.addEventListener('hashchange',renderTopSummary);
+window.addEventListener('panel:orders-changed',()=>{ setReady(false); queueMicrotask(renderTopSummary); });
+window.addEventListener('hashchange',()=>{ setReady(false); queueMicrotask(renderTopSummary); });
 
 document.addEventListener('click',event=>{
   if (event.target.closest('[data-module="preparacion"],#refreshPreparation,#prepDishPicker,[data-prep-select-dish]')) {
+    setReady(false);
     queueMicrotask(renderTopSummary);
   }
 },true);
