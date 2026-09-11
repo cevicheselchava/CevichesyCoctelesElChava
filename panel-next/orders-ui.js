@@ -134,7 +134,7 @@ function installStyles() {
     .orders-day-count{position:relative;z-index:1;display:grid;place-items:center;min-width:42px;height:42px;padding:0 10px;border-radius:50%;background:rgba(255,255,255,.92);color:#078844;font-size:20px;font-weight:1000;box-shadow:0 4px 10px rgba(0,0,0,.10)}
     .orders-day-button.tomorrow .orders-day-count{color:#8a5500}
     #ordersView .status-tabs{margin-top:8px!important;padding:3px 1px 9px!important}#ordersView .status-tabs button{border:0!important;box-shadow:0 4px 10px rgba(26,48,39,.06)}
-    #ordersView .status-tabs button[data-status="active"]{background:#dff5e9;color:#08713a}#ordersView .status-tabs button[data-status="pending"]{background:#fff0b9;color:#715300}#ordersView .status-tabs button[data-status="ready"]{background:#dff3ff;color:#145b80}#ordersView .status-tabs button[data-status="delivered"]{background:#eee6ff;color:#51318c}#ordersView .status-tabs button.active{background:#111!important;color:#fff!important}#ordersView .status-tabs button[data-status="all"]{display:none!important}
+    #ordersView .status-tabs button[data-status="active"]{background:#dff5e9;color:#08713a}#ordersView .status-tabs button[data-status="pending"]{background:#fff0b9;color:#715300}#ordersView .status-tabs button[data-status="ready"]{background:#dff3ff;color:#145b80}#ordersView .status-tabs button[data-status="delivered"]{background:#eee6ff;color:#51318c}#ordersView .status-tabs button[data-status="all"]{display:inline-flex!important;background:#eef1ef;color:#39443e}#ordersView .status-tabs button.active{background:#111!important;color:#fff!important}
     .orders-start-card,.orders-day-empty{margin-top:12px;border-radius:20px;padding:28px 18px;text-align:center;border:1px dashed #cfe0d6;background:linear-gradient(145deg,#f2fff7,#fff9df);color:#526159}.orders-start-card .orders-start-icon,.orders-day-empty .orders-start-icon{font-size:38px;display:block;margin-bottom:8px}.orders-start-card strong,.orders-day-empty strong{display:block;font-size:20px;color:#173c27}.orders-start-card small,.orders-day-empty small{display:block;margin-top:5px;font-size:14px;font-weight:800}
     #ordersView .orders-list{gap:10px!important}#ordersView .order-card{position:relative;border-radius:17px!important;border:1px solid #dce7e1!important;border-left:6px solid #078844!important;box-shadow:0 7px 17px rgba(25,46,37,.07)!important;overflow:hidden!important;transition:.16s ease;background:linear-gradient(145deg,#fff,#fbfffc)!important}#ordersView .order-card:nth-of-type(3n+2){border-left-color:#f1ae25!important}#ordersView .order-card:nth-of-type(3n+3){border-left-color:#8d72d9!important}#ordersView .order-card-head{cursor:pointer;align-items:center!important}
     .order-accordion-summary{display:flex;align-items:center;gap:9px;margin-left:auto;padding-left:8px}.order-accordion-total{font-size:20px;font-weight:1000;color:#078844;white-space:nowrap}.order-accordion-chevron{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#eef7f1;color:#078844;font-size:21px;font-weight:1000;transition:transform .16s ease}#ordersView .order-card:not(.order-collapsed) .order-accordion-chevron{transform:rotate(180deg)}
@@ -249,6 +249,13 @@ function forceAllDatesForApp() {
   return true;
 }
 
+function showAllStatuses() {
+  const button = $('#statusTabs [data-status="all"]');
+  if (!button || button.classList.contains('active')) return false;
+  button.click();
+  return true;
+}
+
 function decorateCard(card, order) {
   const head = $('.order-card-head',card);
   if (!head || !order) return;
@@ -317,7 +324,12 @@ function chooseDay(day) {
   selectedDay = day;
   expandedOrderId = null;
   renderDayChoices();
-  if (forceAllDatesForApp()) { requestAnimationFrame(applyOrdersUi); return; }
+  const changedDay = forceAllDatesForApp();
+  const changedStatus = showAllStatuses();
+  if (changedDay || changedStatus) {
+    requestAnimationFrame(applyOrdersUi);
+    return;
+  }
   applyDayVisibility();
 }
 
@@ -338,6 +350,8 @@ function toggleOrder(id) {
 document.addEventListener('click',event=>{
   const dayButton = event.target.closest('[data-local-order-day]');
   if (dayButton) { event.preventDefault(); chooseDay(dayButton.dataset.localOrderDay); return; }
+  const statusButton = event.target.closest('#statusTabs [data-status]');
+  if (statusButton) { requestAnimationFrame(applyDayVisibility); return; }
   const card = event.target.closest('#ordersList .order-card[data-order-id]');
   if (!card || event.target.closest('button,a,input,select,textarea,label')) return;
   toggleOrder(card.dataset.orderId);
@@ -355,6 +369,10 @@ document.addEventListener('keydown',event=>{
 document.addEventListener('change',event=>{
   if (!event.target.closest?.('[data-prep-plan-key]')) return;
   requestAnimationFrame(()=>{ renderExtraStock(); renderMorningSummary(); });
+});
+
+document.addEventListener('input',event=>{
+  if (event.target.id === 'orderSearch') requestAnimationFrame(applyDayVisibility);
 });
 
 window.addEventListener('panel:orders-changed',event=>{
