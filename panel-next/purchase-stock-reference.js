@@ -58,6 +58,9 @@ function enhancePurchaseRows() {
     stock.textContent = item
       ? `Inventario: ${cleanNumber(item.qty)} ${item.unit || ''}`.trim()
       : 'Inventario: —';
+
+    const packageSuggestion = row.querySelector(':scope > b');
+    if (packageSuggestion) packageSuggestion.hidden = true;
   });
 }
 
@@ -65,7 +68,11 @@ function installStyles() {
   if ($('#purchaseStockReferenceStyles')) return;
   const style = document.createElement('style');
   style.id = 'purchaseStockReferenceStyles';
-  style.textContent = '.purchase-stock-reference{color:#078844!important;font-weight:1000!important;font-size:12px!important}';
+  style.textContent = `
+    .purchase-stock-reference{color:#078844!important;font-weight:1000!important;font-size:12px!important}
+    #purchasesView .purchase-final-row{grid-template-columns:1fr!important}
+    #purchasesView .purchase-final-row>b[hidden]{display:none!important}
+  `;
   document.head.appendChild(style);
 }
 
