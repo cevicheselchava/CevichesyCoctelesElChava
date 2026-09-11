@@ -28,6 +28,7 @@ export const BUSINESS = {
 
 export const MODULES = [
   { id: 'pedidos', label: 'Pedidos', subtitle: 'Gestiona y consulta los pedidos', icon: '📋', color: 'green' },
+  { id: 'venta', label: 'Venta', subtitle: 'Registra una venta del día', icon: '💵', color: 'orange' },
   { id: 'compras', label: 'Compras', subtitle: 'Genera y da seguimiento a tus compras', icon: '🛒', color: 'blue' },
   { id: 'preparacion', label: 'Preparación', subtitle: 'Controla la cocina y tiempos', icon: '👨‍🍳', color: 'yellow' },
   { id: 'entregas', label: 'Entregas', subtitle: 'Controla repartos y envíos', icon: '🛵', color: 'orange' },
