@@ -1,0 +1,8 @@
+const KEY='chava-panel-v3';
+const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}};
+function isCancelled(v){return ['cancelled','cancelado'].includes(String(v||'').toLowerCase())}
+function cardData(card){return {customer:card.querySelector('h3')?.textContent?.trim()||'',meta:card.querySelector('.muted')?.textContent||''};}
+function removeCancelled(card){if(!confirm('¿Eliminar este pedido cancelado?'))return;const d=cardData(card),s=read();s.orders=Array.isArray(s.orders)?s.orders:[];const i=s.orders.findIndex(o=>isCancelled(o.status)&&String(o.customer||'').trim()===d.customer&&d.meta.includes(String(o.date||''))&&d.meta.includes(String(o.time||'')));if(i<0){alert('Ese pedido no está guardado como pedido manual.');return;}s.orders.splice(i,1);s.updatedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(s));location.reload();}
+function decorate(){document.querySelectorAll('.order-row').forEach(card=>{if(!card.querySelector('.status.cancelled')||card.querySelector('[data-delete-cancelled]'))return;let actions=card.querySelector('.actions');if(!actions){actions=document.createElement('div');actions.className='actions';card.appendChild(actions);}const b=document.createElement('button');b.type='button';b.className='danger';b.textContent='Eliminar';b.dataset.deleteCancelled='1';b.onclick=()=>removeCancelled(card);actions.appendChild(b);});}
+const start=()=>{decorate();const host=document.querySelector('#content');if(host)new MutationObserver(decorate).observe(host,{childList:true,subtree:true});};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
