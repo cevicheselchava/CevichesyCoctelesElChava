@@ -2,7 +2,7 @@ if (typeof window !== 'undefined') {
   setTimeout(() => import('./whatsapp-ops.js?v=20260908-0730').catch(error => console.error('Operación WhatsApp:', error)), 0);
   setTimeout(() => import('./preparation-fonts.js?v=20260909-2010').catch(error => console.error('Legibilidad de Preparación:', error)), 0);
   setTimeout(() => import('./order-product-picker.js?v=20260908-1703').catch(error => console.error('Selector de productos:', error)), 0);
-  setTimeout(() => import('./direct-sales.js?v=20260911-0605').catch(error => console.error('Venta directa:', error)), 0);
+  setTimeout(() => import('./direct-sales.js?v=20260911-0612').catch(error => console.error('Venta directa:', error)), 0);
 }
 
 export const BUSINESS = {
@@ -37,8 +37,6 @@ export const MODULES = [
   { id: 'recetas', label: 'Recetas', subtitle: 'Administra tus recetas y porciones', icon: '📖', color: 'purple', wide: true }
 ];
 
-// El menú NO se fija en el código. Cada negocio configurará sus propios productos,
-// unidades y precios. Este arreglo queda vacío hasta construir Configuración.
 export const MENU_DEFAULT = [];
 
 export const UNITS = ['pieza', 'orden', 'lb', '1/2 lb', 'oz', 'vaso', 'combo', 'paquete', 'otro'];
