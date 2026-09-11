@@ -51,6 +51,7 @@ import('./tostadas-config.js?v=20260910-1300')
   .then(()=>import('./purchase-system-final.js?v=20260910-0617'))
   .then(()=>import('./purchase-stock-reference.js?v=20260910-0630'))
   .then(()=>import('./purchase-dish-buttons.js?v=20260910-0828'))
+  .then(()=>import('./purchase-simple-form.js?v=20260910-2038'))
   .then(()=>{
     if (location.hash === '#compras') openPurchases();
   }).catch(error=>{
