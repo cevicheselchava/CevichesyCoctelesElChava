@@ -72,6 +72,7 @@ function ensureStyles() {
   const style = document.createElement('style');
   style.id = 'prepUiFixStyles';
   style.textContent = `
+    #preparationView.active:not(.prep-ui-ready){visibility:hidden!important}
     #prepConfirmedTop{width:100%;margin:0 0 10px;border:0;border-radius:15px;background:linear-gradient(145deg,#0da653,#078844);color:#fff;padding:10px 12px;box-shadow:0 6px 14px rgba(7,136,68,.16)}
     #prepConfirmedTop .prep-confirmed-row{display:flex;align-items:center;gap:10px}
     #prepConfirmedTop .prep-confirmed-icon{font-size:24px;line-height:1;flex:0 0 auto}
