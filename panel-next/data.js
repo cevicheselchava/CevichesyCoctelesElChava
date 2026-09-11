@@ -68,26 +68,10 @@ function inventorySeedItem({ id, name, unit, category='Ingrediente', qty=0, mini
 
 function seedInventory() {
   return [
-    inventorySeedItem({
-      id:'I-1004', name:'Filete de pescado', unit:'lb', qty:6.5, minimum:4,
-      purchaseUnit:'bolsa', contentQty:2, contentUnit:'lb', purchasePrice:9.50,
-      updatedAt:Date.now()-3600000
-    }),
-    inventorySeedItem({
-      id:'I-1003', name:'Camarón', unit:'lb', qty:2, minimum:4,
-      purchaseUnit:'bolsa', contentQty:0.75, contentUnit:'lb', purchasePrice:6.47,
-      updatedAt:Date.now()-7200000
-    }),
-    inventorySeedItem({
-      id:'I-1002', name:'Tomate', unit:'lb', qty:3, minimum:2,
-      purchaseUnit:'lb', contentQty:1, contentUnit:'lb', purchasePrice:1.25,
-      updatedAt:Date.now()-9500000
-    }),
-    inventorySeedItem({
-      id:'I-1001', name:'Contenedores', category:'Empaque', unit:'pieza', qty:0, minimum:12,
-      purchaseUnit:'paquete', contentQty:25, contentUnit:'pieza', purchasePrice:10.50,
-      updatedAt:Date.now()-13000000
-    }),
+    inventorySeedItem({ id:'I-1004', name:'Filete de pescado', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' }),
+    inventorySeedItem({ id:'I-1003', name:'Camarón', unit:'oz', purchaseUnit:'bolsa', contentQty:12, contentUnit:'oz' }),
+    inventorySeedItem({ id:'I-1002', name:'Tomate', unit:'lb', purchaseUnit:'lb', contentQty:1, contentUnit:'lb' }),
+    inventorySeedItem({ id:'I-1001', name:'Contenedores', category:'Empaque', unit:'pieza', purchaseUnit:'paquete', contentQty:25, contentUnit:'pieza' }),
     inventorySeedItem({ id:'I-1005', name:'Pepino', unit:'lb' }),
     inventorySeedItem({ id:'I-1006', name:'Cebolla morada', unit:'lb' }),
     inventorySeedItem({ id:'I-1007', name:'Cilantro', unit:'oz' }),
