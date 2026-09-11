@@ -61,7 +61,6 @@ function removeOldSummary() {
     return text.includes('PEDIDOS CONFIRMADOS DE HOY') && text.includes('ENCARGADO PARA PREPARAR');
   });
   if (!matches.length) return;
-
   matches.sort((a,b)=>a.querySelectorAll('*').length - b.querySelectorAll('*').length);
   const deepest = matches[0];
   const card = deepest.closest('.prep-card,.prep-orders-summary,.prep-confirmed-summary,article,section') || deepest;
@@ -83,30 +82,21 @@ function ensureStyles() {
     #prepConfirmedTop .prep-confirmed-items::-webkit-scrollbar{display:none}
     #prepConfirmedTop .prep-confirmed-chip{flex:0 0 auto;border-radius:999px;background:rgba(255,255,255,.16);padding:5px 8px;font-size:11px;font-weight:900;white-space:nowrap}
     #prepConfirmedTop.empty{background:#eef3f0;color:#53615a;box-shadow:none;border:1px solid #dce5e0}
-
     .prep-dish-options{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
     .prep-dish-option{min-height:78px!important;padding:12px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:7px!important}
     .prep-dish-option span{font-size:17px!important;line-height:1.12!important}
     .prep-dish-option small{font-size:13px!important;border-radius:999px;background:#eef3f0;padding:4px 8px!important}
     .prep-dish-option.selected{box-shadow:0 0 0 2px rgba(7,136,68,.12)!important}
-    @media(max-width:420px){
-      #prepConfirmedTop{padding:9px 10px}
-      #prepConfirmedTop strong{font-size:16px}
-      .prep-dish-option{min-height:72px!important}
-      .prep-dish-option span{font-size:16px!important}
-    }
+    @media(max-width:420px){#prepConfirmedTop{padding:9px 10px}#prepConfirmedTop strong{font-size:16px}.prep-dish-option{min-height:72px!important}.prep-dish-option span{font-size:16px!important}}
   `;
   document.head.appendChild(style);
 }
 
 function renderTopSummary() {
   ensureStyles();
-  const daily = $('#prepDailyPlan');
   const picker = $('#prepDishPicker');
-  if (!daily || !picker) return;
-
+  if (!picker) return;
   removeOldSummary();
-
   const rows = todayPreparationRows();
   let card = $('#prepConfirmedTop');
   if (!card) {
@@ -116,7 +106,6 @@ function renderTopSummary() {
   } else if (card.nextElementSibling !== picker) {
     picker.insertAdjacentElement('beforebegin',card);
   }
-
   card.classList.toggle('empty',rows.length === 0);
   card.innerHTML = `
     <div class="prep-confirmed-row">
@@ -130,23 +119,18 @@ function renderTopSummary() {
   `;
 }
 
-function refreshSoon() {
-  requestAnimationFrame(()=>requestAnimationFrame(renderTopSummary));
-}
-
 ensureStyles();
-refreshSoon();
-
-window.addEventListener('panel:orders-changed',refreshSoon);
-window.addEventListener('hashchange',refreshSoon);
+renderTopSummary();
+window.addEventListener('panel:orders-changed',renderTopSummary);
+window.addEventListener('hashchange',renderTopSummary);
 
 document.addEventListener('click',event=>{
   if (event.target.closest('[data-module="preparacion"],#refreshPreparation,#prepDishPicker,[data-prep-select-dish]')) {
-    setTimeout(refreshSoon,0);
+    queueMicrotask(renderTopSummary);
   }
 },true);
 
 const observer = new MutationObserver(()=>{
-  if ($('#preparationView')?.classList.contains('active')) refreshSoon();
+  if ($('#preparationView')?.classList.contains('active')) renderTopSummary();
 });
 observer.observe(document.body,{subtree:true,childList:true});
