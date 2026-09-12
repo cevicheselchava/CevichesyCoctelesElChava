@@ -1,0 +1,20 @@
+{
+  "id": "/index.html",
+  "name": "Ceviches y Cócteles El Cubano",
+  "short_name": "El Cubano",
+  "description": "Pedidos de ceviches y cócteles con entrega a domicilio.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fff8e8",
+  "theme_color": "#267642",
+  "categories": ["food", "shopping"],
+  "icons": [
+    {"src": "/pwa-icon.svg?v=20260808-2", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "/pwa-icon.svg?v=20260808-2", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable"}
+  ],
+  "launch_handler": {"client_mode": "navigate-existing"},
+  "prefer_related_applications": false
+}
