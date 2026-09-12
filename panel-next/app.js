@@ -1,8 +1,6 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import {
-  getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp,
-  collection, updateDoc
-} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+let initializeApp, getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp, collection, updateDoc;
+let firestore = null;
+let firebaseLoading = null;
 
 const firebaseConfig = {
   apiKey:'AIzaSyBbOIXTr2Tvz1FvoTk5GZgP2jx24jpjlL4',
@@ -14,8 +12,6 @@ const firebaseConfig = {
   measurementId:'G-1MZS4J9Y4Z'
 };
 
-const app = initializeApp(firebaseConfig);
-const firestore = getFirestore(app);
 const $ = s => document.querySelector(s);
 const LOCAL_KEY = 'chava-panel-v3';
 const CLOUD_DOC = ['panel_v2','principal_v3'];
@@ -58,16 +54,47 @@ const today=()=>new Date().toLocaleDateString('en-CA');
 const tomorrow=()=>{const d=new Date();d.setDate(d.getDate()+1);return d.toLocaleDateString('en-CA');};
 const nowTime=()=>new Date().toTimeString().slice(0,5);
 const id=()=>crypto.randomUUID();
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const byId=(arr,value)=>arr.find(x=>x.id===value);
 const sorted=arr=>[...arr].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es'));
 const empty=text=>`<div class="empty">${esc(text)}</div>`;
 
 function saveLocal({sync=true}={}){dbState.updatedAt=Date.now();localStorage.setItem(LOCAL_KEY,JSON.stringify(dbState));renderCurrent();if(sync&&!applyingRemote)queueCloudSave();}
 function toast(text,ms=1800){const el=$('#toast');el.textContent=text;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),ms);}
-function setCloud(text,kind=''){const el=$('#cloudState');el.textContent=text;el.className=`pill ${kind}`.trim();}
-function queueCloudSave(){if(!cloudReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushCloud,450);}
-async function pushCloud(){try{setCloud('Guardando…','syncing');await setDoc(doc(firestore,...CLOUD_DOC),{...dbState,sourceDevice:deviceId,serverUpdatedAt:serverTimestamp()},{merge:false});setCloud('Nube ✓','ok');}catch(e){console.error(e);setCloud('Local','warn');}}
+function setCloud(text,kind=''){const el=$('#cloudState');if(!el)return;el.textContent=text;el.className=`pill ${kind}`.trim();}
+function queueCloudSave(){if(!cloudReady||!firestore)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushCloud,450);}
+async function pushCloud(){if(!cloudReady||!firestore)return;try{setCloud('Guardando…','syncing');await setDoc(doc(firestore,...CLOUD_DOC),{...dbState,sourceDevice:deviceId,serverUpdatedAt:serverTimestamp()},{merge:false});setCloud('Nube ✓','ok');}catch(e){console.error(e);setCloud('Local','warn');}}
+
+async function importWithTimeout(url,ms=7000){
+  return Promise.race([
+    import(url),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('Firebase timeout')),ms))
+  ]);
+}
+async function loadFirebase(){
+  if(firestore)return true;
+  if(firebaseLoading)return firebaseLoading;
+  firebaseLoading=(async()=>{
+    try{
+      const [appMod,fireMod]=await Promise.all([
+        importWithTimeout('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+        importWithTimeout('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js')
+      ]);
+      initializeApp=appMod.initializeApp;
+      ({getFirestore,doc,getDoc,setDoc,onSnapshot,serverTimestamp,collection,updateDoc}=fireMod);
+      const app=initializeApp(firebaseConfig);
+      firestore=getFirestore(app);
+      return true;
+    }catch(e){
+      console.error('Firebase no disponible; panel sigue en modo Local',e);
+      setCloud('Local','warn');
+      return false;
+    }finally{
+      firebaseLoading=null;
+    }
+  })();
+  return firebaseLoading;
+}
 
 const modules=[
  ['orders','📋','Pedidos','mod-orders'],['prep','👨‍🍳','Preparación','mod-prep'],['delivery','🚗','Entregas','mod-delivery'],
@@ -139,7 +166,7 @@ function openExpenseForm(){showModal('Nuevo gasto',`${input('name','Concepto',''
 
 function applyRecipeInventory(recipe,mult=1){if(!recipe)return;for(const line of recipe.ingredients||[]){const inv=byId(dbState.inventory,line.inventoryId);if(inv)inv.stock=Number(inv.stock||0)-Number(line.qty||0)*mult;}}
 function applyPublicInventory(order){for(const [key,val] of Object.entries(order.publicRecipe||{})){const inv=dbState.inventory.find(i=>i.appKey===key);if(inv)inv.stock=Number(inv.stock||0)-Number(val||0);}}
-async function changeOrderStatus(orderId,status,isPublic){if(isPublic){const o=publicOrders.find(x=>x.id===orderId);if(!o)return;const firestoreStatus={pending:'nuevo',preparing:'preparando',ready:'listo',delivery:'en_entrega',delivered:'entregado',cancelled:'cancelado'}[status]||status;try{if(status==='delivered'&&!o.inventoryApplied){applyPublicInventory(o);saveLocal();o.inventoryApplied=true;}await updateDoc(doc(firestore,'pedidos',orderId),{status:firestoreStatus});toast('Pedido actualizado');}catch(e){console.error(e);toast('No se pudo actualizar',2500);}return;}const o=byId(dbState.orders,orderId);if(!o)return;if(status==='delivered'&&!o.inventoryApplied){const r=byId(dbState.recipes,o.recipeId);if(r)applyRecipeInventory(r,Number(orderPounds(o)||0)/Number(r.yieldLb||1));o.inventoryApplied=true;}o.status=status;saveLocal();toast('Pedido actualizado');}
+async function changeOrderStatus(orderId,status,isPublic){if(isPublic){if(!firestore){toast('Sin conexión a nube',2200);return;}const o=publicOrders.find(x=>x.id===orderId);if(!o)return;const firestoreStatus={pending:'nuevo',preparing:'preparando',ready:'listo',delivery:'en_entrega',delivered:'entregado',cancelled:'cancelado'}[status]||status;try{if(status==='delivered'&&!o.inventoryApplied){applyPublicInventory(o);saveLocal();o.inventoryApplied=true;}await updateDoc(doc(firestore,'pedidos',orderId),{status:firestoreStatus});toast('Pedido actualizado');}catch(e){console.error(e);toast('No se pudo actualizar',2500);}return;}const o=byId(dbState.orders,orderId);if(!o)return;if(status==='delivered'&&!o.inventoryApplied){const r=byId(dbState.recipes,o.recipeId);if(r)applyRecipeInventory(r,Number(orderPounds(o)||0)/Number(r.yieldLb||1));o.inventoryApplied=true;}o.status=status;saveLocal();toast('Pedido actualizado');}
 function deleteItem(type,itemId){if(type==='inventory'){const used=dbState.recipes.some(r=>(r.ingredients||[]).some(x=>x.inventoryId===itemId));if(used){toast('Ese ingrediente está usado en una receta',2600);return;}dbState.inventory=dbState.inventory.filter(x=>x.id!==itemId);}if(type==='recipes'){const used=dbState.orders.some(o=>o.recipeId===itemId&&!['delivered','cancelled'].includes(normalizeStatus(o.status)));if(used){toast('Esa receta tiene pedidos activos',2500);return;}dbState.recipes=dbState.recipes.filter(x=>x.id!==itemId);}saveLocal();}
 function exportData(){const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),data:dbState},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`panel-el-chava-${today()}.json`;a.click();URL.revokeObjectURL(a.href);}
 
@@ -148,6 +175,31 @@ $('#primaryBtn').addEventListener('click',()=>({orders:()=>openOrderForm(),inven
 $('#form').addEventListener('submit',e=>{e.preventDefault();if(!editing?.onSubmit)return;editing.onSubmit(new FormData(e.currentTarget));});
 document.addEventListener('click',e=>{const m=e.target.closest('[data-module]');if(m){openModule(m.dataset.module);return;}if(e.target.closest('[data-export]')){exportData();return;}if(e.target.closest('[data-manual-purchase]')){openPurchaseForm();return;}const ie=e.target.closest('[data-inventory-edit]');if(ie){openInventoryForm(byId(dbState.inventory,ie.dataset.inventoryEdit));return;}const re=e.target.closest('[data-recipe-edit]');if(re){openRecipeForm(byId(dbState.recipes,re.dataset.recipeEdit));return;}const oe=e.target.closest('[data-order-edit]');if(oe){openOrderForm(byId(dbState.orders,oe.dataset.orderEdit));return;}const os=e.target.closest('[data-order-status]');if(os){changeOrderStatus(os.dataset.orderStatus,os.dataset.status,os.dataset.public==='1');return;}const del=e.target.closest('[data-delete]');if(del){deleteItem(del.dataset.delete,del.dataset.id);return;}if(e.target.closest('[data-add-line]')){$('#ingredientLines').insertAdjacentHTML('beforeend',ingredientRow());return;}const rm=e.target.closest('[data-remove-line]');if(rm){rm.closest('.ingredient-row')?.remove();return;}});
 
-async function initCloud(){setCloud('Conectando…','syncing');try{const ref=doc(firestore,...CLOUD_DOC);const snap=await getDoc(ref);if(snap.exists()){const remote=normalize(snap.data());if(remote.updatedAt>dbState.updatedAt){dbState=remote;localStorage.setItem(LOCAL_KEY,JSON.stringify(dbState));}}else if(dbState.updatedAt){await setDoc(ref,{...dbState,sourceDevice:deviceId,serverUpdatedAt:serverTimestamp()});}cloudReady=true;setCloud('Nube ✓','ok');onSnapshot(ref,s=>{if(!s.exists())return;const data=normalize(s.data());if(s.data().sourceDevice===deviceId)return;if(data.updatedAt<=dbState.updatedAt)return;applyingRemote=true;dbState=data;localStorage.setItem(LOCAL_KEY,JSON.stringify(dbState));renderCurrent();applyingRemote=false;});onSnapshot(collection(firestore,'pedidos'),snapshot=>{publicOrders=snapshot.docs.map(mapPublicOrder);renderCurrent();});}catch(e){console.error(e);setCloud('Local','warn');}}
+async function initCloud(){
+  if(cloudReady||firebaseLoading)return;
+  setCloud('Conectando…','syncing');
+  const loaded=await loadFirebase();
+  if(!loaded){setCloud('Local','warn');return;}
+  try{
+    const ref=doc(firestore,...CLOUD_DOC);
+    const snap=await getDoc(ref);
+    if(snap.exists()){
+      const remote=normalize(snap.data());
+      if(remote.updatedAt>dbState.updatedAt){dbState=remote;localStorage.setItem(LOCAL_KEY,JSON.stringify(dbState));renderCurrent();}
+    }else if(dbState.updatedAt){
+      await setDoc(ref,{...dbState,sourceDevice:deviceId,serverUpdatedAt:serverTimestamp()});
+    }
+    cloudReady=true;
+    setCloud('Nube ✓','ok');
+    onSnapshot(ref,s=>{if(!s.exists())return;const data=normalize(s.data());if(s.data().sourceDevice===deviceId)return;if(data.updatedAt<=dbState.updatedAt)return;applyingRemote=true;dbState=data;localStorage.setItem(LOCAL_KEY,JSON.stringify(dbState));renderCurrent();applyingRemote=false;});
+    onSnapshot(collection(firestore,'pedidos'),snapshot=>{publicOrders=snapshot.docs.map(mapPublicOrder);renderCurrent();});
+  }catch(e){
+    console.error(e);
+    cloudReady=false;
+    setCloud('Local','warn');
+  }
+}
 
-goHome();initCloud();
+goHome();
+initCloud();
+window.addEventListener('online',()=>{if(!cloudReady)initCloud();});
