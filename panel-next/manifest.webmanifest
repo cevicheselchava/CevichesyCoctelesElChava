@@ -1,0 +1,19 @@
+{
+  "name": "Panel Operativo · El Chava",
+  "short_name": "El Chava",
+  "description": "Panel operativo de Ceviches & Cócteles El Chava",
+  "start_url": "./app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f2e5",
+  "theme_color": "#0b8f4d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
