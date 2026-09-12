@@ -1,16 +1,17 @@
 {
+  "id": "/panel-next/",
   "name": "Panel Operativo · El Chava",
-  "short_name": "El Chava",
+  "short_name": "Panel Chava",
   "description": "Panel operativo de Ceviches & Cócteles El Chava",
-  "start_url": "./app.html",
-  "scope": "./",
+  "start_url": "/panel-next/app.html",
+  "scope": "/panel-next/",
   "display": "standalone",
   "background_color": "#f7f2e5",
   "theme_color": "#0b8f4d",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./app-icon.svg",
+      "src": "/panel-next/app-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
