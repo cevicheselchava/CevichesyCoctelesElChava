@@ -39,14 +39,18 @@
       });
   }
 
-  function inventory(){
-    modal('Nuevo ingrediente',
-      inp('name','Ingrediente','','text','required')+
-      sel('unit','Unidad',units.map(u=>[u,u]),'oz')+
-      inp('stock','Existencia actual','0','number','min="0" step="0.001" required')+
-      inp('minimum','Mínimo','0','number','min="0" step="0.001"'),fd=>{
+  function inventory(existing){
+    modal(existing?'Editar ingrediente':'Nuevo ingrediente',
+      inp('name','Ingrediente',existing?.name||'','text','required')+
+      sel('unit','Unidad',units.map(u=>[u,u]),existing?.unit||'oz')+
+      inp('minimum','Mínimo',existing?.minimum||'0','number','min="0" step="0.001"'),fd=>{
         const db=read();db.inventory=Array.isArray(db.inventory)?db.inventory:[];
-        db.inventory.push({id:id(),name:String(fd.get('name')||'').trim(),unit:String(fd.get('unit')||'otro'),stock:Number(fd.get('stock')||0),minimum:Number(fd.get('minimum')||0),costPerUnit:0,appKey:'',category:''});
+        if(existing){
+          const row=db.inventory.find(x=>x.id===existing.id);if(!row)return;
+          row.name=String(fd.get('name')||'').trim();row.unit=String(fd.get('unit')||row.unit||'otro');row.minimum=Number(fd.get('minimum')||0);
+        }else{
+          db.inventory.push({id:id(),name:String(fd.get('name')||'').trim(),unit:String(fd.get('unit')||'otro'),stock:0,minimum:Number(fd.get('minimum')||0),costPerUnit:0,appKey:'',category:''});
+        }
         close();write(db);
       });
   }
@@ -60,27 +64,30 @@
     if(from==='g'&&to==='kg')return qty/1000;
     return qty;
   }
-  function purchase(){
+  function purchase(preselectedId=''){
     const db=read(),inv=Array.isArray(db.inventory)?db.inventory:[];
-    if(!inv.length){alert('Primero registra inventario.');return}
+    if(!inv.length){alert('Primero registra los ingredientes del inventario.');return}
+    const selected=inv.find(x=>x.id===preselectedId)||inv[0];
     modal('Registrar compra',
-      sel('inventoryId','Producto',inv.map(x=>[x.id,`${x.name} (${x.unit})`]),inv[0]?.id||'')+
-      inp('packCount','Cantidad de paquetes','1','number','min="0.001" step="0.001" required')+
-      inp('packContent','Contenido por paquete','1','number','min="0.001" step="0.001" required')+
-      sel('purchasedUnit','Unidad comprada',units.map(u=>[u,u]),inv[0]?.unit||'oz')+
+      sel('inventoryId','Producto',inv.map(x=>[x.id,`${x.name} (${x.unit})`]),selected?.id||'')+
+      inp('quantity','Cantidad comprada','1','number','min="0.001" step="0.001" required')+
+      sel('purchasedUnit','Unidad',units.map(u=>[u,u]),selected?.unit||'oz')+
       inp('total','Costo total $','','number','min="0" step="0.01" required')+
       inp('date','Fecha',today(),'date','required'),fd=>{
         const db=read();db.inventory=Array.isArray(db.inventory)?db.inventory:[];db.purchases=Array.isArray(db.purchases)?db.purchases:[];
         const row=db.inventory.find(x=>x.id===fd.get('inventoryId'));if(!row)return;
-        const packs=Number(fd.get('packCount')||0),content=Number(fd.get('packContent')||0),u=String(fd.get('purchasedUnit')||row.unit),total=Number(fd.get('total')||0);
-        const bought=packs*content,base=convert(bought,u,row.unit);if(base<=0)return;
+        const bought=Number(fd.get('quantity')||0),u=String(fd.get('purchasedUnit')||row.unit),total=Number(fd.get('total')||0);
+        const base=convert(bought,u,row.unit);if(base<=0)return;
         row.stock=Number(row.stock||0)+base;if(total>0)row.costPerUnit=total/base;
-        db.purchases.push({id:id(),inventoryId:row.id,qty:base,total,date:String(fd.get('date')||''),unit:row.unit,packCount:packs,packContent:content,purchasedQty:bought,purchasedUnit:u});
+        db.purchases.push({id:id(),inventoryId:row.id,qty:base,total,date:String(fd.get('date')||''),unit:row.unit,purchasedQty:bought,purchasedUnit:u});
         close();write(db);
       });
   }
+  window.__panelOpenPurchase=purchase;
 
   document.addEventListener('click',e=>{
+    const edit=e.target.closest('[data-inventory-edit]');
+    if(edit){e.preventDefault();e.stopImmediatePropagation();const db=read(),row=(db.inventory||[]).find(x=>x.id===edit.dataset.inventoryEdit);if(row)inventory(row);return}
     const b=e.target.closest('#primaryBtn');if(!b)return;
     const title=q('#screenTitle')?.textContent.trim();
     if(title==='Pedidos'){e.preventDefault();e.stopImmediatePropagation();order()}
